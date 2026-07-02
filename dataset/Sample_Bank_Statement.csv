@@ -1,0 +1,27 @@
+Bank Name: IDBI Bank
+Account Holder: EnverAI Tech Retail Supplies Pvt Ltd
+Account Number: 09876543211234
+Account Type: Current
+Statement Period: 01-Mar-2026 to 31-May-2026
+Opening Balance: 450000.50
+
+Date,Narration,Ref No,Value Date,Withdrawal Amt,Deposit Amt,Closing Balance
+01-Mar-2026,UPI/Sales/QR-01,UPI102938,01-Mar-2026,0,150000.00,600000.50
+05-Mar-2026,NEFT/Vendor/SupplierX,N123456,05-Mar-2026,200000.00,0,400000.50
+12-Mar-2026,IMPS/Client Payment/A01,IMP4432,12-Mar-2026,0,320000.00,720000.50
+15-Mar-2026,GST Payment Mar,TAX111,15-Mar-2026,50000.00,0,670000.50
+28-Mar-2026,Payroll Transfer,PAY888,28-Mar-2026,120000.00,0,550000.50
+04-Apr-2026,UPI/Sales/QR-02,UPI29384,04-Apr-2026,0,180000.00,730000.50
+10-Apr-2026,Cheque Bounce Charges,CHQ999,10-Apr-2026,500.00,0,729500.50
+12-Apr-2026,Inward Cheque/ClientY,CHQ888,12-Apr-2026,0,210000.00,939500.50
+18-Apr-2026,NEFT/Vendor/SupplierY,N223344,18-Apr-2026,150000.00,0,789500.50
+02-May-2026,UPI/Sales/QR-03,UPI5566,02-May-2026,0,145000.00,934500.50
+15-May-2026,GST Payment May,TAX222,15-May-2026,45000.00,0,889500.50
+28-May-2026,Payroll Transfer,PAY999,28-May-2026,130000.00,0,759500.50
+31-May-2026,Monthly Interest,INT001,31-May-2026,0,1200.00,760700.50
+
+**SUMMARY**
+Total Credits: 1006200.00
+Total Debits: 695500.00
+Inward Bounces: 1
+Closing Balance: 760700.50

@@ -1,0 +1,40 @@
+{
+  "account_type": "CURRENT",
+  "bank": "IDBI Bank",
+  "account_holder": "EnverTech Retail Supplies",
+  "period": {
+    "start": "2026-03-01",
+    "end": "2026-05-31"
+  },
+  "summary": {
+    "opening_balance": 450000.50,
+    "closing_balance": 680200.75,
+    "total_credit_volume": 4640000,
+    "total_debit_volume": 4409799.75,
+    "inward_bounces": 1,
+    "outward_bounces": 0
+  },
+  "transactions": [
+    {
+      "date": "2026-05-15",
+      "mode": "UPI",
+      "type": "CREDIT",
+      "amount": 15000,
+      "narration": "UPI/Client Payment/INV-001"
+    },
+    {
+      "date": "2026-05-16",
+      "mode": "NEFT",
+      "type": "DEBIT",
+      "amount": 250000,
+      "narration": "NEFT/Supplier Pmt/VendorX"
+    },
+    {
+      "date": "2026-05-28",
+      "mode": "IMPS",
+      "type": "DEBIT",
+      "amount": 120000,
+      "narration": "IMPS/Payroll/Salary May"
+    }
+  ]
+}

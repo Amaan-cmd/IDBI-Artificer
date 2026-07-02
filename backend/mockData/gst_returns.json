@@ -1,0 +1,30 @@
+{
+  "gstin": "27AADCB2230M1Z2",
+  "businessName": "EnverTech Retail Supplies",
+  "filingStatus": "ACTIVE",
+  "returns": [
+    {
+      "month": "2026-03",
+      "gstr3b_filed": true,
+      "total_sales": 1540000,
+      "total_purchases": 980000,
+      "tax_paid": 277200
+    },
+    {
+      "month": "2026-04",
+      "gstr3b_filed": true,
+      "total_sales": 1620000,
+      "total_purchases": 1050000,
+      "tax_paid": 291600
+    },
+    {
+      "month": "2026-05",
+      "gstr3b_filed": true,
+      "total_sales": 1480000,
+      "total_purchases": 920000,
+      "tax_paid": 266400
+    }
+  ],
+  "compliance_score": 98,
+  "delayed_filings_12m": 0
+}
