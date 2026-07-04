@@ -35,9 +35,16 @@ async function evaluateMSMECredit(req, res) {
         fs.unlinkSync(file.path);
       }
       
+      const mockScore = Math.floor(Math.random() * (820 - 710 + 1)) + 710;
+      const mockRisk = mockScore > 750 ? "LOW" : "MEDIUM";
+      
+      let bName = "Demo Corp";
+      if (file) bName = "EnverAI Tech Retail Supplies Pvt Ltd";
+      else if (manualData && typeof manualData === 'string' && manualData.includes('bank_name')) bName = "Progressive National Bank";
+      
       const responsePayload = {
         status: 'success',
-        businessName: file ? "EnverAI Tech Retail Supplies Pvt Ltd" : "Demo Corp",
+        businessName: bName,
         metrics: {
           revenueRunRate: 1540000.00,
           cashBufferRatio: 0.45,
@@ -52,12 +59,12 @@ async function evaluateMSMECredit(req, res) {
           ]
         },
         decision: {
-          score: 760,
-          riskLevel: "LOW",
+          score: mockScore,
+          riskLevel: mockRisk,
           narrative: "The business exhibits a strong credit profile with robust operational revenue run rate and solid cash buffer reserves. Excellent tax compliance score and minimal inward transaction bounces support a favorable credit rating.",
-          reasoning: "The synthesis agent assessed the MSME financial health at 760. High revenue stability and a cash buffer ratio of 0.45 provide substantial protection against short-term operational disruptions. No legal red flags or active court litigations were found in the public records scraper simulation.",
+          reasoning: "The synthesis agent assessed the MSME financial health at " + mockScore + ". High revenue stability and a cash buffer ratio of 0.45 provide substantial protection against short-term operational disruptions. No legal red flags or active court litigations were found in the public records scraper simulation.",
           citations: [
-            "Risk level evaluated as LOW due to cashBufferRatio (0.45) > 0.15.",
+            "Risk level evaluated as " + mockRisk + " due to cashBufferRatio (0.45) > 0.15.",
             "Extracted GSTR compliance rating is 9.8/10.",
             "MCA Status verified as 'Active' with zero pending court disputes."
           ]

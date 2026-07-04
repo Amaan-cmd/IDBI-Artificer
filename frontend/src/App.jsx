@@ -61,7 +61,7 @@ function App() {
 
   const handleHardcodedLogin = async (e) => {
     e.preventDefault();
-    if (loginForm.username.trim().toLowerCase() === 'idbi innovate' && loginForm.password.trim().toLowerCase() === 'nemotron') {
+    if (loginForm.username.trim().toLowerCase() === 'innovator@idbi' && loginForm.password.trim() === 'Citadel*23') {
       try {
         const res = await fetch(`${API_BASE}/api/v1/users/login`, {
           method: 'POST',
@@ -207,7 +207,7 @@ function App() {
               className="input-field" 
               value={loginForm.username}
               onChange={(e) => setLoginForm({...loginForm, username: e.target.value})}
-              placeholder="IDBI Innovate"
+              placeholder="innovator@idbi"
             />
             
             <label className="input-label">PASSWORD</label>
@@ -308,7 +308,12 @@ function App() {
                 displayScrollbar={false}
                 items={agamiRecords.map((record, i) => (
                   <div key={i} style={{ padding: '1.5rem', border: '1px solid #333', borderRadius: '8px', background: '#111', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    <div style={{ color: 'var(--brand-orange)', fontSize: '0.9rem', fontWeight: 'bold' }}>RECORD INDEX: {record.row_idx !== undefined ? record.row_idx : i}</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ color: 'var(--brand-orange)', fontSize: '0.9rem', fontWeight: 'bold' }}>RECORD INDEX: {record.row_idx !== undefined ? record.row_idx : i}</div>
+                      <div style={{ color: '#fff', fontSize: '0.75rem', background: 'var(--brand-green)', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold' }}>
+                        ENTITY CLASSIFICATION: {JSON.stringify(record).length > 800 ? 'SME' : 'MSME'}
+                      </div>
+                    </div>
                     <pre style={{ fontSize: '0.75rem', color: '#888', overflowX: 'hidden', height: '120px', margin: 0, padding: '1rem', background: '#0a0a09', borderRadius: '4px' }}>
                       {JSON.stringify(record, null, 2)}
                     </pre>
