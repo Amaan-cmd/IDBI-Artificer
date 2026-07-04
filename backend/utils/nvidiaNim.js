@@ -1,11 +1,17 @@
 const { OpenAI } = require('openai');
-const { SecretManagerServiceClient } = require('@google-cloud/secret-manager');
-
-const secretClient = new SecretManagerServiceClient();
+let secretClient = null;
 
 async function getSecret(secretName) {
   try {
-    const name = `projects/YOUR_PROJECT_ID/secrets/${secretName}/versions/latest`;
+    const projectId = process.env.GOOGLE_CLOUD_PROJECT;
+    if (!projectId || projectId === 'YOUR_PROJECT_ID') {
+      return null;
+    }
+    if (!secretClient) {
+      const { SecretManagerServiceClient } = require('@google-cloud/secret-manager');
+      secretClient = new SecretManagerServiceClient();
+    }
+    const name = `projects/${projectId}/secrets/${secretName}/versions/latest`;
     const [version] = await secretClient.accessSecretVersion({ name });
     return version.payload.data.toString('utf8');
   } catch (error) {
