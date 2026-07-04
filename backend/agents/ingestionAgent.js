@@ -34,7 +34,7 @@ Output Schema:
   "inwardBounces": (count of bounced transactions, 0 if none found)
 }`;
 
-  const model = process.env.NEMOTRON_NANO_MODEL || 'nvidia/nemotron-3-nano';
+  const model = process.env.NEMOTRON_NANO_MODEL || 'meta/llama-3.1-8b-instruct';
   // Secret Name in GCP Secret Manager
   const secretKeyName = 'NVIDIA_KIMI_KEY'; 
   const rawText = await applyGuardrails(

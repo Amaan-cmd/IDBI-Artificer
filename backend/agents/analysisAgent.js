@@ -22,7 +22,7 @@ Return ONLY a raw JSON object with no markdown:
   "citations": ["Citation 1 e.g., 'Total Revenue extracted was X, yielding a run rate of Y'", "Citation 2..."]
 }`;
 
-  const model = process.env.NEMOTRON_ULTRA_MODEL || 'nvidia/nemotron-3-ultra';
+  const model = process.env.NEMOTRON_ULTRA_MODEL || 'meta/llama-3.1-70b-instruct';
   // Secret Name in GCP Secret Manager
   const secretKeyName = 'NVIDIA_NEMOTRON_ULTRA_KEY';
   const rawText = await applyGuardrails(

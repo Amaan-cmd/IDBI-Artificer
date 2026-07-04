@@ -5,7 +5,7 @@ const { callNim } = require('./nvidiaNim');
  * using the NVIDIA Nim LLM to perform rail checks.
  */
 async function applyGuardrails(agentSystemPrompt, agentUserPrompt, agentCoreLogic, contextName = "Financial MSME AI") {
-  const model = process.env.NEMOTRON_NANO_MODEL || 'nvidia/nemotron-3-nano';
+  const model = process.env.NEMOTRON_NANO_MODEL || 'meta/llama-3.1-8b-instruct';
   
   // 1. Input Rail (Topical / Jailbreak check)
   console.log(`[NeMo Guardrails] Checking Input Rails for ${contextName}...`);
