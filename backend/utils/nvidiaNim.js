@@ -16,7 +16,7 @@ async function getSecret(secretName) {
 
 async function callNim(modelName, systemPrompt, userPrompt, secretKeyName) {
   // If a secretKeyName is passed, fetch it from GCP Secret Manager, else fallback to env var
-  let apiKey = process.env.NVIDIA_API_KEY || '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';
+  let apiKey = process.env.NVIDIA_API_KEY;
   if (secretKeyName) {
     const fetchedKey = await getSecret(secretKeyName);
     if (fetchedKey) apiKey = fetchedKey;

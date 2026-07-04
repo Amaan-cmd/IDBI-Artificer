@@ -25,7 +25,7 @@ async function evaluateMSMECredit(req, res) {
 
     console.log(`\n[Credit Engine] Starting Live AI Evaluation (Input Mode: ${file ? 'FILE UPLOAD' : 'MANUAL DATA'})`);
 
-    const apiKey = process.env.NVIDIA_API_KEY || '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';
+    const apiKey = process.env.NVIDIA_API_KEY;
     // Offline mockup fallback for presentation & testing when API Key is missing
     if (!apiKey) {
       console.log('[Credit Engine] NVIDIA_API_KEY env variable not found. Running in MOCK EVALUATION MODE for local presentation & testing.');
