@@ -1,4 +1,5 @@
 const { callNim } = require('../utils/nvidiaNim');
+const { applyGuardrails } = require('../utils/nemoGuardrails');
 
 async function analyzeFinancials(structuredData) {
   console.log('[Analysis Agent] Passing structured data to NVIDIA Nemotron 3 Super for ratio calculation and XAI...');
@@ -24,7 +25,12 @@ Return ONLY a raw JSON object with no markdown:
   const model = process.env.NEMOTRON_ULTRA_MODEL || 'nvidia/nemotron-3-ultra';
   // Secret Name in GCP Secret Manager
   const secretKeyName = 'NVIDIA_NEMOTRON_ULTRA_KEY';
-  const rawText = await callNim(model, systemPrompt, userPrompt, secretKeyName);
+  const rawText = await applyGuardrails(
+    systemPrompt,
+    userPrompt,
+    async () => await callNim(model, systemPrompt, userPrompt, secretKeyName),
+    "Analysis Agent"
+  );
   
   console.log('[Analysis Agent] Nemotron output:', rawText);
   

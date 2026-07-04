@@ -1,4 +1,5 @@
 const { callNim } = require('../utils/nvidiaNim');
+const { applyGuardrails } = require('../utils/nemoGuardrails');
 
 async function synthesizeScore(structuredData, analysis, scraperData = null) {
   console.log('[Synthesis Agent] Passing data and analysis to NVIDIA Nemotron 3 Ultra for final decision and XAI...');
@@ -28,7 +29,12 @@ Return ONLY a raw JSON object with no markdown:
   const model = process.env.NEMOTRON_ULTRA_MODEL || 'nvidia/nemotron-3-ultra';
   // Secret Name in GCP Secret Manager
   const secretKeyName = 'NVIDIA_NEMOTRON_ULTRA_KEY';
-  const rawText = await callNim(model, systemPrompt, userPrompt, secretKeyName);
+  const rawText = await applyGuardrails(
+    systemPrompt,
+    userPrompt,
+    async () => await callNim(model, systemPrompt, userPrompt, secretKeyName),
+    "Synthesis Agent"
+  );
   
   console.log('[Synthesis Agent] Nemotron output:', rawText);
   

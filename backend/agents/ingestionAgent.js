@@ -1,5 +1,6 @@
 const fs = require('fs');
 const { callNim } = require('../utils/nvidiaNim');
+const { applyGuardrails } = require('../utils/nemoGuardrails');
 
 async function ingestAlternateData(inputData) {
   const { file, manualData } = inputData;
@@ -36,7 +37,12 @@ Output Schema:
   const model = process.env.NEMOTRON_NANO_MODEL || 'nvidia/nemotron-3-nano';
   // Secret Name in GCP Secret Manager
   const secretKeyName = 'NVIDIA_KIMI_KEY'; 
-  const rawText = await callNim(model, systemPrompt, userPrompt, secretKeyName);
+  const rawText = await applyGuardrails(
+    systemPrompt,
+    userPrompt,
+    async () => await callNim(model, systemPrompt, userPrompt, secretKeyName),
+    "Ingestion Agent"
+  );
   
   console.log('[Ingestion Agent] Nemotron output:', rawText);
   

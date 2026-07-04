@@ -1,0 +1,70 @@
+.master-dashboard {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  z-index: 10;
+  position: relative;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 3px solid #1a1a19;
+}
+
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--surface);
+  border: 3px solid #1a1a19;
+  box-shadow: 4px 4px 0 0 #1a1a19;
+  padding: 0.5rem 1rem;
+  font-family: 'DM Mono', monospace;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.back-btn:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 0 #1a1a19;
+  background: #e8660a;
+  color: white;
+}
+
+.brutalist-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface);
+  border: 3px solid #1a1a19;
+  box-shadow: 6px 6px 0 0 #1a1a19;
+}
+
+.brutalist-table th, .brutalist-table td {
+  border: 3px solid #1a1a19;
+  padding: 1rem;
+  text-align: left;
+}
+
+.brutalist-table th {
+  background: #1a1a19;
+  color: white;
+  font-family: 'Syne', sans-serif;
+  text-transform: uppercase;
+  font-size: 1.1rem;
+  letter-spacing: 0.05em;
+}
+
+.brutalist-table td {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.95rem;
+}
+
+.brutalist-table tbody tr:hover {
+  background: #fdfaf6;
+}

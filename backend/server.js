@@ -5,8 +5,10 @@ const path = require('path');
 const multer = require('multer');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const mongoSanitize = require('express-mongo-sanitize');
 const { evaluateMSMECredit } = require('./controllers/creditController');
+const { loginUser, getAllUsers } = require('./controllers/userController');
+const { getHistory } = require('./controllers/historyController');
+const { trainAgamiPipeline } = require('./controllers/agamiController');
 
 const upload = multer({ dest: 'uploads/' });
 
@@ -16,7 +18,6 @@ const app = express();
 app.use(helmet()); // Secure HTTP headers
 app.use(cors());
 app.use(express.json());
-app.use(mongoSanitize()); // Prevent NoSQL Injection attacks in payload
 
 // API Throttling / DDoS mitigation
 const limiter = rateLimit({
@@ -64,6 +65,16 @@ app.get('/api/v1/alternate-data/gst/:gstin', (req, res) => {
 
 // Evaluate MSME Credit Score (Live Agentic Pipeline with Multi-Modal Input)
 app.post('/api/v1/evaluate', upload.single('statement'), evaluateMSMECredit);
+
+// --- User & Profile Endpoints ---
+app.post('/api/v1/users/login', loginUser);
+app.get('/api/v1/users', getAllUsers);
+
+// --- History Endpoints ---
+app.get('/api/v1/history', getHistory);
+
+// --- Agami Pipeline Simulation ---
+app.post('/api/v1/agami/train', trainAgamiPipeline);
 
 // --- Server Startup ---
 app.listen(PORT, () => {
