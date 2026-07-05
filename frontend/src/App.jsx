@@ -124,8 +124,11 @@ function App() {
     }
   };
 
-  const triggerEvaluation = async () => {
-    if (inputMode === 'file' && !file) {
+  const triggerEvaluation = async (overrideData = null) => {
+    const activeMode = overrideData ? 'manual' : inputMode;
+    const activeManualData = overrideData ? overrideData : manualData;
+
+    if (activeMode === 'file' && !file) {
       setError("Please upload a Bank Statement or GST file first.");
       return;
     }
@@ -142,7 +145,7 @@ function App() {
 
     try {
       let res;
-      if (inputMode === 'file') {
+      if (activeMode === 'file') {
         const formData = new FormData();
         formData.append('statement', file);
         formData.append('scraperData', scraperData);
@@ -156,7 +159,7 @@ function App() {
         res = await fetch(`${API_BASE}/api/v1/evaluate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ manualData, scraperData, userId: currentUser?.id })
+          body: JSON.stringify({ manualData: activeManualData, scraperData, userId: currentUser?.id })
         });
       }
       
@@ -345,8 +348,10 @@ function App() {
                       style={{ width: '100%', fontSize: '0.85rem', padding: '12px' }}
                       onClick={() => {
                         setInputMode('manual');
-                        setManualData(JSON.stringify(record.statement || record, null, 2));
+                        const dataStr = JSON.stringify(record.statement || record, null, 2);
+                        setManualData(dataStr);
                         setAgamiRecords(null);
+                        triggerEvaluation(dataStr);
                       }}
                     >
                       <Cpu size={14} style={{ display: 'inline', marginRight: '5px' }}/> PROCESS WITH NEMO AGENT
