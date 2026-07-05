@@ -24,6 +24,8 @@ function App() {
   
   const [inputMode, setInputMode] = useState('file'); // 'file' or 'manual'
   const [loading, setLoading] = useState(false);
+  const [authLoading, setAuthLoading] = useState(false);
+  const [evaluationStep, setEvaluationStep] = useState(0);
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   
@@ -61,7 +63,12 @@ function App() {
 
   const handleHardcodedLogin = async (e) => {
     e.preventDefault();
-    if (loginForm.username.trim().toLowerCase() === 'innovator@idbi' && loginForm.password.trim() === 'Citadel*23') {
+    const username = loginForm.username.trim().toLowerCase();
+    const isAllowedEmail = username === 'innovator@idbi' || username.endsWith('@enveraitech.com');
+
+    if (isAllowedEmail && loginForm.password.trim() === 'Citadel*23') {
+      setAuthLoading(true);
+      setError(null);
       try {
         const res = await fetch(`${API_BASE}/api/v1/users/login`, {
           method: 'POST',
@@ -76,6 +83,8 @@ function App() {
         }
       } catch (err) {
         setError("Failed to connect to authentication server.");
+      } finally {
+        setAuthLoading(false);
       }
     } else {
       setError("Invalid credentials. Access Denied.");
@@ -83,6 +92,8 @@ function App() {
   };
 
   const handleGoogleLogin = async () => {
+    setAuthLoading(true);
+    setError(null);
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const email = result.user.email;
@@ -96,6 +107,8 @@ function App() {
       }
     } catch (err) {
       setError(err.message);
+    } finally {
+      setAuthLoading(false);
     }
   };
 
@@ -118,8 +131,14 @@ function App() {
     }
 
     setLoading(true);
+    setEvaluationStep(0);
     setError(null);
     setData(null);
+
+    // Setup simulated progress steps
+    const stepInterval = setInterval(() => {
+      setEvaluationStep((prev) => (prev < 3 ? prev + 1 : prev));
+    }, 2000);
 
     try {
       let res;
@@ -153,8 +172,10 @@ function App() {
       }
     } catch (err) {
       setError('Network error connecting to AI Engine.');
+    } finally {
+      clearInterval(stepInterval);
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleAgamiTrain = async () => {
@@ -190,8 +211,8 @@ function App() {
           
           {error && <div style={{ color: '#cc0000', marginBottom: '1.5rem', fontSize: '0.9rem', textAlign: 'center', background: '#ffcccc', padding: '10px', borderRadius: '0', border: '3px solid #cc0000', fontWeight: 'bold' }}>{error}</div>}
           
-          <button onClick={handleGoogleLogin} className="btn-secondary" style={{ width: '100%', marginBottom: '2rem', display: 'flex', gap: '10px', justifyContent: 'center' }}>
-            <Globe size={18} /> SIGN IN WITH ENVERAI
+          <button onClick={handleGoogleLogin} className="btn-secondary" style={{ width: '100%', marginBottom: '2rem', display: 'flex', gap: '10px', justifyContent: 'center' }} disabled={authLoading}>
+            <Globe size={18} /> {authLoading ? "AUTHENTICATING..." : "SIGN IN WITH ENVERAI"}
           </button>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '2rem', color: 'var(--text-subtle)', fontSize: '0.8rem' }}>
@@ -208,6 +229,7 @@ function App() {
               value={loginForm.username}
               onChange={(e) => setLoginForm({...loginForm, username: e.target.value})}
               placeholder="innovator@idbi"
+              disabled={authLoading}
             />
             
             <label className="input-label">PASSWORD</label>
@@ -217,10 +239,11 @@ function App() {
               value={loginForm.password}
               onChange={(e) => setLoginForm({...loginForm, password: e.target.value})}
               placeholder="••••••••"
+              disabled={authLoading}
             />
             
-            <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '1rem' }}>
-              AUTHENTICATE
+            <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '1rem' }} disabled={authLoading}>
+              {authLoading ? "AUTHENTICATING..." : "LOGIN"}
             </button>
           </form>
         </div>
@@ -414,8 +437,70 @@ function App() {
               disabled={loading}
               style={{ width: '100%', padding: '18px', fontSize: '1.1rem', letterSpacing: '2px' }}
             >
-              {loading ? 'NEMOTRON PIPELINE EXECUTING...' : 'INITIALIZE AI UNDERWRITING'}
+              {loading ? 'NEMOTRON PIPELINE ACTIVE...' : 'INITIALIZE AI UNDERWRITING'}
             </button>
+
+            {loading && (
+              <div className="animate-fade-up" style={{ 
+                marginTop: '2rem', 
+                padding: '1.5rem', 
+                border: '2px dashed var(--border)', 
+                background: '#fafafa',
+                textAlign: 'left'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--brand-navy)', fontWeight: 'bold', marginBottom: '1.5rem', fontFamily: 'var(--font-heading)' }}>
+                  <Cpu className="animate-spin" size={20} style={{ animationDuration: '3s' }} />
+                  NVIDIA NEMOTRON PIPELINE ACTIVE
+                </div>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.9rem', fontFamily: 'var(--font-mono)' }}>
+                    <span style={{ color: evaluationStep >= 0 ? 'var(--brand-green)' : '#999', fontWeight: 'bold' }}>
+                      {evaluationStep > 0 ? '✓' : '●'}
+                    </span>
+                    <span style={{ fontWeight: evaluationStep === 0 ? 'bold' : 'normal', color: evaluationStep === 0 ? 'var(--brand-navy)' : '#666' }}>
+                      [AGENT 1] Ingestion: Parsing unstructured financials
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.9rem', fontFamily: 'var(--font-mono)' }}>
+                    <span style={{ color: evaluationStep >= 1 ? 'var(--brand-green)' : '#999', fontWeight: 'bold' }}>
+                      {evaluationStep > 1 ? '✓' : evaluationStep === 1 ? '●' : '○'}
+                    </span>
+                    <span style={{ fontWeight: evaluationStep === 1 ? 'bold' : 'normal', color: evaluationStep === 1 ? 'var(--brand-navy)' : '#666' }}>
+                      [AGENT 2] Analysis: Calculating credit run rate & ratios
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.9rem', fontFamily: 'var(--font-mono)' }}>
+                    <span style={{ color: evaluationStep >= 2 ? 'var(--brand-green)' : '#999', fontWeight: 'bold' }}>
+                      {evaluationStep > 2 ? '✓' : evaluationStep === 2 ? '●' : '○'}
+                    </span>
+                    <span style={{ fontWeight: evaluationStep === 2 ? 'bold' : 'normal', color: evaluationStep === 2 ? 'var(--brand-navy)' : '#666' }}>
+                      [AGENT 3] Synthesis: Generating score & XAI narrative
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.9rem', fontFamily: 'var(--font-mono)' }}>
+                    <span style={{ color: evaluationStep >= 3 ? 'var(--brand-green)' : '#999', fontWeight: 'bold' }}>
+                      {evaluationStep > 3 ? '✓' : evaluationStep === 3 ? '●' : '○'}
+                    </span>
+                    <span style={{ fontWeight: evaluationStep === 3 ? 'bold' : 'normal', color: evaluationStep === 3 ? 'var(--brand-navy)' : '#666' }}>
+                      [GUARDRAILS] Checking safety rules & topical alignment
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ marginTop: '1.5rem', height: '6px', width: '100%', background: '#eee', border: '1px solid var(--border)', overflow: 'hidden', position: 'relative' }}>
+                  <div style={{ 
+                    height: '100%', 
+                    background: 'var(--brand-orange)', 
+                    width: `${(evaluationStep + 1) * 25}%`, 
+                    transition: 'width 0.4s cubic-bezier(0.25, 1, 0.5, 1)' 
+                  }}></div>
+                </div>
+              </div>
+            )}
           </div>
 
           {error && (

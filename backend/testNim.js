@@ -10,7 +10,7 @@ async function testNim() {
 
   try {
     const response = await openai.chat.completions.create({
-      model: 'meta/llama-3.1-8b-instruct',
+      model: 'meta/llama-3.1-70b-instruct',
       messages: [
         { role: 'system', content: 'You are a helpful assistant.' },
         { role: 'user', content: 'Hello' }
