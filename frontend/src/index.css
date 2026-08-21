@@ -1,27 +1,27 @@
 @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  /* Brand Colors - EnverAI Tech Neo-Brutalist Theme */
-  --brand-navy: #1b2b4b;
-  --brand-orange: #e8660a;
+  /* Brand Colors - Dark Neo-Brutalist Theme */
+  --brand-navy: #faf6ef; /* Inverted for dark mode headings */
+  --brand-orange: #FF4103; /* Vulcanico */
   --brand-green: #3a9a3c;
   --brand-cream: #faf6ef;
-  --brand-black: #1a1a19;
+  --brand-black: #001621; /* Noturno */
   
   /* Surface Tokens */
-  --bg-primary: #faf6ef;
-  --bg-secondary: #ffffff;
-  --surface: #ffffff;
+  --bg-primary: #001621; /* Noturno */
+  --bg-secondary: #001b29;
+  --surface: #001621;
   
   /* Borders */
-  --border: #1a1a19;
-  --border-light: rgba(26, 26, 25, 0.1);
+  --border: #faf6ef;
+  --border-light: rgba(250, 246, 239, 0.2);
   --border-width: 3px;
   
   /* Text */
-  --text-primary: #1a1a19;
-  --text-muted: #4a4a49;
-  --text-subtle: #7a7a79;
+  --text-primary: #faf6ef;
+  --text-muted: #d0c8b8;
+  --text-subtle: #a69f91;
   
   /* Typography */
   --font-primary: 'Inter', system-ui, sans-serif;
@@ -36,9 +36,9 @@
   --radius-xl: 0px;
   
   /* Shadows */
-  --shadow-brutal: 4px 4px 0 0 var(--brand-black);
-  --shadow-brutal-hover: 6px 6px 0 0 var(--brand-black);
-  --shadow-brutal-active: 0px 0px 0 0 var(--brand-black);
+  --shadow-brutal: 5px 5px 0 0 #FF4103;
+  --shadow-brutal-hover: 8px 8px 0 0 #FF4103;
+  --shadow-brutal-active: 0px 0px 0 0 #FF4103;
 }
 
 * {
@@ -60,14 +60,14 @@ body {
 
 /* Scrollbar */
 ::-webkit-scrollbar {
-  width: 10px;
+  width: 12px;
 }
 ::-webkit-scrollbar-track {
   background: var(--bg-primary);
   border-left: var(--border-width) solid var(--border);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--brand-orange);
+  background: var(--brand-black);
   border-left: var(--border-width) solid var(--border);
   border-bottom: var(--border-width) solid var(--border);
 }
@@ -171,26 +171,27 @@ body {
 }
 
 .btn-primary:hover {
-  background: #f5890f;
-  box-shadow: 5px 5px 0 0 var(--border);
+  background: #ff5a24;
+  box-shadow: 6px 6px 0 0 var(--border);
   transform: translate(-1px, -1px);
 }
 
 .btn-primary:active {
   box-shadow: var(--shadow-brutal-active);
-  transform: translate(2px, 2px);
+  transform: translate(3px, 3px);
 }
 
 .btn-primary:disabled {
-  background: #e0e0e0;
+  background: #333;
   color: var(--text-subtle);
   cursor: not-allowed;
   box-shadow: none;
   transform: none;
+  border-color: #555;
 }
 
 .btn-secondary {
-  background: transparent;
+  background: var(--bg-primary);
   color: var(--brand-navy);
   font-family: var(--font-heading);
   font-size: 14px;
@@ -210,15 +211,15 @@ body {
 }
 
 .btn-secondary:hover {
-  background: var(--brand-navy);
+  background: var(--brand-orange);
   color: #ffffff;
-  box-shadow: 5px 5px 0 0 var(--border);
+  box-shadow: 6px 6px 0 0 var(--border);
   transform: translate(-1px, -1px);
 }
 
 .btn-secondary:active {
   box-shadow: var(--shadow-brutal-active);
-  transform: translate(2px, 2px);
+  transform: translate(3px, 3px);
 }
 
 /* Tags & Badges */
@@ -243,7 +244,7 @@ body {
 
 .badge-MEDIUM {
   background-color: #ffe6cc;
-  color: var(--brand-orange);
+  color: #cc5500;
 }
 
 .badge-LOW {
@@ -263,12 +264,12 @@ body {
   color: var(--brand-navy);
 }
 
-.score-HIGH { color: #cc0000; }
+.score-HIGH { color: #ff5252; }
 .score-MEDIUM { color: var(--brand-orange); }
 .score-LOW { color: var(--brand-green); }
 
 .narrative-box {
-  background: #ffffff;
+  background: var(--bg-secondary);
   border: var(--border-width) solid var(--border);
   padding: 1.5rem;
   margin-top: 1.5rem;
@@ -316,17 +317,17 @@ body {
   border-radius: 0;
   font-family: var(--font-mono);
   font-size: 1rem;
-  background-color: #ffffff;
+  background-color: var(--bg-primary);
   color: var(--text-primary);
   transition: all 0.2s ease;
   margin-bottom: 1.5rem;
-  box-shadow: inset 2px 2px 0 0 rgba(0,0,0,0.05);
+  box-shadow: inset 2px 2px 0 0 rgba(0,0,0,0.5);
 }
 
 .input-field:focus {
   outline: none;
   border-color: var(--brand-orange);
-  box-shadow: 4px 4px 0 0 var(--brand-orange);
+  box-shadow: 5px 5px 0 0 var(--brand-orange);
   transform: translate(-2px, -2px);
 }
 

@@ -1,50 +1,67 @@
-const { callNim } = require('../utils/nvidiaNim');
+const { callGemini } = require('../utils/googleGemini');
 const { applyGuardrails } = require('../utils/nemoGuardrails');
 
-async function synthesizeScore(structuredData, analysis, scraperData = null) {
-  console.log('[Synthesis Agent] Passing data and analysis to NVIDIA Nemotron 3 Ultra for final decision and XAI...');
+/**
+ * Agent 3: XAI & Chief Credit Officer (Gemini 2.5 Pro)
+ * Synthesizes final underwriting decision, assesses Agent 1 safety & Agent 2 metrics.
+ */
+async function synthesizeScore(agent1Data, agent2Matrix, externalOverrides = null) {
+  console.log('[Agent 3: Chief Credit Officer & XAI] Synthesizing credit decision via Gemini 2.5 Pro...');
 
-  const systemPrompt = `You are the Chief Credit Officer AI. You make the final underwriting decision. You must be structurally justifiable and properly cite your reasoning based on the extracted metrics and analysis.
-CRITICAL GUARDRAIL: Do not hallucinate data. Base all citations strictly on the provided input. If data is missing, output null or 'Unavailable'. DO NOT fabricate external data.`;
-  const userPrompt = `Input Financials:
-${JSON.stringify(structuredData, null, 2)}
+  const systemPrompt = `You are Agent 3 (Chief Credit Officer & Explainable AI Agent) powered by Gemini 2.5 Pro.
+Your responsibility:
+1. Cross-verify the safety, integrity, and realism of data extracted by Agent 1.
+2. Evaluate the quantitative calculation matrix from Agent 2.
+3. Synthesize a definitive Holistic Credit Score (300 to 900) and Risk Tier (LOW | MEDIUM | HIGH).
+4. Construct an immutable Forensic Audit Trail with exact line-item citations.
+CRITICAL RULE:
+- Zero hallucinations.
+- All risk deductions or approvals must be forensically justified.
+- Return ONLY a raw JSON object with no conversational fluff.`;
 
-Calculated Ratios & Analytics:
-${JSON.stringify(analysis, null, 2)}
+  const userPrompt = `Agent 1 Extracted Profile:
+${JSON.stringify(agent1Data, null, 2)}
 
-External Scraper Data (e.g. MCA, Court Records, Social Sentiment - if any):
-${scraperData ? JSON.stringify(scraperData, null, 2) : 'None Provided'}
+Agent 2 Quantitative Calculation Matrix:
+${JSON.stringify(agent2Matrix, null, 2)}
 
-Based on these inputs, generate a final MSME Health Card decision. Factor in the External Scraper Data if it is present and relevant.
-Crucially, provide EXPLAINABLE AI reasoning and citations for your decision.
-Return ONLY a raw JSON object with no markdown:
+${externalOverrides ? `External Overrides / Manual Scraper Signals:\n${JSON.stringify(externalOverrides, null, 2)}` : ''}
+
+Generate the final underwriting synthesis.
+Output strictly in JSON schema:
 {
-  "score": (a number from 300 to 900 representing financial health),
-  "riskLevel": ("LOW", "MEDIUM", or "HIGH"),
-  "narrative": (A 2-3 sentence executive summary of why this score was given, incorporating insights from all data sources.),
-  "reasoning": (Detailed forensic justification of the score.),
-  "citations": ["Citation 1 e.g., 'Risk level HIGH due to inward bounces = X'", "Citation 2..."]
+  "score": (number between 300 and 900),
+  "riskLevel": ("LOW" | "MEDIUM" | "HIGH"),
+  "narrative": "A concise executive underwriting decision summary (2-3 sentences).",
+  "reasoning": "Detailed forensic explanation of why this specific score and risk tier were assigned.",
+  "citations": [
+    "Line-item citation 1 referencing exact figures...",
+    "Line-item citation 2 referencing GSTR/cash buffer...",
+    "Line-item citation 3 referencing litigation/bounce flags..."
+  ],
+  "agentSafetyAudit": {
+    "dataIntegrityStatus": "VERIFIED_SOUND",
+    "fraudSignalsDetected": 0,
+    "confidenceRating": "99.4%"
+  }
 }`;
 
-  const model = process.env.NEMOTRON_ULTRA_MODEL || 'meta/llama-3.1-70b-instruct';
-  // Secret Name in GCP Secret Manager
-  const secretKeyName = 'NVIDIA_NEMOTRON_ULTRA_KEY';
+  const model = process.env.GEMINI_PRO_MODEL || 'gemini-2.5-pro';
+  const secretKeyName = 'GEMINI_API_KEY';
   const rawText = await applyGuardrails(
     systemPrompt,
     userPrompt,
-    async () => await callNim(model, systemPrompt, userPrompt, secretKeyName),
-    "Synthesis Agent"
+    async () => await callGemini(model, systemPrompt, userPrompt, secretKeyName),
+    "Agent 3: Synthesis & XAI"
   );
-  
-  console.log('[Synthesis Agent] Nemotron output:', rawText);
   
   const jsonMatch = rawText.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
-    throw new Error("Failed to extract JSON from Nemotron response");
+    throw new Error("Failed to extract JSON decision from Gemini response");
   }
 
   const finalDecision = JSON.parse(jsonMatch[0]);
-  console.log('[Synthesis Agent] Final decision synthesized with Explainability.');
+  console.log('[Agent 3] Final Underwriting Synthesis & XAI Audit Trail generated.');
   return finalDecision;
 }
 

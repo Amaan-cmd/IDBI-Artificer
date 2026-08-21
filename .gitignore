@@ -1,7 +1,43 @@
+# Dependencies
 node_modules/
-.env
-.DS_Store
-dist/
-build/
 backend/node_modules/
 frontend/node_modules/
+.pnp
+.pnp.js
+
+# Environment and Secret Configurations
+.env
+.env.*
+*.env
+backend/.env
+backend/.env.*
+frontend/.env
+frontend/.env.*
+*.local
+*.pem
+*.key
+*.cert
+service-account*.json
+credentials.json
+
+# Temporary Uploads & Processing Storage
+uploads/
+backend/uploads/
+*.tmp
+*.log
+
+# Build Outputs
+dist/
+build/
+.vite/
+
+# System & IDE files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

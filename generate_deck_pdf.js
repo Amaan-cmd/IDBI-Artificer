@@ -1,0 +1,729 @@
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
+
+const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>EnverAI Artificer - BITSoM Vertex Pitch Deck</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@500;700&family=Inter:wght@400;500;600;700&display=swap');
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    @page {
+      size: 1920px 1080px;
+      margin: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #001621;
+      color: #FAF6EF;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .slide {
+      width: 1920px;
+      height: 1080px;
+      page-break-after: always;
+      position: relative;
+      overflow: hidden;
+      padding: 80px 100px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background-color: #001621;
+      border: 8px solid #001b29;
+    }
+
+    /* Background decorative grids */
+    .slide::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 90% 10%, rgba(255, 65, 3, 0.08) 0%, transparent 50%),
+                  radial-gradient(circle at 10% 90%, rgba(58, 154, 60, 0.05) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    .slide-header {
+      position: relative;
+      z-index: 1;
+      border-bottom: 2px solid rgba(250, 246, 239, 0.2);
+      padding-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+
+    .eyebrow {
+      font-family: 'DM Mono', monospace;
+      font-size: 18px;
+      color: #FF4103;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 24px;
+      height: 4px;
+      background: #FF4103;
+      display: inline-block;
+    }
+
+    .slide-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 52px;
+      font-weight: 800;
+      color: #FAF6EF;
+      letter-spacing: -1.5px;
+      line-height: 1.1;
+    }
+
+    .header-tag {
+      font-family: 'DM Mono', monospace;
+      font-size: 16px;
+      color: #3A9A3C;
+      border: 1.5px solid #3A9A3C;
+      padding: 6px 16px;
+      background: rgba(58, 154, 60, 0.1);
+      font-weight: 700;
+    }
+
+    .slide-body {
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      margin: 40px 0;
+      display: flex;
+      gap: 40px;
+    }
+
+    .slide-footer {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid rgba(250, 246, 239, 0.15);
+      padding-top: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: 'DM Mono', monospace;
+      font-size: 16px;
+      color: #A69F91;
+    }
+
+    .footer-left {
+      display: flex;
+      gap: 30px;
+    }
+
+    .card {
+      background: #001B29;
+      border: 3px solid #FAF6EF;
+      padding: 36px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      box-shadow: 8px 8px 0 0 #FF4103;
+    }
+
+    .card.no-shadow {
+      box-shadow: none;
+      border-color: rgba(250, 246, 239, 0.3);
+    }
+
+    .card.highlight {
+      border-color: #FF4103;
+      background: #002235;
+    }
+
+    .card-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 28px;
+      font-weight: 800;
+      color: #FAF6EF;
+      margin-bottom: 16px;
+    }
+
+    .card-text {
+      font-size: 20px;
+      line-height: 1.6;
+      color: #D0C8B8;
+    }
+
+    .metric-big {
+      font-family: 'Syne', sans-serif;
+      font-size: 68px;
+      font-weight: 800;
+      color: #FF4103;
+      line-height: 1;
+      margin-bottom: 10px;
+    }
+
+    .metric-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 18px;
+      color: #FAF6EF;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 700;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 6px 14px;
+      font-family: 'DM Mono', monospace;
+      font-size: 14px;
+      font-weight: 700;
+      border-radius: 0;
+      text-transform: uppercase;
+    }
+
+    .badge-green {
+      background: rgba(58, 154, 60, 0.2);
+      color: #3A9A3C;
+      border: 1.5px solid #3A9A3C;
+    }
+
+    .badge-orange {
+      background: rgba(255, 65, 3, 0.2);
+      color: #FF4103;
+      border: 1.5px solid #FF4103;
+    }
+
+    ul.bullet-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    ul.bullet-list li {
+      font-size: 20px;
+      line-height: 1.5;
+      color: #D0C8B8;
+      display: flex;
+      gap: 14px;
+    }
+
+    ul.bullet-list li::before {
+      content: "[+]";
+      color: #FF4103;
+      font-family: 'DM Mono', monospace;
+      font-weight: 700;
+    }
+
+    /* Cover specific */
+    .cover-slide {
+      background: #001621;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 120px 140px;
+    }
+
+    .cover-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 88px;
+      font-weight: 800;
+      color: #FAF6EF;
+      letter-spacing: -3px;
+      line-height: 1.05;
+      margin-bottom: 24px;
+    }
+
+    .cover-subtitle {
+      font-size: 32px;
+      color: #D0C8B8;
+      max-width: 1200px;
+      line-height: 1.4;
+      margin-bottom: 60px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==================== SLIDE 1: COVER ==================== -->
+  <div class="slide cover-slide">
+    <div>
+      <div class="eyebrow">BITSOM VERTEX • BUILDERS PITCH FEST 2026</div>
+      <h1 class="cover-title">ENVERAI ARTIFICER</h1>
+      <p class="cover-subtitle">
+        Autonomous Multi-Agent Alternate-Data Underwriting Citadel for New-to-Credit (NTC) MSMEs.
+      </p>
+      
+      <div style="display: flex; gap: 24px; margin-top: 40px;">
+        <span class="badge badge-orange" style="font-size: 18px; padding: 10px 24px;">POWERED BY GOOGLE VERTEX AI & GEMINI 2.5</span>
+        <span class="badge badge-green" style="font-size: 18px; padding: 10px 24px;">INSTITUTIONAL LENDING GRADE</span>
+      </div>
+    </div>
+
+    <div class="slide-footer" style="width: 100%;">
+      <div class="footer-left">
+        <span>ENVERAI TECH INC.</span>
+        <span>•</span>
+        <span>TEAM CITADEL / ANDALAUS</span>
+      </div>
+      <div>CONFIDENTIAL PITCH DECK 2026</div>
+    </div>
+  </div>
+
+  <!-- ==================== SLIDE 2: THE PROBLEM ==================== -->
+  <div class="slide">
+    <div class="slide-header">
+      <div>
+        <div class="eyebrow">MARKET DYSFUNCTION</div>
+        <h2 class="slide-title">The $300B+ MSME Credit Void</h2>
+      </div>
+      <div class="header-tag">PROBLEM SPACE</div>
+    </div>
+
+    <div class="slide-body">
+      <div class="card">
+        <div>
+          <div class="metric-big">$300B+</div>
+          <div class="metric-label">Credit Deficit in India</div>
+          <div style="margin: 20px 0; height: 2px; background: rgba(250, 246, 239, 0.2);"></div>
+          <p class="card-text">
+            Over 63 Million MSMEs drive 30% of national GDP, yet 70% of New-to-Credit (NTC) applicants are summarily rejected due to zero bureau footprint.
+          </p>
+        </div>
+        <div class="badge badge-orange">SYSTEMIC EXCLUSION</div>
+      </div>
+
+      <div class="card">
+        <div>
+          <div class="metric-big">14 Days</div>
+          <div class="metric-label">Manual Turnaround Time (TAT)</div>
+          <div style="margin: 20px 0; height: 2px; background: rgba(250, 246, 239, 0.2);"></div>
+          <p class="card-text">
+            Lenders rely on manual Chartered Accountant (CA) statement cross-verification and physical collateral inspections, costing $25+ per evaluation.
+          </p>
+        </div>
+        <div class="badge badge-orange">HIGH COST OF UNDERWRITING</div>
+      </div>
+
+      <div class="card">
+        <div>
+          <div class="metric-big">85%</div>
+          <div class="metric-label">Unstructured Alternate Data</div>
+          <div style="margin: 20px 0; height: 2px; background: rgba(250, 246, 239, 0.2);"></div>
+          <p class="card-text">
+            Rich operational data (GSTN returns, Sahamati Account Aggregators, UPI POS debits, MCA filings) remains completely unmined by traditional bureaus.
+          </p>
+        </div>
+        <div class="badge badge-orange">UNEXPLOITED TELEMETRY</div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <div class="footer-left"><span>ENVERAI ARTIFICER</span><span>•</span><span>PROBLEM DEFINITION</span></div>
+      <div>02 / 10</div>
+    </div>
+  </div>
+
+  <!-- ==================== SLIDE 3: THE SOLUTION ==================== -->
+  <div class="slide">
+    <div class="slide-header">
+      <div>
+        <div class="eyebrow">AGENTIC UNDERWRITING ENGINE</div>
+        <h2 class="slide-title">Autonomous Alternate-Data Underwriting</h2>
+      </div>
+      <div class="header-tag">THE BREAKTHROUGH</div>
+    </div>
+
+    <div class="slide-body">
+      <div class="card highlight" style="flex: 1.2;">
+        <h3 class="card-title" style="color: #FF4103;">Instant Financial Health Card (300–900)</h3>
+        <p class="card-text" style="margin-bottom: 24px;">
+          Artificer ingests multi-modal bank statements, GST invoices, and registry records to derive a verified, institutional-grade credit score in under 10 seconds.
+        </p>
+        <ul class="bullet-list">
+          <li><strong>Deterministic Ratio Modeling:</strong> Cash Buffer Ratio, Annualized Run Rate, Debt Capacity.</li>
+          <li><strong>GSTR-1 vs GSTR-3B Reconciliation:</strong> Automated tax discrepancy & turnover verification.</li>
+          <li><strong>Character & Legal Risk Engine:</strong> MCA21 status, director integrity & litigation records.</li>
+        </ul>
+      </div>
+
+      <div class="card" style="flex: 0.8;">
+        <h3 class="card-title">Three Core Pillars</h3>
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+          <div style="background: #00283D; padding: 18px; border-left: 4px solid #3A9A3C;">
+            <strong style="color: #3A9A3C; font-size: 20px; display: block; margin-bottom: 4px;">10-Second Processing</strong>
+            <span style="font-size: 16px; color: #D0C8B8;">Replaces 14-day manual underwriting turnaround time.</span>
+          </div>
+
+          <div style="background: #00283D; padding: 18px; border-left: 4px solid #FF4103;">
+            <strong style="color: #FF4103; font-size: 20px; display: block; margin-bottom: 4px;">Zero Hallucinations</strong>
+            <span style="font-size: 16px; color: #D0C8B8;">Traceable line-item citations with source data auditing.</span>
+          </div>
+
+          <div style="background: #00283D; padding: 18px; border-left: 4px solid #FAF6EF;">
+            <strong style="color: #FAF6EF; font-size: 20px; display: block; margin-bottom: 4px;">$0.05 Unit Economics</strong>
+            <span style="font-size: 16px; color: #D0C8B8;">99.8% cost reduction over legacy underwriting manual labor.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <div class="footer-left"><span>ENVERAI ARTIFICER</span><span>•</span><span>SOLUTION ARCHITECTURE</span></div>
+      <div>03 / 10</div>
+    </div>
+  </div>
+
+  <!-- ==================== SLIDE 4: MULTI-AGENT ARCHITECTURE ==================== -->
+  <div class="slide">
+    <div class="slide-header">
+      <div>
+        <div class="eyebrow">GOOGLE VERTEX AI & GEMINI 2.5 STACK</div>
+        <h2 class="slide-title">Multi-Agent Persona Triad</h2>
+      </div>
+      <div class="header-tag">AGENTIC ORCHESTRATION</div>
+    </div>
+
+    <div class="slide-body">
+      <div class="card">
+        <div class="badge badge-orange" style="margin-bottom: 16px;">AGENT 1</div>
+        <h3 class="card-title">FETCHA</h3>
+        <p style="font-family: 'DM Mono', monospace; font-size: 14px; color: #3A9A3C; margin-bottom: 14px;">Gemini 2.5 Flash • Ingestion & Scraper</p>
+        <ul class="bullet-list" style="font-size: 17px;">
+          <li>Multi-modal parsing of messy bank PDFs, CSVs, and Sahamati AA JSON feeds.</li>
+          <li>Live Web Scraper for GSTIN tax validation and MCA21 corporate registry search.</li>
+          <li>Strict canonical schema normalization with zero data leakage.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="badge badge-orange" style="margin-bottom: 16px;">AGENT 2</div>
+        <h3 class="card-title">GEEK</h3>
+        <p style="font-family: 'DM Mono', monospace; font-size: 14px; color: #3A9A3C; margin-bottom: 14px;">Gemini 2.5 Pro • Telemetry Matrix</p>
+        <ul class="bullet-list" style="font-size: 17px;">
+          <li>Computes Cash Buffer Ratio (Closing Balance / Monthly Debits; benchmark > 0.15x).</li>
+          <li>Calculates Annualized Run Rate and Debt Serviceability Capacity.</li>
+          <li>Flags NACH/ECS inward dishonors and return friction penalties.</li>
+        </ul>
+      </div>
+
+      <div class="card highlight">
+        <div class="badge badge-green" style="margin-bottom: 16px;">AGENT 3</div>
+        <h3 class="card-title">ORC</h3>
+        <p style="font-family: 'DM Mono', monospace; font-size: 14px; color: #FF4103; margin-bottom: 14px;">Gemini 2.5 Pro • Chief Credit Officer & XAI</p>
+        <ul class="bullet-list" style="font-size: 17px;">
+          <li>Synthesizes 300–900 Health Score and prime risk categorizations.</li>
+          <li>Generates immutable line-item evidence citations.</li>
+          <li>Powers Conversational XAI Drawer for zero-greeting loan officer interrogation.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <div class="footer-left"><span>ENVERAI ARTIFICER</span><span>•</span><span>AGENT SPECIFICATIONS</span></div>
+      <div>04 / 10</div>
+    </div>
+  </div>
+
+  <!-- ==================== SLIDE 5: INSTITUTIONAL COCKPIT ==================== -->
+  <div class="slide">
+    <div class="slide-header">
+      <div>
+        <div class="eyebrow">PRODUCT & USER EXPERIENCE</div>
+        <h2 class="slide-title">The Institutional Underwriting Cockpit</h2>
+      </div>
+      <div class="header-tag">LIVE PLATFORM UI</div>
+    </div>
+
+    <div class="slide-body">
+      <div class="card" style="flex: 1;">
+        <h3 class="card-title" style="color: #3A9A3C;">1. Ingestion & Pre-Evaluation</h3>
+        <ul class="bullet-list">
+          <li><strong>Single-Page Viewport Containment:</strong> Zero unnecessary vertical scrolling on initial landing.</li>
+          <li><strong>Interactive Scraper Switch:</strong> Fetcha live web scraping toggle for GSTIN / MCA registries.</li>
+          <li><strong>Agami HuggingFace Integration:</strong> One-click ingestion of real-world Indian MSME training records.</li>
+        </ul>
+      </div>
+
+      <div class="card" style="flex: 1;">
+        <h3 class="card-title" style="color: #FF4103;">2. 2-Column Analytics Citadel</h3>
+        <ul class="bullet-list">
+          <li><strong>Left Column:</strong> 300–900 Score dial, Risk Tier badge, CCO Narrative, and Geek Telemetry Matrix.</li>
+          <li><strong>Right Column:</strong> Explainable AI reasoning, Immutable Line-Item Evidence Ledger, and Zero-Hallucination Safety Seal.</li>
+          <li><strong>Interactive Directive Chips:</strong> Instant one-click query templates to test Orc's underwriting decisions.</li>
+        </ul>
+      </div>
+
+      <div class="card" style="flex: 1;">
+        <h3 class="card-title" style="color: #FAF6EF;">3. Conversational XAI Drawer</h3>
+        <ul class="bullet-list">
+          <li><strong>Floating Geometric Owl Emblem:</strong> Triggered instantly from anywhere in the cockpit.</li>
+          <li><strong>Zero Token Waste:</strong> Skips pleasantries and greetings to deliver mathematically grounded forensic answers.</li>
+          <li><strong>Full Auditability:</strong> Underwriters can challenge cash buffer ratios or simulate limit expansion (e.g. ₹50L).</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <div class="footer-left"><span>ENVERAI ARTIFICER</span><span>•</span><span>COCKPIT ARCHITECTURE</span></div>
+      <div>05 / 10</div>
+    </div>
+  </div>
+
+  <!-- ==================== SLIDE 6: SECURITY & CITADEL ==================== -->
+  <div class="slide">
+    <div class="slide-header">
+      <div>
+        <div class="eyebrow">ENTERPRISE COMPLIANCE & GOVERNANCE</div>
+        <h2 class="slide-title">Enterprise Security Citadel</h2>
+      </div>
+      <div class="header-tag">INSTITUTIONAL TRUST</div>
+    </div>
+
+    <div class="slide-body">
+      <div class="card">
+        <h3 class="card-title" style="color: #FF4103;">Access Control Matrix</h3>
+        <ul class="bullet-list">
+          <li><strong>Google SSO Domain Lock:</strong> Exclusively permits verified <code>@enveraitech.com</code> identities; all outside attempts rejected with instant sign-out.</li>
+          <li><strong>Citadel Brick Wall:</strong> Hardened master password protocol (<code>Andalaus</code> / <code>Citadel@296</code>) with show/hide eye toggle.</li>
+          <li><strong>5-Minute Silent Sentinel:</strong> Orc automatically locks idle sessions after 300 seconds for banking compliance.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3 class="card-title" style="color: #3A9A3C;">Live SecOps & Auditability</h3>
+        <ul class="bullet-list">
+          <li><strong>Real-Time Slack Dispatch:</strong> SecOps alerts broadcasted immediately to Slack / iOS Spark on every login attempt and evaluation run.</li>
+          <li><strong>Master Admin Citadel:</strong> Full telemetry on API costs ($0.05/run), evaluation volumes, and active daemon health.</li>
+          <li><strong>Zero-Trace File Scrubbing:</strong> Raw bank statements processed in memory and immediately sanitized post-analysis.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <div class="footer-left"><span>ENVERAI ARTIFICER</span><span>•</span><span>SECURITY PROTOCOLS</span></div>
+      <div>06 / 10</div>
+    </div>
+  </div>
+
+  <!-- ==================== SLIDE 7: MARKET & BUSINESS MODEL ==================== -->
+  <div class="slide">
+    <div class="slide-header">
+      <div>
+        <div class="eyebrow">UNIT ECONOMICS & TAM</div>
+        <h2 class="slide-title">Market Opportunity & Monetization</h2>
+      </div>
+      <div class="header-tag">BUSINESS MODEL</div>
+    </div>
+
+    <div class="slide-body">
+      <div class="card">
+        <div class="metric-big">$1.2B</div>
+        <div class="metric-label">India SAM for MSME Underwriting SaaS</div>
+        <p class="card-text" style="margin-top: 16px;">
+          Over 1,200 commercial banks, small finance banks (SFBs), NBFCs, and digital co-lenders process ~50M loan applications annually.
+        </p>
+      </div>
+
+      <div class="card highlight">
+        <h3 class="card-title" style="color: #FF4103;">B2B Enterprise SaaS Model</h3>
+        <ul class="bullet-list">
+          <li><strong>Per-Evaluation API Fee:</strong> ₹50 ($0.60) per underwriting call (98% margin over $0.05 LLM cost).</li>
+          <li><strong>Annual Core Platform License:</strong> $25,000 – $100,000 / year for on-premise Vertex AI private cloud deployment.</li>
+          <li><strong>Lending Co-pilot Add-on:</strong> $500 / seat / month for human underwriters utilizing the Orc XAI Interrogation Drawer.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="metric-big">92%</div>
+        <div class="metric-label">Gross Margin Profile</div>
+        <p class="card-text" style="margin-top: 16px;">
+          High-velocity multi-agent routing (Gemini Flash for extraction + Gemini Pro for synthesis) drives industry-leading gross margins.
+        </p>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <div class="footer-left"><span>ENVERAI ARTIFICER</span><span>•</span><span>MONETIZATION & TAM</span></div>
+      <div>07 / 10</div>
+    </div>
+  </div>
+
+  <!-- ==================== SLIDE 8: COMPETITIVE ADVANTAGE ==================== -->
+  <div class="slide">
+    <div class="slide-header">
+      <div>
+        <div class="eyebrow">DEFENSIBILITY & MOAT</div>
+        <h2 class="slide-title">Competitive Moat</h2>
+      </div>
+      <div class="header-tag">COMPETITIVE MATRIX</div>
+    </div>
+
+    <div class="slide-body">
+      <div class="card" style="flex: 1;">
+        <h3 class="card-title" style="color: #A69F91;">Legacy Bureaus (CIBIL / Experian)</h3>
+        <ul class="bullet-list" style="font-size: 16px;">
+          <li>Requires 12+ months of prior loan repayment history.</li>
+          <li>Blind to live GSTN tax compliance and bank closing buffers.</li>
+          <li>Zero explainability (single opaque 3-digit score).</li>
+          <li>Static monthly updates (no live registry scraping).</li>
+        </ul>
+      </div>
+
+      <div class="card" style="flex: 1;">
+        <h3 class="card-title" style="color: #A69F91;">Generic LLM Wrappers</h3>
+        <ul class="bullet-list" style="font-size: 16px;">
+          <li>Severe hallucination risk in financial calculations.</li>
+          <li>Single-prompt execution without multi-agent verification.</li>
+          <li>Lacks deterministic cash buffer and bounce ratio modeling.</li>
+          <li>No institutional security or domain-gated MFA citadel.</li>
+        </ul>
+      </div>
+
+      <div class="card highlight" style="flex: 1.2;">
+        <h3 class="card-title" style="color: #3A9A3C;">EnverAI Artificer Citadel</h3>
+        <ul class="bullet-list" style="font-size: 16px;">
+          <li><strong>Purpose-Built for NTC MSMEs:</strong> Zero bureau footprint required.</li>
+          <li><strong>Triad Agent Verification:</strong> Fetcha $\rightarrow$ Geek $\rightarrow$ Orc segregation.</li>
+          <li><strong>Explainable XAI Citadel:</strong> Immutable line-item citations with source data auditing.</li>
+          <li><strong>Enterprise Governance:</strong> Strict domain gate, Slack SecOps, and 5-min silent session sentinel.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <div class="footer-left"><span>ENVERAI ARTIFICER</span><span>•</span><span>COMPETITIVE MOAT</span></div>
+      <div>08 / 10</div>
+    </div>
+  </div>
+
+  <!-- ==================== SLIDE 9: ENVERAI ECOSYSTEM ==================== -->
+  <div class="slide">
+    <div class="slide-header">
+      <div>
+        <div class="eyebrow">ENTERPRISE AGENT SUITE</div>
+        <h2 class="slide-title">The EnverAI Autonomous OS</h2>
+      </div>
+      <div class="header-tag">PRODUCT SUITE</div>
+    </div>
+
+    <div class="slide-body">
+      <div class="card highlight">
+        <div class="badge badge-orange" style="margin-bottom: 12px;">FLAGSHIP HERO</div>
+        <h3 class="card-title" style="color: #FF4103;">ARTIFICER</h3>
+        <p class="card-text" style="font-size: 17px;">
+          Autonomous MSME Alternate-Data Underwriting & Financial Health Engine for commercial lending institutions.
+        </p>
+      </div>
+
+      <div class="card">
+        <div class="badge badge-green" style="margin-bottom: 12px;">CLOUDOPS</div>
+        <h3 class="card-title">ARBITER</h3>
+        <p class="card-text" style="font-size: 17px;">
+          Agentic Cloud Resource Provisioning & Slack-based FinOps Governance Gatekeeper for enterprise engineering teams.
+        </p>
+      </div>
+
+      <div class="card">
+        <div class="badge badge-orange" style="margin-bottom: 12px;">HEALTHCARE</div>
+        <h3 class="card-title">KARIMAN</h3>
+        <p class="card-text" style="font-size: 17px;">
+          Agentic Emergency Medical Response Routing & Hospital Bed Allocation Coordinator.
+        </p>
+      </div>
+
+      <div class="card">
+        <div class="badge badge-green" style="margin-bottom: 12px;">SECOPS</div>
+        <h3 class="card-title">CERBERUS</h3>
+        <p class="card-text" style="font-size: 17px;">
+          Multi-dimensional Cyber Vulnerability Scanner & Automated Git Security Auditor.
+        </p>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <div class="footer-left"><span>ENVERAI TECH</span><span>•</span><span>ENTERPRISE AGENT SUITE</span></div>
+      <div>09 / 10</div>
+    </div>
+  </div>
+
+  <!-- ==================== SLIDE 10: TEAM & ASK ==================== -->
+  <div class="slide">
+    <div class="slide-header">
+      <div>
+        <div class="eyebrow">TEAM & ROADMAP</div>
+        <h2 class="slide-title">Deploying Autonomous Finance</h2>
+      </div>
+      <div class="header-tag">THE ASK & VISION</div>
+    </div>
+
+    <div class="slide-body">
+      <div class="card" style="flex: 1;">
+        <h3 class="card-title" style="color: #FF4103;">Leadership & Engineering</h3>
+        <p class="card-text" style="margin-bottom: 20px;">
+          EnverAI Tech is built by senior engineers specializing in enterprise agentic AI architectures, Google Cloud Vertex AI, and FinOps governance.
+        </p>
+        <div style="background: #00283D; padding: 18px; border: 1.5px solid var(--border-light); margin-bottom: 14px;">
+          <strong style="color: #FAF6EF; font-size: 18px; display: block;">Andalaus / Daddy (Lead Architects)</strong>
+          <span style="font-size: 15px; color: #D0C8B8;">Multi-Agent Systems, Vertex AI Infrastructure & Institutional SecOps</span>
+        </div>
+      </div>
+
+      <div class="card highlight" style="flex: 1;">
+        <h3 class="card-title" style="color: #3A9A3C;">Milestones & Next Steps</h3>
+        <ul class="bullet-list" style="font-size: 18px;">
+          <li><strong>Q3 2026:</strong> Pilot deployment with 3 Small Finance Banks (SFBs) & NBFC co-lenders.</li>
+          <li><strong>Q4 2026:</strong> Direct API integration with Sahamati Account Aggregator FIU gateways.</li>
+          <li><strong>Q1 2027:</strong> Launching EnverAI Agent OS enterprise marketplace.</li>
+        </ul>
+        <div style="margin-top: 30px; padding: 16px; background: rgba(255, 65, 3, 0.15); border: 2px solid #FF4103; text-align: center;">
+          <strong style="color: #FF4103; font-size: 20px; font-family: 'DM Mono', monospace;">JOIN US IN UNLOCKING $300B IN MSME CAPITAL</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <div class="footer-left"><span>ENVERAI TECH INC.</span><span>•</span><span>BITSoM VERTEX 2026</span></div>
+      <div>10 / 10</div>
+    </div>
+  </div>
+
+</body>
+</html>
+`;
+
+const htmlPath = path.join(__dirname, 'BITSoM_Pitch_Deck.html');
+const pdfPath = path.join(__dirname, 'EnverAI_Artificer_BITSoM_Pitch_Deck.pdf');
+
+fs.writeFileSync(htmlPath, htmlContent, 'utf8');
+console.log('[Deck Builder] Generated HTML Slide Deck at:', htmlPath);
+
+// Locate Chrome or Edge on Windows
+const edgePath = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
+const chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+const browserExe = fs.existsSync(edgePath) ? edgePath : fs.existsSync(chromePath) ? chromePath : null;
+
+if (browserExe) {
+  console.log(`[Deck Builder] Compiling vector PDF via ${path.basename(browserExe)}...`);
+  try {
+    const cmd = `"${browserExe}" --headless --disable-gpu --run-all-compositor-stages-before-draw --print-to-pdf-no-header --print-to-pdf="${pdfPath}" "${htmlPath}"`;
+    execSync(cmd, { stdio: 'inherit' });
+    console.log('[Deck Builder] Successfully generated Vector PDF at:', pdfPath);
+  } catch (err) {
+    console.error('[Deck Builder] PDF compile error:', err.message);
+  }
+} else {
+  console.warn('[Deck Builder] Neither Edge nor Chrome found in default paths for PDF export.');
+}

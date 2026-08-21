@@ -1,4 +1,8 @@
 {
+  "functions": {
+    "source": "backend",
+    "runtime": "nodejs22"
+  },
   "hosting": {
     "public": "frontend/dist",
     "ignore": [
@@ -7,6 +11,10 @@
       "**/node_modules/**"
     ],
     "rewrites": [
+      {
+        "source": "/api/**",
+        "function": "api"
+      },
       {
         "source": "**",
         "destination": "/index.html"

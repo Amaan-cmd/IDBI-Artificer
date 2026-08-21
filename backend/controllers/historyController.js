@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { db } = require('../utils/firebaseAdmin');
 
 const historyFilePath = path.join(__dirname, '../data/history.json');
 
@@ -13,30 +14,57 @@ const getHistoryData = () => {
 };
 
 const saveHistoryData = (history) => {
-  fs.writeFileSync(historyFilePath, JSON.stringify(history, null, 2), 'utf8');
+  try {
+    fs.writeFileSync(historyFilePath, JSON.stringify(history, null, 2), 'utf8');
+  } catch(e) {
+    console.warn("Failed to save local history.json");
+  }
 };
 
-const getHistory = (req, res) => {
+const getHistory = async (req, res) => {
   const userId = req.query.userId;
-  let history = getHistoryData();
   
+  if (db) {
+    try {
+      let query = db.collection('history');
+      if (userId) {
+        query = query.where('userId', '==', userId);
+      }
+      const snapshot = await query.orderBy('timestamp', 'desc').get();
+      const history = snapshot.docs.map(doc => doc.data());
+      return res.json({ status: 'success', history });
+    } catch (e) {
+      console.error("Firestore getHistory failed:", e);
+    }
+  }
+
+  // Fallback
+  let history = getHistoryData();
   if (userId) {
     history = history.filter(h => h.userId === userId);
   }
-  
-  // Sort descending by timestamp
   history.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
   res.json({ status: 'success', history });
 };
 
-const addHistoryRecord = (record) => {
-  const history = getHistoryData();
+const addHistoryRecord = async (record) => {
   const newRecord = {
     id: `h_${Date.now()}`,
     timestamp: new Date().toISOString(),
     ...record
   };
+
+  if (db) {
+    try {
+      await db.collection('history').doc(newRecord.id).set(newRecord);
+      return newRecord;
+    } catch (e) {
+      console.error("Firestore addHistoryRecord failed:", e);
+    }
+  }
+
+  // Fallback
+  const history = getHistoryData();
   history.unshift(newRecord);
   saveHistoryData(history);
   return newRecord;

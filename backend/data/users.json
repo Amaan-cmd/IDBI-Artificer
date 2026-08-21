@@ -1,9 +1,52 @@
 [
   {
-    "id": "u_idbi_innovate",
-    "username": "idbi innovate",
-    "calls": 15,
-    "cost": 0.7500000000000001,
-    "lastLogin": "2026-07-04T15:15:24.927Z"
+    "id": "u_andalaus_master",
+    "username": "Andalaus",
+    "email": "andalaus@enveraitech.com",
+    "role": "Chief Risk Officer & Master SecOps",
+    "status": "Active (MFA Enforced)",
+    "calls": 29,
+    "cost": 1.42,
+    "lastLogin": "2026-08-22T03:05:12.000Z"
+  },
+  {
+    "id": "u_daddy_enverai",
+    "username": "daddy@enveraitech.com",
+    "email": "daddy@enveraitech.com",
+    "role": "Enterprise Principal Underwriter",
+    "status": "Active (Google Workspace SSO)",
+    "calls": 14,
+    "cost": 0.7,
+    "lastLogin": "2026-08-22T02:40:00.000Z"
+  },
+  {
+    "id": "u_fetcha_system",
+    "username": "fetcha.engine",
+    "email": "fetcha.engine@enveraitech.com",
+    "role": "Agent 1 Ingestion & Public Web Scraper",
+    "status": "Automated Daemon (Gemini 2.5 Flash)",
+    "calls": 92,
+    "cost": 1.84,
+    "lastLogin": "2026-08-22T03:10:00.000Z"
+  },
+  {
+    "id": "u_geek_system",
+    "username": "geek.matrix",
+    "email": "geek.matrix@enveraitech.com",
+    "role": "Agent 2 Quantitative Telemetry Matrix",
+    "status": "Automated Daemon (Gemini 2.5 Pro)",
+    "calls": 92,
+    "cost": 3.68,
+    "lastLogin": "2026-08-22T03:10:00.000Z"
+  },
+  {
+    "id": "u_orc_system",
+    "username": "orc.orchestrator",
+    "email": "orc.orchestrator@enveraitech.com",
+    "role": "Agent 3 Chief Credit Officer & XAI Citadel",
+    "status": "Automated Daemon (Gemini 2.5 Pro)",
+    "calls": 92,
+    "cost": 4.6,
+    "lastLogin": "2026-08-22T03:10:00.000Z"
   }
 ]
