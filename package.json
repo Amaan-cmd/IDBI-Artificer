@@ -1,15 +1,22 @@
 {
-  "name": "idbi",
+  "name": "enverai-artificer",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "EnverAI Artificer - Multi-Agent Alternate-Data Underwriting Citadel",
+  "main": "backend/server.js",
   "scripts": {
     "postinstall": "npm install --prefix backend",
     "start": "node backend/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "enverai",
+    "artificer",
+    "multi-agent",
+    "underwriting",
+    "gemini",
+    "vertex-ai"
+  ],
+  "author": "EnverAI Tech Inc.",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {

@@ -1,35 +1,26 @@
-# Product Requirements Document (PRD)
-**Project:** EnverAI Tech - MSME Financial Health Card (IDBI Hackathon Track 03)
-**Target Users:** IDBI Loan Officers and Credit Underwriters
+# Product Requirement Document (PRD)
 
-## 1. Product Overview
-The MSME Financial Health Card is an Agentic AI underwriting engine designed to score "New-to-Credit" (NTC) MSMEs using alternative operational data (Bank Statements, GST Returns, UPI Ledgers) rather than traditional CIBIL scores.
+**Project:** EnverAI Artificer - Multi-Agent MSME Financial Health Citadel  
+**Author:** EnverAI Tech Inc.  
+**Target Users:** Institutional Loan Officers, Credit Underwriters, Commercial Banks & NBFCs  
 
-## 2. Core Features
+---
 
-### 2.1 Dual-Input Processing
-The engine must support two modes of input to allow for robust testing and hackathon judging:
-- **File Upload Mode:** Directly ingest unstructured data (CSVs, JSONs) simulating Account Aggregator or raw bank statement dumps.
-- **Manual Simulation Mode:** An integrated code editor allowing the admin to tweak arbitrary metrics (e.g., artificially inflating bounce rates) to see how the AI dynamically adjusts the score.
+## 1. Executive Summary
+EnverAI Artificer is an autonomous multi-agent underwriting platform powered by Google Vertex AI (Gemini 2.5 Flash & Pro). It ingests multi-modal alternate data (Bank statements, GSTN returns, Sahamati Account Aggregators, MCA21 corporate filings) to produce an explainable Financial Health Card (Score: 300–900, Risk Tier: LOW/MED/HIGH, and immutable citations) in under 10 seconds with zero hallucinations.
 
-### 2.2 Explainable AI (XAI) & Audit Trail
-To solve the "black box" problem of AI lending, the system must produce a **Forensic Audit Trail**.
-- Every final score must be accompanied by a detailed `reasoning` narrative.
-- Every metric and decision must include an array of `citations` linking directly back to the original data (e.g., extracting the exact line item where a cheque bounced).
+---
 
-### 2.3 True Multi-Model Architecture
-The engine leverages specialized AI models for specialized tasks via the NVIDIA NIM API:
-- **Data Ingestion:** Utilizing **NVIDIA Nemotron 3 Nano** for maximum efficiency in agentic tasks, parsing unstructured financial dumps into strict JSON schemas.
-- **Analytics & Decisioning:** Utilizing **NVIDIA Nemotron 3 Super and Ultra** for frontier-level logical reasoning to compute ratios, synthesize the final XAI report, and act as the Chief Credit Officer.
+## 2. Multi-Agent Persona Triad
+- **Fetcha (Agent 1 - Gemini 2.5 Flash):** Statement parsing, schema normalization, and live public registry scraping (GSTIN, MCA21, Court records).
+- **Geek (Agent 2 - Gemini 2.5 Pro):** Quantitative calculation matrix (Cash Buffer Ratio, Annualized Run Rate, GSTR-1 vs 3B Tax Reconciliation, Return Bounces).
+- **Orc (Agent 3 - Gemini 2.5 Pro):** Chief Credit Officer, master orchestrator, holistic credit scoring, immutable citations ledger, and conversational XAI interrogation.
 
-## 3. Design System (EnverAI Dotcom)
-The frontend application MUST strictly adhere to the EnverAI brand identity:
-- **Typography:** `Syne` (Headings/Body), `DM Mono` (Eyebrows/Tags), `Caveat` (Accents).
-- **Colors:** Navy (`#1B2B4B`), Orange (`#E8660A`), Green (`#3A9A3C`), Cream (`#FAF6EF`).
-- **Aesthetic:** Modern architectural design, soft rounded cards (`24px` radius), and smooth micro-interactions (`fadeUp`).
+---
 
-## 4. MVP Success Criteria
-- [x] Successfully parse a raw, unstructured CSV bank statement.
-- [x] Successfully generate a dynamic health score based on extracted math (not keyword matching).
-- [x] Output a fully transparent Audit Trail with citations.
-- [x] Wrap the logic in a highly polished, branded UI for the IDBI judges.
+## 3. Key Milestones
+- [x] Multi-Agent Pipeline on Google Vertex AI (Fetcha, Geek, Orc).
+- [x] Enterprise Security Citadel (`@enveraitech.com` domain gate, `Citadel@296` password wall, 5-min silent session sentinel).
+- [x] Master Admin Citadel with live daemon health & API unit economics.
+- [x] Balanced 2-Column Institutional Analytics Grid with XAI evidence ledger.
+- [x] BITSoM Vertex Pitch Deck 2026 Presentation Artifacts.
