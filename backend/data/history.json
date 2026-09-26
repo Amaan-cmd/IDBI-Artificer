@@ -1,5 +1,203 @@
 [
   {
+    "id": "h_1790421417375",
+    "timestamp": "2026-09-26T11:16:57.375Z",
+    "userId": "u_daddy_enverai",
+    "userEmail": "daddy@enveraitech.com",
+    "userName": "daddy@enveraitech.com",
+    "userRole": "Enterprise Principal Underwriter",
+    "name": "CENTRAL WAREHOUSING CORPORATION",
+    "gstin": "23AAACC1206D2ZN",
+    "score": 768,
+    "risk": "LOW",
+    "revenue": 10212958,
+    "buffer": "1.11x",
+    "compliance": "Excellent",
+    "reason": "Entity assessed with a LOW risk profile (Score: 768). Liquidity cushion with a Cash Buffer Ratio of 1.11x and 28 days minimum runway provide resilient NTC shock absorption.",
+    "fullPayload": {
+      "status": "success",
+      "businessName": "CENTRAL WAREHOUSING CORPORATION",
+      "gstin": "23AAACC1206D2ZN",
+      "metrics": {
+        "pillar1_liquidity": {
+          "cashBufferRatio": 1.11,
+          "minimumCashBufferDays": 28,
+          "overdraftLimitUtilization": 36,
+          "status": "EXCELLENT",
+          "benchmark": "> 0.15–0.25x (15–25 Days)"
+        },
+        "pillar2_revenue": {
+          "annualizedRevenueRunRate": 10212958,
+          "revenueGrowthRate": 1.94,
+          "gstVsBankReconciliation": 0.99,
+          "gstr1VsGstr3bGap": 2.6,
+          "trajectory": "STABLE",
+          "benchmark": "Reconciliation ~ 1.0x, Gap < 5%"
+        },
+        "pillar3_stability": {
+          "creditCoefficientOfVariation": 0.05,
+          "consecutiveLowCreditMonths": 0,
+          "inwardBounceRate": 0,
+          "outwardBounceRate": 0,
+          "status": "ROBUST",
+          "benchmark": "CV < 0.30, Bounces = 0.0%"
+        },
+        "pillar4_leverage": {
+          "debtServiceCoverageProxy": 0.3,
+          "interestEmiBurdenRatio": 4.62,
+          "newBorrowingVelocity": 0,
+          "tier": "HEAVILY_LEVERAGED",
+          "benchmark": "DSCP > 1.50x, Burden < 20%"
+        },
+        "pillar5_operational": {
+          "salaryStaffPaymentConsistency": "CONSISTENT (Monthly payroll verified)",
+          "utilityRentPaymentRegularity": "REGULAR (On-time utility payments)",
+          "highValueCashWithdrawalPct": 4,
+          "circularTransactionRisk": "LOW (Clean independent counterparties)",
+          "suspiciousTimingFlags": "CLEAN (Normal business hour distribution)",
+          "benchmark": "Clean Counterparties, Cash WDL < 15%"
+        },
+        "revenueRunRate": 10212958,
+        "cashBufferRatio": 1.11,
+        "isCashFlowStable": true,
+        "hasBounces": false,
+        "taxCompliance": "Excellent",
+        "debtServiceCapacity": "Constrained",
+        "citations": [
+          "[Liquidity] Cash Buffer Ratio evaluated at 1.11x with 28 minimum survival buffer days (OD utilization: 36%).",
+          "[Revenue] Annualized Revenue Run Rate: ₹1,02,12,958; Trajectory: STABLE (+1.94%).",
+          "[Compliance] GSTR-1 outward taxable supplies reconcile to Bank credit volume at 0.99x ratio with 2.6% GSTR-3B tax gap.",
+          "[Stability] Monthly credit volatility CV is 0.05 with 0 consecutive low-credit months and 0% inward bounce friction.",
+          "[Debt Service] Debt Service Coverage Proxy (DSCP) is 0.3x with an EMI burden ratio of 4.62% across 0 new debt facilities.",
+          "[Operational Flags] Payroll regularity: CONSISTENT (Monthly payroll verified); Cash withdrawals: 4%; Circular flow risk: LOW (Clean independent counterparties)."
+        ],
+        "reasoning": "Comprehensive 5-Pillar NTC evaluation: Liquidity buffer is EXCELLENT (1.11x / 28 days runway). Revenue momentum is STABLE at ₹102.1 Lacs run rate. Credit cash flow shows ROBUST stability with a CV of 0.05. Leverage is evaluated as HEAVILY_LEVERAGED with 0.3x debt service coverage."
+      },
+      "decision": {
+        "score": 768,
+        "riskLevel": "LOW",
+        "narrative": "Entity assessed with a LOW risk profile (Score: 768). Liquidity cushion with a Cash Buffer Ratio of 1.11x and 28 days minimum runway provide resilient NTC shock absorption.",
+        "reasoning": "Orc Chief Credit Officer synthesis: Pillar 1 liquidity demonstrates EXCELLENT reserves above the 0.15x critical NTC baseline. Cash flow volatility (CV: 0.05) indicates stable merchant deposits with 0% bounce friction. Debt coverage proxy is strong at 0.3x with LOW (Clean independent counterparties).",
+        "citations": [
+          "[Pillar 1: Liquidity] Cash Buffer Ratio is 1.11x with 28 minimum survival buffer days.",
+          "[Pillar 2: Revenue] Annualized run rate verified at ₹102.1 Lacs with GSTR-1 reconciliation at 0.99x.",
+          "[Pillar 3: Stability] Credit CV is 0.05 with zero inward cheque/NACH dishonors.",
+          "[Pillar 4: Leverage] Debt Service Coverage Proxy (DSCP) is 0.3x with an interest burden ratio of 4.62%.",
+          "[Pillar 5: Operational Flags] Operational payroll consistency is verified with cash withdrawal volume below 5%."
+        ],
+        "agentSafetyAudit": {
+          "dataIntegrityStatus": "VERIFIED_SOUND (Ledger Parity & JEV Gatekeeper Confirmed)",
+          "fraudSignalsDetected": 0,
+          "confidenceRating": "99.6%"
+        }
+      },
+      "jevAudit": {
+        "verdict": "APPROPRIATE",
+        "confidenceScore": 93,
+        "isAppropriate": true,
+        "tamperRisk": "LOW",
+        "injectionDefenseStatus": "PASSED",
+        "rationale": "TypeSafe Jev System 1 Verification: Data verified appropriate (Confidence: 93%, Tamper Risk: LOW). Arithmetic ledger parity verified (Variance: ₹0).",
+        "integrityFlags": [],
+        "balanceContinuity": {
+          "verified": true,
+          "variance": 0,
+          "status": "VERIFIED_PARITY"
+        },
+        "technicalBouncesExcluded": 0,
+        "solvencyBouncesVerified": 0,
+        "gatekeeperTimestamp": "2026-09-26T11:16:32.563Z"
+      },
+      "agent1Telemetry": {
+        "businessName": "CENTRAL WAREHOUSING CORPORATION",
+        "gstin": "23AAACC1206D2ZN",
+        "taxpayerType": "Regular",
+        "monthsAnalyzed": 6,
+        "totalRevenue": 5106479,
+        "totalTaxPaid": 886316,
+        "gstComplianceScore": 100,
+        "bankOpeningBalance": 517674,
+        "bankClosingBalance": 588266,
+        "totalCreditVolume": 5106479,
+        "totalDebitVolume": 5035887,
+        "monthlyCredits": [
+          801979,
+          834713,
+          891997,
+          810163,
+          859263,
+          908364
+        ],
+        "monthlyDebits": [
+          790893,
+          823174,
+          879666,
+          798963,
+          847384,
+          895807
+        ],
+        "dailyClosingBalances": [
+          505909,
+          552970,
+          588266,
+          635327
+        ],
+        "sanctionedOdLimit": 1117705,
+        "peakOdUsage": 402374,
+        "gstr1OutwardTaxable": 5055414,
+        "gstr3bTaxPaid": 886316,
+        "gstr1DeclaredTax": 909975,
+        "inwardBounces": 0,
+        "totalDebitAttempts": 140,
+        "outwardBounces": 0,
+        "totalOutwardAttempts": 95,
+        "monthlyEmiObligations": 39297,
+        "newBorrowingCount6M": 0,
+        "transactions": [],
+        "scrapedRegistryData": {
+          "source": "Fetcha Engine (Grok 4.6 Registry Tools: GSTN, MCA21, e-Courts, TReDS)",
+          "timestamp": "2026-09-26T11:16:07.309Z",
+          "gstin": "23AAACC1206D2ZN",
+          "pan": "AAACC1206D",
+          "stateCode": "23",
+          "state": "Madhya Pradesh",
+          "entityType": "Private/Public Limited Company",
+          "legalEntityName": "CENTRAL WAREHOUSING CORPORATION",
+          "tradeName": "CENTRAL WAREHOUSING CORPORATION",
+          "mcaStatus": "Active",
+          "incorporationDate": "01 Jul 2017",
+          "cin": "U18299232020PTC908023",
+          "principalPlace": "Madhya Pradesh, India",
+          "filingCompliance": {
+            "gstr1FilingStatus": "On-Time (Last 4 Quarters)",
+            "gstr3bFilingStatus": "Regular",
+            "taxPaymentReliability": "98.0%",
+            "eWayBillMonthlyVolumeAvg": "₹24,17,568",
+            "annualizedTurnoverEstimate": "₹1,72,68,346"
+          },
+          "litigationRecords": {
+            "activeCourtCases": 0,
+            "drCourtDefaultNotices": 0,
+            "chequeBounceSection138Count": 0,
+            "riskFlag": "Clean"
+          },
+          "tradeLedgerFootprint": {
+            "vendorRelationshipCount": 16,
+            "avgInvoiceSettlementDays": 26,
+            "publicSentimentScore": "Verified Positive (Operational Stability Grounded)"
+          }
+        },
+        "solvencyBouncesVerified": 0,
+        "technicalBouncesExcluded": 0,
+        "balanceContinuity": {
+          "verified": true,
+          "variance": 0,
+          "status": "VERIFIED_PARITY"
+        }
+      }
+    }
+  },
+  {
     "id": "h_1790413446511",
     "timestamp": "2026-09-26T09:04:06.511Z",
     "userId": "u_daddy_enverai",
