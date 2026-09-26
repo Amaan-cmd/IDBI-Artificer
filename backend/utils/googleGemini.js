@@ -6,7 +6,7 @@ let secretClient = null;
  */
 async function getSecret(secretName) {
   try {
-    const projectId = process.env.GOOGLE_CLOUD_PROJECT || 'hii-gemini';
+    const projectId = process.env.GCP_PROJECT_ID || process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT || 'idbi-innovate';
     if (!projectId || projectId === 'YOUR_PROJECT_ID') {
       return null;
     }
@@ -34,7 +34,7 @@ let vertexAuthAvailable = true;
  * @param {string} [secretKeyName] - Optional secret key name in GCP Secret Manager
  */
 async function callGemini(modelName = 'gemini-3.8-flash', systemPrompt = '', userPrompt = '', secretKeyName = null) {
-  const projectId = process.env.GOOGLE_CLOUD_PROJECT || 'hii-gemini';
+  const projectId = process.env.GCP_PROJECT_ID || process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT || 'idbi-innovate';
   const location = process.env.GOOGLE_CLOUD_LOCATION || 'us-central1';
   
   // 1. Primary Route: Google Cloud Vertex AI (using ADC)
