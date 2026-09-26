@@ -1,5 +1,239 @@
 [
   {
+    "id": "h_1790413446511",
+    "timestamp": "2026-09-26T09:04:06.511Z",
+    "userId": "u_daddy_enverai",
+    "userEmail": "daddy@enveraitech.com",
+    "userName": "daddy@enveraitech.com",
+    "userRole": "Enterprise Principal Underwriter",
+    "name": "EnverAI Tech Retail Supplies Pvt Ltd",
+    "gstin": "27AABCU9603R1ZM",
+    "score": 830,
+    "risk": "LOW",
+    "revenue": 9680000,
+    "buffer": "1.17x",
+    "compliance": "Excellent",
+    "reason": "The business demonstrates a strong NTC credit profile with stable operating cash flows and strong short-term liquidity reserves (Cash Buffer: 1.17x, 30 buffer days). Timely GST compliance and zero cheque return friction support a prime underwriting recommendation.",
+    "fullPayload": {
+      "status": "success",
+      "businessName": "EnverAI Tech Retail Supplies Pvt Ltd",
+      "metrics": {
+        "pillar1_liquidity": {
+          "cashBufferRatio": 1.17,
+          "minimumCashBufferDays": 30,
+          "overdraftLimitUtilization": 32,
+          "status": "EXCELLENT",
+          "benchmark": "> 0.15–0.25x (15–25 Days)"
+        },
+        "pillar2_revenue": {
+          "annualizedRevenueRunRate": 9680000,
+          "revenueGrowthRate": 5.96,
+          "gstVsBankReconciliation": 0.99,
+          "gstr1VsGstr3bGap": 0,
+          "trajectory": "STABLE",
+          "benchmark": "Reconciliation ~ 1.0x, Gap < 5%"
+        },
+        "pillar3_stability": {
+          "creditCoefficientOfVariation": 0.06,
+          "consecutiveLowCreditMonths": 0,
+          "inwardBounceRate": 0,
+          "outwardBounceRate": 0,
+          "status": "ROBUST",
+          "benchmark": "CV < 0.30, Bounces = 0.0%"
+        },
+        "pillar4_leverage": {
+          "debtServiceCoverageProxy": 1.67,
+          "interestEmiBurdenRatio": 5.58,
+          "newBorrowingVelocity": 0,
+          "tier": "LOW_LEVERAGE",
+          "benchmark": "DSCP > 1.50x, Burden < 20%"
+        },
+        "pillar5_operational": {
+          "salaryStaffPaymentConsistency": "CONSISTENT (Monthly payroll verified)",
+          "utilityRentPaymentRegularity": "REGULAR (On-time utility payments)",
+          "highValueCashWithdrawalPct": 4,
+          "circularTransactionRisk": "LOW (Clean independent counterparties)",
+          "suspiciousTimingFlags": "CLEAN (Normal business hour distribution)",
+          "benchmark": "Clean Counterparties, Cash WDL < 15%"
+        },
+        "revenueRunRate": 9680000,
+        "cashBufferRatio": 1.17,
+        "isCashFlowStable": true,
+        "hasBounces": false,
+        "taxCompliance": "Excellent",
+        "debtServiceCapacity": "High",
+        "citations": [
+          "[Liquidity] Cash Buffer Ratio evaluated at 1.17x with 30 minimum survival buffer days (OD utilization: 32%).",
+          "[Revenue] Annualized Revenue Run Rate: ₹96,80,000; Trajectory: STABLE (+5.96%).",
+          "[Compliance] GSTR-1 outward taxable supplies reconcile to Bank credit volume at 0.99x ratio with 0% GSTR-3B tax gap.",
+          "[Stability] Monthly credit volatility CV is 0.06 with 0 consecutive low-credit months and 0% inward bounce friction.",
+          "[Debt Service] Debt Service Coverage Proxy (DSCP) is 1.67x with an EMI burden ratio of 5.58% across 0 new debt facilities.",
+          "[Operational Flags] Payroll regularity: CONSISTENT (Monthly payroll verified); Cash withdrawals: 4%; Circular flow risk: LOW (Clean independent counterparties)."
+        ],
+        "reasoning": "Comprehensive 5-Pillar NTC evaluation: Liquidity buffer is EXCELLENT (1.17x / 30 days runway). Revenue momentum is STABLE at ₹96.8 Lacs run rate. Credit cash flow shows ROBUST stability with a CV of 0.06. Leverage is evaluated as LOW_LEVERAGE with 1.67x debt service coverage."
+      },
+      "decision": {
+        "score": 830,
+        "riskLevel": "LOW",
+        "narrative": "The business demonstrates a strong NTC credit profile with stable operating cash flows and strong short-term liquidity reserves (Cash Buffer: 1.17x, 30 buffer days). Timely GST compliance and zero cheque return friction support a prime underwriting recommendation.",
+        "reasoning": "Orc Synthesis Agent evaluated the enterprise financial health at 830. High revenue stability and a cash buffer ratio of 1.17x provide significant shock absorption against working capital volatility across all 5 financial pillars.",
+        "citations": [
+          "[Liquidity] Cash Buffer Ratio evaluated at 1.17x with 30 minimum survival buffer days (OD utilization: 32%).",
+          "[Revenue] Annualized Revenue Run Rate: ₹96,80,000; Trajectory: STABLE (+5.96%).",
+          "[Compliance] GSTR-1 outward taxable supplies reconcile to Bank credit volume at 0.99x ratio with 0% GSTR-3B tax gap.",
+          "[Stability] Monthly credit volatility CV is 0.06 with 0 consecutive low-credit months and 0% inward bounce friction.",
+          "[Debt Service] Debt Service Coverage Proxy (DSCP) is 1.67x with an EMI burden ratio of 5.58% across 0 new debt facilities.",
+          "[Operational Flags] Payroll regularity: CONSISTENT (Monthly payroll verified); Cash withdrawals: 4%; Circular flow risk: LOW (Clean independent counterparties)."
+        ],
+        "agentSafetyAudit": {
+          "dataIntegrityStatus": "VERIFIED_SOUND",
+          "fraudSignalsDetected": 0,
+          "confidenceRating": "99.4%"
+        }
+      },
+      "jevAudit": {
+        "verdict": "APPROPRIATE",
+        "confidenceScore": 99.6,
+        "isAppropriate": true,
+        "integrityFlags": [],
+        "balanceContinuity": {
+          "verified": true,
+          "variance": 0,
+          "status": "VERIFIED_PARITY"
+        },
+        "technicalBouncesExcluded": 0,
+        "solvencyBouncesVerified": 0,
+        "rationale": "JEV System 1 Heuristic Verification: Entity data is complete, statutory GSTIN verified, arithmetic ledger continuity verified (Variance: ₹0), and cash flows conform to institutional banking distributions."
+      },
+      "agent1Telemetry": {
+        "businessName": "EnverAI Tech Retail Supplies Pvt Ltd",
+        "monthsAnalyzed": 6,
+        "totalRevenue": 9680000,
+        "totalCreditVolume": 4840000,
+        "totalDebitVolume": 4356000,
+        "bankClosingBalance": 680200.75,
+        "inwardBounces": 0
+      }
+    }
+  },
+  {
+    "id": "h_1790413055479",
+    "timestamp": "2026-09-26T08:57:35.479Z",
+    "userId": "u_daddy_enverai",
+    "userEmail": "daddy@enveraitech.com",
+    "userName": "daddy@enveraitech.com",
+    "userRole": "Enterprise Principal Underwriter",
+    "name": "EnverAI Tech Retail Supplies Pvt Ltd",
+    "gstin": "27AABCU9603R1ZM",
+    "score": 814,
+    "risk": "LOW",
+    "revenue": 9680000,
+    "buffer": "1.17x",
+    "compliance": "Excellent",
+    "reason": "The business demonstrates a strong NTC credit profile with stable operating cash flows and strong short-term liquidity reserves (Cash Buffer: 1.17x, 30 buffer days). Timely GST compliance and zero cheque return friction support a prime underwriting recommendation.",
+    "fullPayload": {
+      "status": "success",
+      "businessName": "EnverAI Tech Retail Supplies Pvt Ltd",
+      "metrics": {
+        "pillar1_liquidity": {
+          "cashBufferRatio": 1.17,
+          "minimumCashBufferDays": 30,
+          "overdraftLimitUtilization": 32,
+          "status": "EXCELLENT",
+          "benchmark": "> 0.15–0.25x (15–25 Days)"
+        },
+        "pillar2_revenue": {
+          "annualizedRevenueRunRate": 9680000,
+          "revenueGrowthRate": 5.96,
+          "gstVsBankReconciliation": 0.99,
+          "gstr1VsGstr3bGap": 0,
+          "trajectory": "STABLE",
+          "benchmark": "Reconciliation ~ 1.0x, Gap < 5%"
+        },
+        "pillar3_stability": {
+          "creditCoefficientOfVariation": 0.06,
+          "consecutiveLowCreditMonths": 0,
+          "inwardBounceRate": 0,
+          "outwardBounceRate": 0,
+          "status": "ROBUST",
+          "benchmark": "CV < 0.30, Bounces = 0.0%"
+        },
+        "pillar4_leverage": {
+          "debtServiceCoverageProxy": 1.67,
+          "interestEmiBurdenRatio": 5.58,
+          "newBorrowingVelocity": 0,
+          "tier": "LOW_LEVERAGE",
+          "benchmark": "DSCP > 1.50x, Burden < 20%"
+        },
+        "pillar5_operational": {
+          "salaryStaffPaymentConsistency": "CONSISTENT (Monthly payroll verified)",
+          "utilityRentPaymentRegularity": "REGULAR (On-time utility payments)",
+          "highValueCashWithdrawalPct": 4,
+          "circularTransactionRisk": "LOW (Clean independent counterparties)",
+          "suspiciousTimingFlags": "CLEAN (Normal business hour distribution)",
+          "benchmark": "Clean Counterparties, Cash WDL < 15%"
+        },
+        "revenueRunRate": 9680000,
+        "cashBufferRatio": 1.17,
+        "isCashFlowStable": true,
+        "hasBounces": false,
+        "taxCompliance": "Excellent",
+        "debtServiceCapacity": "High",
+        "citations": [
+          "[Liquidity] Cash Buffer Ratio evaluated at 1.17x with 30 minimum survival buffer days (OD utilization: 32%).",
+          "[Revenue] Annualized Revenue Run Rate: ₹96,80,000; Trajectory: STABLE (+5.96%).",
+          "[Compliance] GSTR-1 outward taxable supplies reconcile to Bank credit volume at 0.99x ratio with 0% GSTR-3B tax gap.",
+          "[Stability] Monthly credit volatility CV is 0.06 with 0 consecutive low-credit months and 0% inward bounce friction.",
+          "[Debt Service] Debt Service Coverage Proxy (DSCP) is 1.67x with an EMI burden ratio of 5.58% across 0 new debt facilities.",
+          "[Operational Flags] Payroll regularity: CONSISTENT (Monthly payroll verified); Cash withdrawals: 4%; Circular flow risk: LOW (Clean independent counterparties)."
+        ],
+        "reasoning": "Comprehensive 5-Pillar NTC evaluation: Liquidity buffer is EXCELLENT (1.17x / 30 days runway). Revenue momentum is STABLE at ₹96.8 Lacs run rate. Credit cash flow shows ROBUST stability with a CV of 0.06. Leverage is evaluated as LOW_LEVERAGE with 1.67x debt service coverage."
+      },
+      "decision": {
+        "score": 814,
+        "riskLevel": "LOW",
+        "narrative": "The business demonstrates a strong NTC credit profile with stable operating cash flows and strong short-term liquidity reserves (Cash Buffer: 1.17x, 30 buffer days). Timely GST compliance and zero cheque return friction support a prime underwriting recommendation.",
+        "reasoning": "Orc Synthesis Agent evaluated the enterprise financial health at 814. High revenue stability and a cash buffer ratio of 1.17x provide significant shock absorption against working capital volatility across all 5 financial pillars.",
+        "citations": [
+          "[Liquidity] Cash Buffer Ratio evaluated at 1.17x with 30 minimum survival buffer days (OD utilization: 32%).",
+          "[Revenue] Annualized Revenue Run Rate: ₹96,80,000; Trajectory: STABLE (+5.96%).",
+          "[Compliance] GSTR-1 outward taxable supplies reconcile to Bank credit volume at 0.99x ratio with 0% GSTR-3B tax gap.",
+          "[Stability] Monthly credit volatility CV is 0.06 with 0 consecutive low-credit months and 0% inward bounce friction.",
+          "[Debt Service] Debt Service Coverage Proxy (DSCP) is 1.67x with an EMI burden ratio of 5.58% across 0 new debt facilities.",
+          "[Operational Flags] Payroll regularity: CONSISTENT (Monthly payroll verified); Cash withdrawals: 4%; Circular flow risk: LOW (Clean independent counterparties)."
+        ],
+        "agentSafetyAudit": {
+          "dataIntegrityStatus": "VERIFIED_SOUND",
+          "fraudSignalsDetected": 0,
+          "confidenceRating": "99.4%"
+        }
+      },
+      "jevAudit": {
+        "verdict": "APPROPRIATE",
+        "confidenceScore": 99.6,
+        "isAppropriate": true,
+        "integrityFlags": [],
+        "balanceContinuity": {
+          "verified": true,
+          "variance": 0,
+          "status": "VERIFIED_PARITY"
+        },
+        "technicalBouncesExcluded": 0,
+        "solvencyBouncesVerified": 0,
+        "rationale": "JEV System 1 Heuristic Verification: Entity data is complete, statutory GSTIN verified, arithmetic ledger continuity verified (Variance: ₹0), and cash flows conform to institutional banking distributions."
+      },
+      "agent1Telemetry": {
+        "businessName": "EnverAI Tech Retail Supplies Pvt Ltd",
+        "monthsAnalyzed": 6,
+        "totalRevenue": 9680000,
+        "totalCreditVolume": 4840000,
+        "totalDebitVolume": 4356000,
+        "bankClosingBalance": 680200.75,
+        "inwardBounces": 0
+      }
+    }
+  },
+  {
     "id": "h_1790412604873",
     "timestamp": "2026-09-26T08:50:04.873Z",
     "userId": "u_daddy_enverai",
