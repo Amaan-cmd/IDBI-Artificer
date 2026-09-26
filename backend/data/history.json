@@ -1,5 +1,2730 @@
 [
   {
+    "id": "h_1790412604873",
+    "timestamp": "2026-09-26T08:50:04.873Z",
+    "userId": "u_daddy_enverai",
+    "userEmail": "daddy@enveraitech.com",
+    "userName": "daddy@enveraitech.com",
+    "userRole": "Enterprise Principal Underwriter",
+    "name": "ENVER-AITECH INDIA PRIVATE LIMITED",
+    "gstin": "27AAHCE5539J1ZA",
+    "score": 803,
+    "risk": "LOW",
+    "revenue": 10560000,
+    "buffer": "1.34x",
+    "compliance": "Excellent",
+    "reason": "Entity assessed with a LOW risk profile (Score: 803). Liquidity cushion with a Cash Buffer Ratio of 1.34x and 35 days minimum runway provide resilient NTC shock absorption.",
+    "fullPayload": {
+      "status": "success",
+      "businessName": "ENVER-AITECH INDIA PRIVATE LIMITED",
+      "gstin": "27AAHCE5539J1ZA",
+      "metrics": {
+        "pillar1_liquidity": {
+          "cashBufferRatio": 1.34,
+          "minimumCashBufferDays": 35,
+          "overdraftLimitUtilization": 11.67,
+          "status": "EXCELLENT",
+          "benchmark": "> 0.15–0.25x (15–25 Days)"
+        },
+        "pillar2_revenue": {
+          "annualizedRevenueRunRate": 10560000,
+          "revenueGrowthRate": 16.84,
+          "gstVsBankReconciliation": 1,
+          "gstr1VsGstr3bGap": 0.31,
+          "trajectory": "EXPANDING",
+          "benchmark": "Reconciliation ~ 1.0x, Gap < 5%"
+        },
+        "pillar3_stability": {
+          "creditCoefficientOfVariation": 0.09,
+          "consecutiveLowCreditMonths": 0,
+          "inwardBounceRate": 0,
+          "outwardBounceRate": 0,
+          "status": "ROBUST",
+          "benchmark": "CV < 0.30, Bounces = 0.0%"
+        },
+        "pillar4_leverage": {
+          "debtServiceCoverageProxy": 0.47,
+          "interestEmiBurdenRatio": 3.18,
+          "newBorrowingVelocity": 0,
+          "tier": "HEAVILY_LEVERAGED",
+          "benchmark": "DSCP > 1.50x, Burden < 20%"
+        },
+        "pillar5_operational": {
+          "salaryStaffPaymentConsistency": "CONSISTENT (Monthly payroll verified)",
+          "utilityRentPaymentRegularity": "REGULAR (On-time utility payments)",
+          "highValueCashWithdrawalPct": 4,
+          "circularTransactionRisk": "LOW (Clean independent counterparties)",
+          "suspiciousTimingFlags": "CLEAN (Normal business hour distribution)",
+          "benchmark": "Clean Counterparties, Cash WDL < 15%"
+        },
+        "revenueRunRate": 10560000,
+        "cashBufferRatio": 1.34,
+        "isCashFlowStable": true,
+        "hasBounces": false,
+        "taxCompliance": "Excellent",
+        "debtServiceCapacity": "Constrained",
+        "citations": [
+          "[Liquidity] Cash Buffer Ratio evaluated at 1.34x with 35 minimum survival buffer days (OD utilization: 11.67%).",
+          "[Revenue] Annualized Revenue Run Rate: ₹1,05,60,000; Trajectory: EXPANDING (+16.84%).",
+          "[Compliance] GSTR-1 outward taxable supplies reconcile to Bank credit volume at 1x ratio with 0.31% GSTR-3B tax gap.",
+          "[Stability] Monthly credit volatility CV is 0.09 with 0 consecutive low-credit months and 0% inward bounce friction.",
+          "[Debt Service] Debt Service Coverage Proxy (DSCP) is 0.47x with an EMI burden ratio of 3.18% across 0 new debt facilities.",
+          "[Operational Flags] Payroll regularity: CONSISTENT (Monthly payroll verified); Cash withdrawals: 4%; Circular flow risk: LOW (Clean independent counterparties)."
+        ],
+        "reasoning": "Comprehensive 5-Pillar NTC evaluation: Liquidity buffer is EXCELLENT (1.34x / 35 days runway). Revenue momentum is EXPANDING at ₹105.6 Lacs run rate. Credit cash flow shows ROBUST stability with a CV of 0.09. Leverage is evaluated as HEAVILY_LEVERAGED with 0.47x debt service coverage."
+      },
+      "decision": {
+        "score": 803,
+        "riskLevel": "LOW",
+        "narrative": "Entity assessed with a LOW risk profile (Score: 803). Liquidity cushion with a Cash Buffer Ratio of 1.34x and 35 days minimum runway provide resilient NTC shock absorption.",
+        "reasoning": "Orc Chief Credit Officer synthesis: Pillar 1 liquidity demonstrates EXCELLENT reserves above the 0.15x critical NTC baseline. Cash flow volatility (CV: 0.09) indicates stable merchant deposits with 0% bounce friction. Debt coverage proxy is strong at 0.47x with LOW (Clean independent counterparties).",
+        "citations": [
+          "[Pillar 1: Liquidity] Cash Buffer Ratio is 1.34x with 35 minimum survival buffer days.",
+          "[Pillar 2: Revenue] Annualized run rate verified at ₹105.6 Lacs with GSTR-1 reconciliation at 1x.",
+          "[Pillar 3: Stability] Credit CV is 0.09 with zero inward cheque/NACH dishonors.",
+          "[Pillar 4: Leverage] Debt Service Coverage Proxy (DSCP) is 0.47x with an interest burden ratio of 3.18%.",
+          "[Pillar 5: Operational Flags] Operational payroll consistency is verified with cash withdrawal volume below 5%."
+        ],
+        "agentSafetyAudit": {
+          "dataIntegrityStatus": "VERIFIED_SOUND (Ledger Parity & JEV Gatekeeper Confirmed)",
+          "fraudSignalsDetected": 0,
+          "confidenceRating": "99.6%"
+        }
+      },
+      "jevAudit": {
+        "verdict": "APPROPRIATE",
+        "confidenceScore": 91,
+        "isAppropriate": true,
+        "tamperRisk": "LOW",
+        "injectionDefenseStatus": "PASSED",
+        "rationale": "TypeSafe Jev System 1 Verification: Data verified appropriate (Confidence: 91%, Tamper Risk: LOW). Arithmetic ledger parity verified (Variance: ₹0).",
+        "integrityFlags": [],
+        "balanceContinuity": {
+          "verified": true,
+          "variance": 0,
+          "status": "VERIFIED_PARITY"
+        },
+        "technicalBouncesExcluded": 0,
+        "solvencyBouncesVerified": 0,
+        "gatekeeperTimestamp": "2026-09-26T08:49:51.703Z"
+      },
+      "agent1Telemetry": {
+        "businessName": "ENVER-AITECH INDIA PRIVATE LIMITED",
+        "gstin": "27AAHCE5539J1ZA",
+        "taxpayerType": "Regular",
+        "monthsAnalyzed": 6,
+        "totalRevenue": 5280000,
+        "totalTaxPaid": 947500,
+        "gstComplianceScore": 100,
+        "bankOpeningBalance": 575520,
+        "bankClosingBalance": 654000,
+        "totalCreditVolume": 5280000,
+        "totalDebitVolume": 5201520,
+        "monthlyCredits": [
+          780000,
+          810000,
+          845000,
+          890000,
+          940000,
+          1015000
+        ],
+        "monthlyDebits": [
+          760819,
+          799637,
+          838454,
+          869508,
+          939379,
+          993723
+        ],
+        "dailyClosingBalances": [
+          590000,
+          620000,
+          654000,
+          680000
+        ],
+        "sanctionedOdLimit": 1200000,
+        "peakOdUsage": 140000,
+        "gstr1OutwardTaxable": 5280000,
+        "gstr3bTaxPaid": 947500,
+        "gstr1DeclaredTax": 950400,
+        "inwardBounces": 0,
+        "totalDebitAttempts": 140,
+        "outwardBounces": 0,
+        "totalOutwardAttempts": 95,
+        "monthlyEmiObligations": 28000,
+        "newBorrowingCount6M": 0,
+        "transactions": [],
+        "scrapedRegistryData": {
+          "source": "Fetcha Engine (Grok 4.6 Registry Tools: GSTN, MCA21, e-Courts, TReDS)",
+          "timestamp": "2026-09-26T08:47:09.220Z",
+          "gstin": "27AAHCE5539J1ZA",
+          "pan": "AAHCE5539J",
+          "stateCode": "27",
+          "state": "Maharashtra",
+          "entityType": "Private/Public Limited Company",
+          "legalEntityName": "ENVER-AITECH INDIA PRIVATE LIMITED",
+          "tradeName": "Enver AI Tech",
+          "mcaStatus": "Active",
+          "incorporationDate": "2023-08-14",
+          "cin": "U47190MH2023PTC402519",
+          "principalPlace": "Mumbai, Maharashtra",
+          "filingCompliance": {
+            "gstr1FilingStatus": "Regular & On-Time (100%)",
+            "gstr3bFilingStatus": "Filed Up to Date",
+            "taxPaymentReliability": "99.8%",
+            "eWayBillMonthlyVolumeAvg": "₹1,450,000",
+            "annualizedTurnoverEstimate": "₹1,05,60,000"
+          },
+          "litigationRecords": {
+            "activeCourtCases": 0,
+            "drCourtDefaultNotices": 0,
+            "chequeBounceSection138Count": 0,
+            "riskFlag": "Clean"
+          },
+          "tradeLedgerFootprint": {
+            "vendorRelationshipCount": 16,
+            "avgInvoiceSettlementDays": 26,
+            "publicSentimentScore": "Verified Positive (Operational Stability Grounded)"
+          }
+        },
+        "solvencyBouncesVerified": 0,
+        "technicalBouncesExcluded": 0,
+        "balanceContinuity": {
+          "verified": true,
+          "variance": 0,
+          "status": "VERIFIED_PARITY"
+        }
+      }
+    }
+  },
+  {
+    "id": "h_1790412535179",
+    "timestamp": "2026-09-26T08:48:55.179Z",
+    "userId": "u_daddy_enverai",
+    "userEmail": "daddy@enveraitech.com",
+    "userName": "daddy@enveraitech.com",
+    "userRole": "Enterprise Principal Underwriter",
+    "name": "Ministry Of Railways",
+    "gstin": "24AAAGM0289C1ZP",
+    "score": 722,
+    "risk": "MEDIUM",
+    "revenue": 8073000,
+    "buffer": "0.56x",
+    "compliance": "Excellent",
+    "reason": "Entity assessed with a MEDIUM risk profile (Score: 722). Liquidity cushion with a Cash Buffer Ratio of 0.56x and 14 days minimum runway provide resilient NTC shock absorption.",
+    "fullPayload": {
+      "status": "success",
+      "businessName": "Ministry Of Railways",
+      "gstin": "24AAAGM0289C1ZP",
+      "metrics": {
+        "pillar1_liquidity": {
+          "cashBufferRatio": 0.56,
+          "minimumCashBufferDays": 14,
+          "overdraftLimitUtilization": 39,
+          "status": "EXCELLENT",
+          "benchmark": "> 0.15–0.25x (15–25 Days)"
+        },
+        "pillar2_revenue": {
+          "annualizedRevenueRunRate": 8073000,
+          "revenueGrowthRate": 5.63,
+          "gstVsBankReconciliation": 1.02,
+          "gstr1VsGstr3bGap": 2.9,
+          "trajectory": "STABLE",
+          "benchmark": "Reconciliation ~ 1.0x, Gap < 5%"
+        },
+        "pillar3_stability": {
+          "creditCoefficientOfVariation": 0.06,
+          "consecutiveLowCreditMonths": 0,
+          "inwardBounceRate": 0,
+          "outwardBounceRate": 0,
+          "status": "ROBUST",
+          "benchmark": "CV < 0.30, Bounces = 0.0%"
+        },
+        "pillar4_leverage": {
+          "debtServiceCoverageProxy": 0.15,
+          "interestEmiBurdenRatio": 4.77,
+          "newBorrowingVelocity": 0,
+          "tier": "HEAVILY_LEVERAGED",
+          "benchmark": "DSCP > 1.50x, Burden < 20%"
+        },
+        "pillar5_operational": {
+          "salaryStaffPaymentConsistency": "CONSISTENT (Monthly payroll verified)",
+          "utilityRentPaymentRegularity": "REGULAR (On-time utility payments)",
+          "highValueCashWithdrawalPct": 4,
+          "circularTransactionRisk": "LOW (Clean independent counterparties)",
+          "suspiciousTimingFlags": "CLEAN (Normal business hour distribution)",
+          "benchmark": "Clean Counterparties, Cash WDL < 15%"
+        },
+        "revenueRunRate": 8073000,
+        "cashBufferRatio": 0.56,
+        "isCashFlowStable": true,
+        "hasBounces": false,
+        "taxCompliance": "Excellent",
+        "debtServiceCapacity": "Constrained",
+        "citations": [
+          "[Liquidity] Cash Buffer Ratio evaluated at 0.56x with 14 minimum survival buffer days (OD utilization: 39%).",
+          "[Revenue] Annualized Revenue Run Rate: ₹80,73,000; Trajectory: STABLE (+5.63%).",
+          "[Compliance] GSTR-1 outward taxable supplies reconcile to Bank credit volume at 1.02x ratio with 2.9% GSTR-3B tax gap.",
+          "[Stability] Monthly credit volatility CV is 0.06 with 0 consecutive low-credit months and 0% inward bounce friction.",
+          "[Debt Service] Debt Service Coverage Proxy (DSCP) is 0.15x with an EMI burden ratio of 4.77% across 0 new debt facilities.",
+          "[Operational Flags] Payroll regularity: CONSISTENT (Monthly payroll verified); Cash withdrawals: 4%; Circular flow risk: LOW (Clean independent counterparties)."
+        ],
+        "reasoning": "Comprehensive 5-Pillar NTC evaluation: Liquidity buffer is EXCELLENT (0.56x / 14 days runway). Revenue momentum is STABLE at ₹80.7 Lacs run rate. Credit cash flow shows ROBUST stability with a CV of 0.06. Leverage is evaluated as HEAVILY_LEVERAGED with 0.15x debt service coverage."
+      },
+      "decision": {
+        "score": 722,
+        "riskLevel": "MEDIUM",
+        "narrative": "Entity assessed with a MEDIUM risk profile (Score: 722). Liquidity cushion with a Cash Buffer Ratio of 0.56x and 14 days minimum runway provide resilient NTC shock absorption.",
+        "reasoning": "Orc Chief Credit Officer synthesis: Pillar 1 liquidity demonstrates EXCELLENT reserves above the 0.15x critical NTC baseline. Cash flow volatility (CV: 0.06) indicates stable merchant deposits with 0% bounce friction. Debt coverage proxy is strong at 0.15x with LOW (Clean independent counterparties).",
+        "citations": [
+          "[Pillar 1: Liquidity] Cash Buffer Ratio is 0.56x with 14 minimum survival buffer days.",
+          "[Pillar 2: Revenue] Annualized run rate verified at ₹80.7 Lacs with GSTR-1 reconciliation at 1.02x.",
+          "[Pillar 3: Stability] Credit CV is 0.06 with zero inward cheque/NACH dishonors.",
+          "[Pillar 4: Leverage] Debt Service Coverage Proxy (DSCP) is 0.15x with an interest burden ratio of 4.77%.",
+          "[Pillar 5: Operational Flags] Operational payroll consistency is verified with cash withdrawal volume below 5%."
+        ],
+        "agentSafetyAudit": {
+          "dataIntegrityStatus": "VERIFIED_SOUND (Ledger Parity & JEV Gatekeeper Confirmed)",
+          "fraudSignalsDetected": 0,
+          "confidenceRating": "99.6%"
+        }
+      },
+      "jevAudit": {
+        "verdict": "APPROPRIATE",
+        "confidenceScore": 89,
+        "isAppropriate": true,
+        "tamperRisk": "LOW",
+        "injectionDefenseStatus": "PASSED",
+        "rationale": "TypeSafe Jev System 1 Verification: Data verified appropriate (Confidence: 89%, Tamper Risk: LOW). Arithmetic ledger parity verified (Variance: ₹1).",
+        "integrityFlags": [],
+        "balanceContinuity": {
+          "verified": true,
+          "variance": 1,
+          "status": "VERIFIED_PARITY"
+        },
+        "technicalBouncesExcluded": 0,
+        "solvencyBouncesVerified": 0,
+        "gatekeeperTimestamp": "2026-09-26T08:47:39.978Z"
+      },
+      "agent1Telemetry": {
+        "businessName": "Ministry Of Railways",
+        "gstin": "24AAAGM0289C1ZP",
+        "taxpayerType": "Regular",
+        "monthsAnalyzed": 6,
+        "totalRevenue": 4036500,
+        "totalTaxPaid": 719609,
+        "gstComplianceScore": 100,
+        "bankOpeningBalance": 218456,
+        "bankClosingBalance": 248245,
+        "totalCreditVolume": 4036500,
+        "totalDebitVolume": 4006710,
+        "monthlyCredits": [
+          617500,
+          650000,
+          695500,
+          656500,
+          676000,
+          741000
+        ],
+        "monthlyDebits": [
+          612943,
+          645203,
+          690367,
+          651655,
+          671011,
+          735531
+        ],
+        "dailyClosingBalances": [
+          213491,
+          233350,
+          248245,
+          268105
+        ],
+        "sanctionedOdLimit": 446841,
+        "peakOdUsage": 174268,
+        "gstr1OutwardTaxable": 4117230,
+        "gstr3bTaxPaid": 719609,
+        "gstr1DeclaredTax": 741101,
+        "inwardBounces": 0,
+        "totalDebitAttempts": 140,
+        "outwardBounces": 0,
+        "totalOutwardAttempts": 95,
+        "monthlyEmiObligations": 32110,
+        "newBorrowingCount6M": 0,
+        "transactions": [],
+        "scrapedRegistryData": {
+          "source": "Fetcha Engine (Grok 4.6 Registry Tools: GSTN, MCA21, e-Courts, TReDS)",
+          "timestamp": "2026-09-26T08:47:34.241Z",
+          "gstin": "24AAAGM0289C1ZP",
+          "pan": "AAAGM0289C",
+          "stateCode": "24",
+          "state": "Gujarat",
+          "entityType": "Enterprise",
+          "legalEntityName": "Ministry Of Railways",
+          "tradeName": "Ministry Of Railways",
+          "mcaStatus": "Active",
+          "incorporationDate": "2019-07-01",
+          "cin": "Registered Entity",
+          "principalPlace": "Gujarat, India",
+          "filingCompliance": {
+            "gstr1FilingStatus": "On-Time (Last 4 Quarters)",
+            "gstr3bFilingStatus": "Regular",
+            "taxPaymentReliability": "98.0%",
+            "eWayBillMonthlyVolumeAvg": "₹11,20,000",
+            "annualizedTurnoverEstimate": "₹80,00,000"
+          },
+          "litigationRecords": {
+            "activeCourtCases": 0,
+            "drCourtDefaultNotices": 0,
+            "chequeBounceSection138Count": 0,
+            "riskFlag": "Clean"
+          },
+          "tradeLedgerFootprint": {
+            "vendorRelationshipCount": 16,
+            "avgInvoiceSettlementDays": 26,
+            "publicSentimentScore": "Verified Positive (Operational Stability Grounded)"
+          }
+        },
+        "solvencyBouncesVerified": 0,
+        "technicalBouncesExcluded": 0,
+        "balanceContinuity": {
+          "verified": true,
+          "variance": 1,
+          "status": "VERIFIED_PARITY"
+        }
+      }
+    }
+  },
+  {
+    "id": "h_1790410419529",
+    "timestamp": "2026-09-26T08:13:39.529Z",
+    "userId": "u_daddy_enverai",
+    "userEmail": "daddy@enveraitech.com",
+    "userName": "daddy@enveraitech.com",
+    "userRole": "Enterprise Principal Underwriter",
+    "name": "RELIANCE INDUSTRIES LIMITED",
+    "gstin": "27AAACR5055K1Z7",
+    "score": 728,
+    "risk": "MEDIUM",
+    "revenue": 15760212,
+    "buffer": "0.96x",
+    "compliance": "Excellent",
+    "reason": "The applicant demonstrates exceptional operational stability with zero bounce friction, robust liquidity buffer (25 days runway), and tight GSTR-to-banking alignment (1.01x). However, overall credit risk is constrained to Medium due to a low operating cash flow Debt Service Coverage Proxy (0.29x), despite a manageable revenue-based EMI burden of 4.67% and ₹9.03 Lacs in liquid reserves.",
+    "fullPayload": {
+      "status": "success",
+      "businessName": "RELIANCE INDUSTRIES LIMITED",
+      "gstin": "27AAACR5055K1Z7",
+      "metrics": {
+        "pillar1_liquidity": {
+          "cashBufferRatio": 0.96,
+          "minimumCashBufferDays": 25,
+          "overdraftLimitUtilization": 62,
+          "status": "ADEQUATE",
+          "benchmark": "> 0.15–0.25x (15–25 Days)"
+        },
+        "pillar2_revenue": {
+          "annualizedRevenueRunRate": 15760212,
+          "revenueGrowthRate": 5.96,
+          "gstVsBankReconciliation": 1.01,
+          "gstr1VsGstr3bGap": 2.8,
+          "trajectory": "STABLE",
+          "benchmark": "Reconciliation ~ 1.0x, Gap < 5%"
+        },
+        "pillar3_stability": {
+          "creditCoefficientOfVariation": 0.06,
+          "consecutiveLowCreditMonths": 0,
+          "inwardBounceRate": 0,
+          "outwardBounceRate": 0,
+          "status": "ROBUST",
+          "benchmark": "CV < 0.30, Bounces = 0.0%"
+        },
+        "pillar4_leverage": {
+          "debtServiceCoverageProxy": 0.29,
+          "interestEmiBurdenRatio": 4.67,
+          "newBorrowingVelocity": 0,
+          "tier": "HEAVILY_LEVERAGED",
+          "benchmark": "DSCP > 1.50x, Burden < 20%"
+        },
+        "pillar5_operational": {
+          "salaryStaffPaymentConsistency": "CONSISTENT (Monthly payroll verified)",
+          "utilityRentPaymentRegularity": "REGULAR (On-time utility payments)",
+          "highValueCashWithdrawalPct": 4,
+          "circularTransactionRisk": "LOW (Clean independent counterparties)",
+          "suspiciousTimingFlags": "CLEAN (Normal business hour distribution)",
+          "benchmark": "Clean Counterparties, Cash WDL < 15%"
+        },
+        "revenueRunRate": 15760212,
+        "cashBufferRatio": 0.96,
+        "isCashFlowStable": true,
+        "hasBounces": false,
+        "taxCompliance": "Excellent",
+        "debtServiceCapacity": "Constrained",
+        "citations": [
+          "[Liquidity] Cash Buffer Ratio evaluated at 0.96x with 25 minimum survival buffer days (OD utilization: 62%).",
+          "[Revenue] Annualized Revenue Run Rate: ₹1,57,60,212; Trajectory: STABLE (+5.96%).",
+          "[Compliance] GSTR-1 outward taxable supplies reconcile to Bank credit volume at 1.01x ratio with 2.8% GSTR-3B tax gap.",
+          "[Stability] Monthly credit volatility CV is 0.06 with 0 consecutive low-credit months and 0% inward bounce friction.",
+          "[Debt Service] Debt Service Coverage Proxy (DSCP) is 0.29x with an EMI burden ratio of 4.67% across 0 new debt facilities.",
+          "[Operational Flags] Payroll regularity: CONSISTENT (Monthly payroll verified); Cash withdrawals: 4%; Circular flow risk: LOW (Clean independent counterparties)."
+        ],
+        "reasoning": "Comprehensive 5-Pillar NTC evaluation: Liquidity buffer is ADEQUATE (0.96x / 25 days runway). Revenue momentum is STABLE at ₹157.6 Lacs run rate. Credit cash flow shows ROBUST stability with a CV of 0.06. Leverage is evaluated as HEAVILY_LEVERAGED with 0.29x debt service coverage."
+      },
+      "decision": {
+        "score": 728,
+        "riskLevel": "MEDIUM",
+        "narrative": "The applicant demonstrates exceptional operational stability with zero bounce friction, robust liquidity buffer (25 days runway), and tight GSTR-to-banking alignment (1.01x). However, overall credit risk is constrained to Medium due to a low operating cash flow Debt Service Coverage Proxy (0.29x), despite a manageable revenue-based EMI burden of 4.67% and ₹9.03 Lacs in liquid reserves.",
+        "reasoning": "Forensic underwrite across the 5 NTC pillars reveals a split-profile credit posture. Pillar 1 (Liquidity) is solid with a Cash Buffer Ratio of 0.96x, 25 minimum survival buffer days, and a closing balance of ₹9,03,848 against a peak OD utilization of 62% (₹11,76,810 on ₹18,98,081 limit). Pillar 2 (Revenue Momentum) is verified through an annualized turnover run rate of ₹1,57,60,212 (+5.96% trend) and high-integrity tax reconciliation between GSTR-1 (₹79,58,907) and bank credits (₹78,80,106) at a 1.01x parity ratio. Pillar 3 (Stability) reflects top-decile discipline with an ultra-low monthly credit CV of 0.06 and 0 inward or outward bounces across 235 total debit/outward transaction attempts. Conversely, Pillar 4 (Leverage) flags an operational cash surplus shortfall, yielding a DSCP proxy of 0.29x relative to ₹61,381 monthly EMI obligations, as net monthly retained cash accretions average ₹18,077; this is significantly mitigated by the existing liquid cash buffer equivalent to ~14.7 months of debt service. Pillar 5 (Operational Flags) confirms pristine operational integrity with negligible cash withdrawals (4%), zero litigation, and confirmed salary/vendor distribution cadence.",
+        "citations": [
+          "Pillar 1 [Liquidity]: Maintained average closing cash buffer of ₹9,03,848 providing 25 minimum buffer days (Cash Buffer Ratio: 0.96x) against sanctioned OD limit of ₹18,98,081 utilized at 62%.",
+          "Pillar 2 [Revenue & Tax]: Annualized revenue run rate stands at ₹1,57,60,212 with GSTR-1 outward taxable turnover (₹79,58,907) reconciling to banking credits (₹78,80,106) at a 1.01x ratio with a 2.8% GSTR-3B variance.",
+          "Pillar 3 [Stability]: Monthly cash flow coefficient of variation (CV) is 0.06 with zero inward bounces across 140 debit clearing attempts and zero outward bounces across 95 attempts.",
+          "Pillar 4 [Leverage]: Debt Service Coverage Proxy (DSCP) is compressed at 0.29x against ₹61,381 monthly EMI obligations, balanced by an interest/burden ratio of 4.67% of monthly revenue and 0 new credit facilities over 6 months.",
+          "Pillar 5 [Operational Signals]: High-value cash withdrawals contained at 4.0% of debit volume; verified absence of circular counterparty transfers, 0 active court or Section 138 cases, and positive MCA active standing."
+        ],
+        "agentSafetyAudit": {
+          "dataIntegrityStatus": "VERIFIED_SOUND",
+          "fraudSignalsDetected": 0,
+          "confidenceRating": "99.4%"
+        }
+      },
+      "jevAudit": {
+        "verdict": "APPROPRIATE",
+        "confidenceScore": 84,
+        "isAppropriate": true,
+        "tamperRisk": "LOW",
+        "injectionDefenseStatus": "PASSED",
+        "rationale": "TypeSafe Jev System 1 Verification: Data verified appropriate (Confidence: 84%, Tamper Risk: LOW). Arithmetic ledger parity verified (Variance: ₹0).",
+        "integrityFlags": [],
+        "balanceContinuity": {
+          "verified": true,
+          "variance": 0,
+          "status": "VERIFIED_PARITY"
+        },
+        "technicalBouncesExcluded": 0,
+        "solvencyBouncesVerified": 0,
+        "gatekeeperTimestamp": "2026-09-26T08:11:57.714Z"
+      },
+      "agent1Telemetry": {
+        "businessName": "RELIANCE INDUSTRIES LIMITED",
+        "gstin": "27AAACR5055K1Z7",
+        "taxpayerType": "Regular",
+        "monthsAnalyzed": 6,
+        "totalRevenue": 7880106,
+        "totalTaxPaid": 1392490,
+        "gstComplianceScore": 100,
+        "bankOpeningBalance": 795386,
+        "bankClosingBalance": 903848,
+        "totalCreditVolume": 7880106,
+        "totalDebitVolume": 7771644,
+        "monthlyCredits": [
+          1203553,
+          1266898,
+          1355581,
+          1279567,
+          1330243,
+          1444264
+        ],
+        "monthlyDebits": [
+          1186987,
+          1249461,
+          1336923,
+          1261955,
+          1311934,
+          1424384
+        ],
+        "dailyClosingBalances": [
+          777309,
+          849617,
+          903848,
+          976156
+        ],
+        "sanctionedOdLimit": 1898081,
+        "peakOdUsage": 1176810,
+        "gstr1OutwardTaxable": 7958907,
+        "gstr3bTaxPaid": 1392490,
+        "gstr1DeclaredTax": 1432603,
+        "inwardBounces": 0,
+        "totalDebitAttempts": 140,
+        "outwardBounces": 0,
+        "totalOutwardAttempts": 95,
+        "monthlyEmiObligations": 61381,
+        "newBorrowingCount6M": 0,
+        "transactions": [],
+        "scrapedRegistryData": {
+          "source": "Fetcha Engine (Grok 4.6 Registry Tools: GSTN, MCA21, e-Courts, TReDS)",
+          "timestamp": "2026-09-26T08:11:45.774Z",
+          "gstin": "27AAACR5055K1Z7",
+          "pan": "AAACR5055K",
+          "stateCode": "27",
+          "state": "Maharashtra",
+          "entityType": "Private/Public Limited Company",
+          "legalEntityName": "RELIANCE INDUSTRIES LIMITED",
+          "tradeName": "RELIANCE INDUSTRIES LIMITED",
+          "mcaStatus": "Active",
+          "incorporationDate": "01 Jul 2017",
+          "cin": "U23252272020PTC302600",
+          "principalPlace": "Maharashtra, India",
+          "filingCompliance": {
+            "gstr1FilingStatus": "On-Time (Last 4 Quarters)",
+            "gstr3bFilingStatus": "Regular",
+            "taxPaymentReliability": "98.0%",
+            "eWayBillMonthlyVolumeAvg": "₹18,71,366",
+            "annualizedTurnoverEstimate": "₹1,33,66,898"
+          },
+          "litigationRecords": {
+            "activeCourtCases": 0,
+            "drCourtDefaultNotices": 0,
+            "chequeBounceSection138Count": 0,
+            "riskFlag": "Clean"
+          },
+          "tradeLedgerFootprint": {
+            "vendorRelationshipCount": 16,
+            "avgInvoiceSettlementDays": 26,
+            "publicSentimentScore": "Verified Positive (Operational Stability Grounded)"
+          }
+        },
+        "solvencyBouncesVerified": 0,
+        "technicalBouncesExcluded": 0,
+        "balanceContinuity": {
+          "verified": true,
+          "variance": 0,
+          "status": "VERIFIED_PARITY"
+        }
+      }
+    }
+  },
+  {
+    "id": "h_1790198141936",
+    "timestamp": "2026-09-23T21:15:41.936Z",
+    "userId": "u_google_1790193309062",
+    "name": "Apex Precision Engineering Pvt Ltd",
+    "score": 734,
+    "risk": "MEDIUM",
+    "revenue": 9660000,
+    "buffer": "0.64x",
+    "compliance": "Excellent",
+    "reason": "Entity assessed with a MEDIUM risk profile (Score: 734). Liquidity cushion with a Cash Buffer Ratio of 0.64x and 17 days minimum runway provide resilient NTC shock absorption.",
+    "fullPayload": {
+      "status": "success",
+      "businessName": "Apex Precision Engineering Pvt Ltd",
+      "gstin": "27AADCB2230M1Z2",
+      "metrics": {
+        "pillar1_liquidity": {
+          "cashBufferRatio": 0.64,
+          "minimumCashBufferDays": 17,
+          "overdraftLimitUtilization": 52.5,
+          "status": "EXCELLENT",
+          "benchmark": "> 0.15–0.25x (15–25 Days)"
+        },
+        "pillar2_revenue": {
+          "annualizedRevenueRunRate": 9660000,
+          "revenueGrowthRate": 4.66,
+          "gstVsBankReconciliation": 1,
+          "gstr1VsGstr3bGap": 1.8,
+          "trajectory": "STABLE",
+          "benchmark": "Reconciliation ~ 1.0x, Gap < 5%"
+        },
+        "pillar3_stability": {
+          "creditCoefficientOfVariation": 0.03,
+          "consecutiveLowCreditMonths": 0,
+          "inwardBounceRate": 0,
+          "outwardBounceRate": 0,
+          "status": "ROBUST",
+          "benchmark": "CV < 0.30, Bounces = 0.0%"
+        },
+        "pillar4_leverage": {
+          "debtServiceCoverageProxy": 0.17,
+          "interestEmiBurdenRatio": 4.72,
+          "newBorrowingVelocity": 0,
+          "tier": "HEAVILY_LEVERAGED",
+          "benchmark": "DSCP > 1.50x, Burden < 20%"
+        },
+        "pillar5_operational": {
+          "salaryStaffPaymentConsistency": "CONSISTENT (Monthly payroll verified)",
+          "utilityRentPaymentRegularity": "REGULAR (On-time utility payments)",
+          "highValueCashWithdrawalPct": 4,
+          "circularTransactionRisk": "LOW (Clean independent counterparties)",
+          "suspiciousTimingFlags": "CLEAN (Normal business hour distribution)",
+          "benchmark": "Clean Counterparties, Cash WDL < 15%"
+        },
+        "revenueRunRate": 9660000,
+        "cashBufferRatio": 0.64,
+        "isCashFlowStable": true,
+        "hasBounces": false,
+        "taxCompliance": "Excellent",
+        "debtServiceCapacity": "Constrained",
+        "citations": [
+          "[Liquidity] Cash Buffer Ratio evaluated at 0.64x with 17 minimum survival buffer days (OD utilization: 52.5%).",
+          "[Revenue] Annualized Revenue Run Rate: ₹96,60,000; Trajectory: STABLE (+4.66%).",
+          "[Compliance] GSTR-1 outward taxable supplies reconcile to Bank credit volume at 1x ratio with 1.8% GSTR-3B tax gap.",
+          "[Stability] Monthly credit volatility CV is 0.03 with 0 consecutive low-credit months and 0% inward bounce friction.",
+          "[Debt Service] Debt Service Coverage Proxy (DSCP) is 0.17x with an EMI burden ratio of 4.72% across 0 new debt facilities.",
+          "[Operational Flags] Payroll regularity: CONSISTENT (Monthly payroll verified); Cash withdrawals: 4%; Circular flow risk: LOW (Clean independent counterparties)."
+        ],
+        "reasoning": "Comprehensive 5-Pillar NTC evaluation: Liquidity buffer is EXCELLENT (0.64x / 17 days runway). Revenue momentum is STABLE at ₹96.6 Lacs run rate. Credit cash flow shows ROBUST stability with a CV of 0.03. Leverage is evaluated as HEAVILY_LEVERAGED with 0.17x debt service coverage."
+      },
+      "decision": {
+        "score": 734,
+        "riskLevel": "MEDIUM",
+        "narrative": "Entity assessed with a MEDIUM risk profile (Score: 734). Liquidity cushion with a Cash Buffer Ratio of 0.64x and 17 days minimum runway provide resilient NTC shock absorption.",
+        "reasoning": "Orc Chief Credit Officer synthesis: Pillar 1 liquidity demonstrates EXCELLENT reserves above the 0.15x critical NTC baseline. Cash flow volatility (CV: 0.03) indicates stable merchant deposits with 0% bounce friction. Debt coverage proxy is strong at 0.17x with LOW (Clean independent counterparties).",
+        "citations": [
+          "[Pillar 1: Liquidity] Cash Buffer Ratio is 0.64x with 17 minimum survival buffer days.",
+          "[Pillar 2: Revenue] Annualized run rate verified at ₹96.6 Lacs with GSTR-1 reconciliation at 1x.",
+          "[Pillar 3: Stability] Credit CV is 0.03 with zero inward cheque/NACH dishonors.",
+          "[Pillar 4: Leverage] Debt Service Coverage Proxy (DSCP) is 0.17x with an interest burden ratio of 4.72%.",
+          "[Pillar 5: Operational Flags] Operational payroll consistency is verified with cash withdrawal volume below 5%."
+        ],
+        "agentSafetyAudit": {
+          "dataIntegrityStatus": "VERIFIED_SOUND (Ledger Parity & JEV Gatekeeper Confirmed)",
+          "fraudSignalsDetected": 0,
+          "confidenceRating": "99.6%"
+        }
+      },
+      "jevAudit": {
+        "verdict": "APPROPRIATE",
+        "confidenceScore": 99.6,
+        "isAppropriate": true,
+        "integrityFlags": [],
+        "balanceContinuity": {
+          "verified": true,
+          "variance": 0,
+          "status": "VERIFIED_PARITY"
+        },
+        "technicalBouncesExcluded": 0,
+        "solvencyBouncesVerified": 0,
+        "rationale": "JEV System 1 Heuristic Verification: Entity data is complete, statutory GSTIN verified, arithmetic ledger continuity verified (Variance: ₹0), and cash flows conform to institutional banking distributions.",
+        "tamperRisk": "LOW",
+        "injectionDefenseStatus": "PASSED",
+        "gatekeeperTimestamp": "2026-09-23T21:15:41.744Z"
+      },
+      "agent1Telemetry": {
+        "businessName": "Apex Precision Engineering Pvt Ltd",
+        "gstin": "27AADCB2230M1Z2",
+        "taxpayerType": "Regular",
+        "monthsAnalyzed": 6,
+        "totalRevenue": 4830000,
+        "totalTaxPaid": 853750,
+        "gstComplianceScore": 100,
+        "bankOpeningBalance": 286000,
+        "bankClosingBalance": 325000,
+        "totalCreditVolume": 4830000,
+        "totalDebitVolume": 4791000,
+        "monthlyCredits": [
+          760000,
+          810000,
+          790000,
+          830000,
+          815000,
+          825000
+        ],
+        "monthlyDebits": [
+          755232,
+          802433,
+          784733,
+          826034,
+          808334,
+          814234
+        ],
+        "dailyClosingBalances": [
+          290000,
+          315000,
+          325000,
+          350000
+        ],
+        "sanctionedOdLimit": 800000,
+        "peakOdUsage": 420000,
+        "gstr1OutwardTaxable": 4830000,
+        "gstr3bTaxPaid": 853750,
+        "gstr1DeclaredTax": 869400,
+        "inwardBounces": 0,
+        "totalDebitAttempts": 140,
+        "outwardBounces": 0,
+        "totalOutwardAttempts": 95,
+        "monthlyEmiObligations": 38000,
+        "newBorrowingCount6M": 0,
+        "transactions": [],
+        "scrapedRegistryData": {
+          "source": "Fetcha Engine (Grok 4.6 Registry Tools: GSTN, MCA21, e-Courts, TReDS)",
+          "timestamp": "2026-09-23T21:15:27.470Z",
+          "gstin": "27AADCB2230M1Z2",
+          "pan": "AADCB2230M",
+          "stateCode": "27",
+          "state": "Maharashtra",
+          "entityType": "Private/Public Limited Company",
+          "legalEntityName": "Apex Precision Engineering Pvt Ltd",
+          "tradeName": "Apex Engineering",
+          "mcaStatus": "Active",
+          "incorporationDate": "2018-05-22",
+          "cin": "U28110MH2018PTC304891",
+          "principalPlace": "MIDC Bhosari, Pune, Maharashtra 411026",
+          "filingCompliance": {
+            "gstr1FilingStatus": "On-Time (Last 12 Quarters)",
+            "gstr3bFilingStatus": "Regular",
+            "taxPaymentReliability": "98.4%",
+            "eWayBillMonthlyVolumeAvg": "₹1,850,000",
+            "annualizedTurnoverEstimate": "₹96,40,000"
+          },
+          "litigationRecords": {
+            "activeCourtCases": 0,
+            "drCourtDefaultNotices": 0,
+            "chequeBounceSection138Count": 0,
+            "riskFlag": "Clean"
+          },
+          "tradeLedgerFootprint": {
+            "vendorRelationshipCount": 16,
+            "avgInvoiceSettlementDays": 26,
+            "publicSentimentScore": "Verified Positive (Operational Stability Grounded)"
+          }
+        },
+        "solvencyBouncesVerified": 0,
+        "technicalBouncesExcluded": 0,
+        "balanceContinuity": {
+          "verified": true,
+          "variance": 0,
+          "status": "VERIFIED_PARITY"
+        }
+      }
+    }
+  },
+  {
+    "id": "h_1790198093438",
+    "timestamp": "2026-09-23T21:14:53.438Z",
+    "userId": "u_google_1790193309062",
+    "name": "Kariman Enterprises",
+    "score": 731,
+    "risk": "MEDIUM",
+    "revenue": 8240000,
+    "buffer": "0.69x",
+    "compliance": "Excellent",
+    "reason": "Entity assessed with a MEDIUM risk profile (Score: 731). Liquidity cushion with a Cash Buffer Ratio of 0.69x and 18 days minimum runway provide resilient NTC shock absorption.",
+    "fullPayload": {
+      "status": "success",
+      "businessName": "Kariman Enterprises",
+      "gstin": "27AABPQ1063C1Z5",
+      "metrics": {
+        "pillar1_liquidity": {
+          "cashBufferRatio": 0.69,
+          "minimumCashBufferDays": 18,
+          "overdraftLimitUtilization": 35.83,
+          "status": "EXCELLENT",
+          "benchmark": "> 0.15–0.25x (15–25 Days)"
+        },
+        "pillar2_revenue": {
+          "annualizedRevenueRunRate": 8240000,
+          "revenueGrowthRate": 1.47,
+          "gstVsBankReconciliation": 1.01,
+          "gstr1VsGstr3bGap": 1.44,
+          "trajectory": "STABLE",
+          "benchmark": "Reconciliation ~ 1.0x, Gap < 5%"
+        },
+        "pillar3_stability": {
+          "creditCoefficientOfVariation": 0.04,
+          "consecutiveLowCreditMonths": 0,
+          "inwardBounceRate": 0,
+          "outwardBounceRate": 0,
+          "status": "ROBUST",
+          "benchmark": "CV < 0.30, Bounces = 0.0%"
+        },
+        "pillar4_leverage": {
+          "debtServiceCoverageProxy": 0.21,
+          "interestEmiBurdenRatio": 3.86,
+          "newBorrowingVelocity": 0,
+          "tier": "HEAVILY_LEVERAGED",
+          "benchmark": "DSCP > 1.50x, Burden < 20%"
+        },
+        "pillar5_operational": {
+          "salaryStaffPaymentConsistency": "CONSISTENT (Monthly payroll verified)",
+          "utilityRentPaymentRegularity": "REGULAR (On-time utility payments)",
+          "highValueCashWithdrawalPct": 4,
+          "circularTransactionRisk": "LOW (Clean independent counterparties)",
+          "suspiciousTimingFlags": "CLEAN (Normal business hour distribution)",
+          "benchmark": "Clean Counterparties, Cash WDL < 15%"
+        },
+        "revenueRunRate": 8240000,
+        "cashBufferRatio": 0.69,
+        "isCashFlowStable": true,
+        "hasBounces": false,
+        "taxCompliance": "Excellent",
+        "debtServiceCapacity": "Constrained",
+        "citations": [
+          "[Liquidity] Cash Buffer Ratio evaluated at 0.69x with 18 minimum survival buffer days (OD utilization: 35.83%).",
+          "[Revenue] Annualized Revenue Run Rate: ₹82,40,000; Trajectory: STABLE (+1.47%).",
+          "[Compliance] GSTR-1 outward taxable supplies reconcile to Bank credit volume at 1.01x ratio with 1.44% GSTR-3B tax gap.",
+          "[Stability] Monthly credit volatility CV is 0.04 with 0 consecutive low-credit months and 0% inward bounce friction.",
+          "[Debt Service] Debt Service Coverage Proxy (DSCP) is 0.21x with an EMI burden ratio of 3.86% across 0 new debt facilities.",
+          "[Operational Flags] Payroll regularity: CONSISTENT (Monthly payroll verified); Cash withdrawals: 4%; Circular flow risk: LOW (Clean independent counterparties)."
+        ],
+        "reasoning": "Comprehensive 5-Pillar NTC evaluation: Liquidity buffer is EXCELLENT (0.69x / 18 days runway). Revenue momentum is STABLE at ₹82.4 Lacs run rate. Credit cash flow shows ROBUST stability with a CV of 0.04. Leverage is evaluated as HEAVILY_LEVERAGED with 0.21x debt service coverage."
+      },
+      "decision": {
+        "score": 731,
+        "riskLevel": "MEDIUM",
+        "narrative": "Entity assessed with a MEDIUM risk profile (Score: 731). Liquidity cushion with a Cash Buffer Ratio of 0.69x and 18 days minimum runway provide resilient NTC shock absorption.",
+        "reasoning": "Orc Chief Credit Officer synthesis: Pillar 1 liquidity demonstrates EXCELLENT reserves above the 0.15x critical NTC baseline. Cash flow volatility (CV: 0.04) indicates stable merchant deposits with 0% bounce friction. Debt coverage proxy is strong at 0.21x with LOW (Clean independent counterparties).",
+        "citations": [
+          "[Pillar 1: Liquidity] Cash Buffer Ratio is 0.69x with 18 minimum survival buffer days.",
+          "[Pillar 2: Revenue] Annualized run rate verified at ₹82.4 Lacs with GSTR-1 reconciliation at 1.01x.",
+          "[Pillar 3: Stability] Credit CV is 0.04 with zero inward cheque/NACH dishonors.",
+          "[Pillar 4: Leverage] Debt Service Coverage Proxy (DSCP) is 0.21x with an interest burden ratio of 3.86%.",
+          "[Pillar 5: Operational Flags] Operational payroll consistency is verified with cash withdrawal volume below 5%."
+        ],
+        "agentSafetyAudit": {
+          "dataIntegrityStatus": "VERIFIED_SOUND (Ledger Parity & JEV Gatekeeper Confirmed)",
+          "fraudSignalsDetected": 0,
+          "confidenceRating": "99.6%"
+        }
+      },
+      "jevAudit": {
+        "verdict": "APPROPRIATE",
+        "confidenceScore": 99.6,
+        "isAppropriate": true,
+        "integrityFlags": [],
+        "balanceContinuity": {
+          "verified": true,
+          "variance": 0,
+          "status": "VERIFIED_PARITY"
+        },
+        "technicalBouncesExcluded": 0,
+        "solvencyBouncesVerified": 0,
+        "rationale": "JEV System 1 Heuristic Verification: Entity data is complete, statutory GSTIN verified, arithmetic ledger continuity verified (Variance: ₹0), and cash flows conform to institutional banking distributions.",
+        "tamperRisk": "LOW",
+        "injectionDefenseStatus": "PASSED",
+        "gatekeeperTimestamp": "2026-09-23T21:14:53.230Z"
+      },
+      "agent1Telemetry": {
+        "businessName": "Kariman Enterprises",
+        "gstin": "27AABPQ1063C1Z5",
+        "taxpayerType": "Regular",
+        "monthsAnalyzed": 6,
+        "totalRevenue": 4120000,
+        "totalTaxPaid": 741600,
+        "gstComplianceScore": 100,
+        "bankOpeningBalance": 250360,
+        "bankClosingBalance": 284500,
+        "totalCreditVolume": 4120000,
+        "totalDebitVolume": 4085860,
+        "monthlyCredits": [
+          642000,
+          678000,
+          725000,
+          660000,
+          694000,
+          721000
+        ],
+        "monthlyDebits": [
+          641727,
+          659390,
+          718264,
+          671164,
+          682939,
+          712376
+        ],
+        "dailyClosingBalances": [
+          245000,
+          268000,
+          284500,
+          310000
+        ],
+        "sanctionedOdLimit": 600000,
+        "peakOdUsage": 215000,
+        "gstr1OutwardTaxable": 4180000,
+        "gstr3bTaxPaid": 741600,
+        "gstr1DeclaredTax": 752400,
+        "inwardBounces": 0,
+        "totalDebitAttempts": 140,
+        "outwardBounces": 0,
+        "totalOutwardAttempts": 95,
+        "monthlyEmiObligations": 26500,
+        "newBorrowingCount6M": 0,
+        "transactions": [],
+        "scrapedRegistryData": {
+          "source": "Fetcha Engine (Grok 4.6 Registry Tools: GSTN, MCA21, e-Courts, TReDS)",
+          "timestamp": "2026-09-23T21:14:38.102Z",
+          "gstin": "27AABPQ1063C1Z5",
+          "pan": "AABPQ1063C",
+          "stateCode": "27",
+          "state": "Maharashtra",
+          "entityType": "Sole Proprietorship",
+          "legalEntityName": "Kariman Enterprises",
+          "tradeName": "Kariman Enterprises",
+          "mcaStatus": "Active",
+          "incorporationDate": "2017-07-01",
+          "cin": "Sole Proprietorship",
+          "principalPlace": "102 Emerald Apartments, Vakola Market, Santacruz East, Mumbai, Maharashtra 400055",
+          "filingCompliance": {
+            "gstr1FilingStatus": "Regular & On-Time (100%)",
+            "gstr3bFilingStatus": "Regular",
+            "taxPaymentReliability": "98.5%",
+            "eWayBillMonthlyVolumeAvg": "₹1,180,000",
+            "annualizedTurnoverEstimate": "₹82,40,000"
+          },
+          "litigationRecords": {
+            "drCourtDefaultNotices": 0,
+            "chequeBounceSection138Count": 0
+          },
+          "tradeLedgerFootprint": {
+            "vendorRelationshipCount": 16,
+            "avgInvoiceSettlementDays": 26,
+            "publicSentimentScore": "Verified Positive (Operational Stability Grounded)"
+          }
+        },
+        "solvencyBouncesVerified": 0,
+        "technicalBouncesExcluded": 0,
+        "balanceContinuity": {
+          "verified": true,
+          "variance": 0,
+          "status": "VERIFIED_PARITY"
+        }
+      }
+    }
+  },
+  {
+    "id": "h_1790195962593",
+    "timestamp": "2026-09-23T20:39:22.593Z",
+    "userId": "u_google_1790193309062",
+    "name": "Kariman Enterprises",
+    "score": 810,
+    "risk": "LOW",
+    "revenue": 8240000,
+    "buffer": "0.48x",
+    "compliance": "Excellent",
+    "reason": "Entity assessed with a LOW risk profile (Score: 810). Strong liquidity cushion with a Cash Buffer Ratio of 0.48x and 13 days minimum runway provide resilient NTC shock absorption.",
+    "fullPayload": {
+      "status": "success",
+      "businessName": "Kariman Enterprises",
+      "gstin": "27AABPQ1063C1Z5",
+      "metrics": {
+        "pillar1_liquidity": {
+          "cashBufferRatio": 0.48,
+          "minimumCashBufferDays": 13,
+          "overdraftLimitUtilization": 35.83,
+          "status": "EXCELLENT",
+          "benchmark": "> 0.15–0.25x (15–25 Days)"
+        },
+        "pillar2_revenue": {
+          "annualizedRevenueRunRate": 8240000,
+          "revenueGrowthRate": 1.47,
+          "gstVsBankReconciliation": 1.01,
+          "gstr1VsGstr3bGap": 1.44,
+          "trajectory": "STABLE",
+          "benchmark": "Reconciliation ~ 1.0x, Gap < 5%"
+        },
+        "pillar3_stability": {
+          "creditCoefficientOfVariation": 0.04,
+          "consecutiveLowCreditMonths": 0,
+          "inwardBounceRate": 0,
+          "outwardBounceRate": 0,
+          "status": "ROBUST",
+          "benchmark": "CV < 0.30, Bounces = 0.0%"
+        },
+        "pillar4_leverage": {
+          "debtServiceCoverageProxy": 4.09,
+          "interestEmiBurdenRatio": 3.86,
+          "newBorrowingVelocity": 0,
+          "tier": "LOW_LEVERAGE",
+          "benchmark": "DSCP > 1.50x, Burden < 20%"
+        },
+        "pillar5_operational": {
+          "salaryStaffPaymentConsistency": "CONSISTENT (Monthly payroll verified)",
+          "utilityRentPaymentRegularity": "REGULAR (On-time utility payments)",
+          "highValueCashWithdrawalPct": 4,
+          "circularTransactionRisk": "LOW (Clean independent counterparties)",
+          "suspiciousTimingFlags": "CLEAN (Normal business hour distribution)",
+          "benchmark": "Clean Counterparties, Cash WDL < 15%"
+        },
+        "revenueRunRate": 8240000,
+        "cashBufferRatio": 0.48,
+        "isCashFlowStable": true,
+        "hasBounces": false,
+        "taxCompliance": "Excellent",
+        "debtServiceCapacity": "High",
+        "citations": [
+          "[Liquidity] Cash Buffer Ratio evaluated at 0.48x with 13 minimum survival buffer days (OD utilization: 35.83%).",
+          "[Revenue] Annualized Revenue Run Rate: ₹82,40,000; Trajectory: STABLE (+1.47%).",
+          "[Compliance] GSTR-1 outward taxable supplies reconcile to Bank credit volume at 1.01x ratio with 1.44% GSTR-3B tax gap.",
+          "[Stability] Monthly credit volatility CV is 0.04 with 0 consecutive low-credit months and 0% inward bounce friction.",
+          "[Debt Service] Debt Service Coverage Proxy (DSCP) is 4.09x with an EMI burden ratio of 3.86% across 0 new debt facilities.",
+          "[Operational Flags] Payroll regularity: CONSISTENT (Monthly payroll verified); Cash withdrawals: 4%; Circular flow risk: LOW (Clean independent counterparties)."
+        ],
+        "reasoning": "Comprehensive 5-Pillar NTC evaluation: Liquidity buffer is EXCELLENT (0.48x / 13 days runway). Revenue momentum is STABLE at ₹82.4 Lacs run rate. Credit cash flow shows ROBUST stability with a CV of 0.04. Leverage is evaluated as LOW_LEVERAGE with 4.09x debt service coverage."
+      },
+      "decision": {
+        "score": 810,
+        "riskLevel": "LOW",
+        "narrative": "Entity assessed with a LOW risk profile (Score: 810). Strong liquidity cushion with a Cash Buffer Ratio of 0.48x and 13 days minimum runway provide resilient NTC shock absorption.",
+        "reasoning": "Orc Chief Credit Officer synthesis: Pillar 1 liquidity demonstrates EXCELLENT reserves above the 0.15x critical NTC baseline. Cash flow volatility (CV: 0.04) indicates stable merchant deposits with 0% bounce friction. Debt coverage proxy is strong at 4.09x with LOW (Clean independent counterparties).",
+        "citations": [
+          "[Pillar 1: Liquidity] Cash Buffer Ratio is 0.48x with 13 minimum survival buffer days.",
+          "[Pillar 2: Revenue] Annualized run rate verified at ₹82.4 Lacs with GSTR-1 reconciliation at 1.01x.",
+          "[Pillar 3: Stability] Credit CV is 0.04 with zero inward cheque/NACH dishonors.",
+          "[Pillar 4: Leverage] Debt Service Coverage Proxy (DSCP) is 4.09x with an interest burden ratio of 3.86%.",
+          "[Pillar 5: Operational Flags] Operational payroll consistency is verified with cash withdrawal volume below 5%."
+        ],
+        "agentSafetyAudit": {
+          "dataIntegrityStatus": "VERIFIED_SOUND",
+          "fraudSignalsDetected": 0,
+          "confidenceRating": "99.4%"
+        }
+      },
+      "jevAudit": {
+        "verdict": "APPROPRIATE",
+        "confidenceScore": 99.6,
+        "isAppropriate": true,
+        "integrityFlags": [],
+        "rationale": "JEV System 1 Heuristic Verification: Entity data is complete, statutory GSTIN verified, and cash flows conform to standard institutional banking distributions.",
+        "tamperRisk": "LOW",
+        "injectionDefenseStatus": "PASSED",
+        "gatekeeperTimestamp": "2026-09-23T20:39:08.407Z"
+      },
+      "agent1Telemetry": {
+        "businessName": "Kariman Enterprises",
+        "gstin": "27AABPQ1063C1Z5",
+        "monthsAnalyzed": 6,
+        "totalRevenue": 4120000,
+        "totalTaxPaid": 741600,
+        "gstComplianceScore": 100,
+        "bankOpeningBalance": 241825,
+        "bankClosingBalance": 284500,
+        "totalCreditVolume": 4120000,
+        "totalDebitVolume": 3470000,
+        "monthlyCredits": [
+          642000,
+          678000,
+          725000,
+          660000,
+          694000,
+          721000
+        ],
+        "monthlyDebits": [
+          545000,
+          560000,
+          610000,
+          570000,
+          580000,
+          605000
+        ],
+        "dailyClosingBalances": [
+          245000,
+          268000,
+          284500,
+          310000
+        ],
+        "sanctionedOdLimit": 600000,
+        "peakOdUsage": 215000,
+        "gstr1OutwardTaxable": 4180000,
+        "gstr3bTaxPaid": 741600,
+        "gstr1DeclaredTax": 752400,
+        "inwardBounces": 0,
+        "totalDebitAttempts": 140,
+        "outwardBounces": 0,
+        "totalOutwardAttempts": 95,
+        "monthlyEmiObligations": 26500,
+        "newBorrowingCount6M": 0,
+        "transactions": [],
+        "scrapedRegistryData": {
+          "source": "Fetcha Engine (Grok 4.6 Registry Tools: GSTN, MCA21, e-Courts, TReDS)",
+          "timestamp": "2026-09-23T20:38:19.949Z",
+          "gstin": "27AABPQ1063C1Z5",
+          "pan": "AABPQ1063C",
+          "stateCode": "27",
+          "state": "Maharashtra",
+          "entityType": "Sole Proprietorship",
+          "legalEntityName": "Kariman Enterprises",
+          "tradeName": "Kariman Enterprises",
+          "mcaStatus": "Active",
+          "incorporationDate": "2017-07-01",
+          "cin": "Sole Proprietorship",
+          "principalPlace": "102 Emerald Apartments, Vakola Market, Santacruz East, Mumbai, Maharashtra 400055",
+          "filingCompliance": {
+            "gstr1FilingStatus": "Regular & On-Time (100%)",
+            "gstr3bFilingStatus": "Regular",
+            "taxPaymentReliability": "98.5%",
+            "eWayBillMonthlyVolumeAvg": "₹1,180,000",
+            "annualizedTurnoverEstimate": "₹82,40,000"
+          },
+          "litigationRecords": {
+            "activeCourtCases": 0,
+            "drCourtDefaultNotices": 0,
+            "chequeBounceSection138Count": 0,
+            "riskFlag": "Clean"
+          },
+          "tradeLedgerFootprint": {
+            "vendorRelationshipCount": 16,
+            "avgInvoiceSettlementDays": 26,
+            "publicSentimentScore": "Verified Positive (Operational Stability Grounded)"
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "h_1790195000555",
+    "timestamp": "2026-09-23T20:23:20.555Z",
+    "userId": "u_google_1790193309062",
+    "name": "Kariman Enterprises",
+    "score": 855,
+    "risk": "LOW",
+    "revenue": 9120400,
+    "buffer": "0.83x",
+    "compliance": "Excellent",
+    "reason": "Entity assessed with a LOW risk profile (Score: 855). Strong liquidity cushion with a Cash Buffer Ratio of 0.83x and 23 days minimum runway provide resilient NTC shock absorption.",
+    "fullPayload": {
+      "status": "success",
+      "businessName": "Kariman Enterprises",
+      "gstin": "27AABPQ1063C1Z5",
+      "metrics": {
+        "pillar1_liquidity": {
+          "cashBufferRatio": 0.83,
+          "minimumCashBufferDays": 23,
+          "overdraftLimitUtilization": 21.88,
+          "status": "EXCELLENT",
+          "benchmark": "> 0.15–0.25x (15–25 Days)"
+        },
+        "pillar2_revenue": {
+          "annualizedRevenueRunRate": 9120400,
+          "revenueGrowthRate": 4.75,
+          "gstVsBankReconciliation": 1,
+          "gstr1VsGstr3bGap": 0,
+          "trajectory": "STABLE",
+          "benchmark": "Reconciliation ~ 1.0x, Gap < 5%"
+        },
+        "pillar3_stability": {
+          "creditCoefficientOfVariation": 0.05,
+          "consecutiveLowCreditMonths": 0,
+          "inwardBounceRate": 0,
+          "outwardBounceRate": 0,
+          "status": "ROBUST",
+          "benchmark": "CV < 0.30, Bounces = 0.0%"
+        },
+        "pillar4_leverage": {
+          "debtServiceCoverageProxy": 4.82,
+          "interestEmiBurdenRatio": 3.74,
+          "newBorrowingVelocity": 0,
+          "tier": "LOW_LEVERAGE",
+          "benchmark": "DSCP > 1.50x, Burden < 20%"
+        },
+        "pillar5_operational": {
+          "salaryStaffPaymentConsistency": "CONSISTENT (Monthly payroll verified)",
+          "utilityRentPaymentRegularity": "REGULAR (On-time utility payments)",
+          "highValueCashWithdrawalPct": 4,
+          "circularTransactionRisk": "LOW (Clean independent counterparties)",
+          "suspiciousTimingFlags": "CLEAN (Normal business hour distribution)",
+          "benchmark": "Clean Counterparties, Cash WDL < 15%"
+        },
+        "revenueRunRate": 9120400,
+        "cashBufferRatio": 0.83,
+        "isCashFlowStable": true,
+        "hasBounces": false,
+        "taxCompliance": "Excellent",
+        "debtServiceCapacity": "High",
+        "citations": [
+          "[Liquidity] Cash Buffer Ratio evaluated at 0.83x with 23 minimum survival buffer days (OD utilization: 21.88%).",
+          "[Revenue] Annualized Revenue Run Rate: ₹91,20,400; Trajectory: STABLE (+4.75%).",
+          "[Compliance] GSTR-1 outward taxable supplies reconcile to Bank credit volume at 1x ratio with 0% GSTR-3B tax gap.",
+          "[Stability] Monthly credit volatility CV is 0.05 with 0 consecutive low-credit months and 0% inward bounce friction.",
+          "[Debt Service] Debt Service Coverage Proxy (DSCP) is 4.82x with an EMI burden ratio of 3.74% across 0 new debt facilities.",
+          "[Operational Flags] Payroll regularity: CONSISTENT (Monthly payroll verified); Cash withdrawals: 4%; Circular flow risk: LOW (Clean independent counterparties)."
+        ],
+        "reasoning": "Comprehensive 5-Pillar NTC evaluation: Liquidity buffer is EXCELLENT (0.83x / 23 days runway). Revenue momentum is STABLE at ₹91.2 Lacs run rate. Credit cash flow shows ROBUST stability with a CV of 0.05. Leverage is evaluated as LOW_LEVERAGE with 4.82x debt service coverage."
+      },
+      "decision": {
+        "score": 855,
+        "riskLevel": "LOW",
+        "narrative": "Entity assessed with a LOW risk profile (Score: 855). Strong liquidity cushion with a Cash Buffer Ratio of 0.83x and 23 days minimum runway provide resilient NTC shock absorption.",
+        "reasoning": "Orc Chief Credit Officer synthesis: Pillar 1 liquidity demonstrates EXCELLENT reserves above the 0.15x critical NTC baseline. Cash flow volatility (CV: 0.05) indicates stable merchant deposits with 0% bounce friction. Debt coverage proxy is strong at 4.82x with LOW (Clean independent counterparties).",
+        "citations": [
+          "[Pillar 1: Liquidity] Cash Buffer Ratio is 0.83x with 23 minimum survival buffer days.",
+          "[Pillar 2: Revenue] Annualized run rate verified at ₹91.2 Lacs with GSTR-1 reconciliation at 1x.",
+          "[Pillar 3: Stability] Credit CV is 0.05 with zero inward cheque/NACH dishonors.",
+          "[Pillar 4: Leverage] Debt Service Coverage Proxy (DSCP) is 4.82x with an interest burden ratio of 3.74%.",
+          "[Pillar 5: Operational Flags] Operational payroll consistency is verified with cash withdrawal volume below 5%."
+        ],
+        "agentSafetyAudit": {
+          "dataIntegrityStatus": "VERIFIED_SOUND",
+          "fraudSignalsDetected": 0,
+          "confidenceRating": "99.4%"
+        }
+      },
+      "jevAudit": {
+        "verdict": "APPROPRIATE",
+        "confidenceScore": 99.6,
+        "isAppropriate": true,
+        "integrityFlags": [],
+        "rationale": "JEV System 1 Heuristic Verification: Entity data is complete, statutory GSTIN verified, and cash flows conform to standard institutional banking distributions.",
+        "tamperRisk": "LOW",
+        "injectionDefenseStatus": "PASSED",
+        "gatekeeperTimestamp": "2026-09-23T20:23:10.355Z"
+      },
+      "agent1Telemetry": {
+        "businessName": "Kariman Enterprises",
+        "gstin": "27AABPQ1063C1Z5",
+        "monthsAnalyzed": 6,
+        "totalRevenue": 4560200,
+        "totalTaxPaid": 820836,
+        "gstComplianceScore": 100,
+        "bankOpeningBalance": 450509,
+        "bankClosingBalance": 530010,
+        "totalCreditVolume": 4560200,
+        "totalDebitVolume": 3739364,
+        "monthlyCredits": [
+          709700,
+          739900,
+          777650,
+          724800,
+          792750,
+          815400
+        ],
+        "monthlyDebits": [
+          581954,
+          606718,
+          637673,
+          594336,
+          650055,
+          668628
+        ],
+        "dailyClosingBalances": [
+          477009,
+          503509.5,
+          530010,
+          556510.5
+        ],
+        "sanctionedOdLimit": 848016,
+        "peakOdUsage": 185504,
+        "gstr1OutwardTaxable": 4560200,
+        "gstr3bTaxPaid": 820836,
+        "gstr1DeclaredTax": 820836,
+        "inwardBounces": 0,
+        "totalDebitAttempts": 140,
+        "outwardBounces": 0,
+        "totalOutwardAttempts": 95,
+        "monthlyEmiObligations": 28388,
+        "newBorrowingCount6M": 0,
+        "transactions": [],
+        "scrapedRegistryData": {
+          "source": "Fetcha Engine (Grok 4.6 Registry Tools: GSTN, MCA21, e-Courts, TReDS)",
+          "timestamp": "2026-09-23T20:22:04.197Z",
+          "gstin": "27AABPQ1063C1Z5",
+          "pan": "AABPQ1063C",
+          "stateCode": "27",
+          "state": "Maharashtra",
+          "entityType": "Sole Proprietorship",
+          "legalEntityName": "Kariman Enterprises",
+          "tradeName": "Kariman Enterprises",
+          "mcaStatus": "Active",
+          "incorporationDate": "2017-07-01",
+          "cin": "Sole Proprietorship",
+          "filingCompliance": {
+            "gstr1FilingStatus": "Regular & On-Time (100%)",
+            "gstr3bFilingStatus": "Regular",
+            "taxPaymentReliability": "98.5%",
+            "eWayBillMonthlyVolumeAvg": "₹1,320,000",
+            "annualizedTurnoverEstimate": "₹90,60,000"
+          },
+          "litigationRecords": {
+            "activeCourtCases": 0,
+            "drCourtDefaultNotices": 0,
+            "chequeBounceSection138Count": 0,
+            "riskFlag": "Clean"
+          },
+          "tradeLedgerFootprint": {
+            "vendorRelationshipCount": 16,
+            "avgInvoiceSettlementDays": 26,
+            "publicSentimentScore": "Verified Positive (Operational Stability Grounded)"
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "h_1790194443806",
+    "timestamp": "2026-09-23T20:14:03.806Z",
+    "userId": "u_google_1790193309062",
+    "name": "M/s. AABP Enterprises (Sole Proprietorship)",
+    "score": 855,
+    "risk": "LOW",
+    "revenue": 9060000,
+    "buffer": "0.83x",
+    "compliance": "Excellent",
+    "reason": "Entity assessed with a LOW risk profile (Score: 855). Strong liquidity cushion with a Cash Buffer Ratio of 0.83x and 23 days minimum runway provide resilient NTC shock absorption.",
+    "fullPayload": {
+      "status": "success",
+      "businessName": "M/s. AABP Enterprises (Sole Proprietorship)",
+      "metrics": {
+        "pillar1_liquidity": {
+          "cashBufferRatio": 0.83,
+          "minimumCashBufferDays": 23,
+          "overdraftLimitUtilization": 21.88,
+          "status": "EXCELLENT",
+          "benchmark": "> 0.15–0.25x (15–25 Days)"
+        },
+        "pillar2_revenue": {
+          "annualizedRevenueRunRate": 9060000,
+          "revenueGrowthRate": 4.75,
+          "gstVsBankReconciliation": 1,
+          "gstr1VsGstr3bGap": 0,
+          "trajectory": "STABLE",
+          "benchmark": "Reconciliation ~ 1.0x, Gap < 5%"
+        },
+        "pillar3_stability": {
+          "creditCoefficientOfVariation": 0.05,
+          "consecutiveLowCreditMonths": 0,
+          "inwardBounceRate": 0,
+          "outwardBounceRate": 0,
+          "status": "ROBUST",
+          "benchmark": "CV < 0.30, Bounces = 0.0%"
+        },
+        "pillar4_leverage": {
+          "debtServiceCoverageProxy": 4.82,
+          "interestEmiBurdenRatio": 3.74,
+          "newBorrowingVelocity": 0,
+          "tier": "LOW_LEVERAGE",
+          "benchmark": "DSCP > 1.50x, Burden < 20%"
+        },
+        "pillar5_operational": {
+          "salaryStaffPaymentConsistency": "CONSISTENT (Monthly payroll verified)",
+          "utilityRentPaymentRegularity": "REGULAR (On-time utility payments)",
+          "highValueCashWithdrawalPct": 4,
+          "circularTransactionRisk": "LOW (Clean independent counterparties)",
+          "suspiciousTimingFlags": "CLEAN (Normal business hour distribution)",
+          "benchmark": "Clean Counterparties, Cash WDL < 15%"
+        },
+        "revenueRunRate": 9060000,
+        "cashBufferRatio": 0.83,
+        "isCashFlowStable": true,
+        "hasBounces": false,
+        "taxCompliance": "Excellent",
+        "debtServiceCapacity": "High",
+        "citations": [
+          "[Liquidity] Cash Buffer Ratio evaluated at 0.83x with 23 minimum survival buffer days (OD utilization: 21.88%).",
+          "[Revenue] Annualized Revenue Run Rate: ₹90,60,000; Trajectory: STABLE (+4.75%).",
+          "[Compliance] GSTR-1 outward taxable supplies reconcile to Bank credit volume at 1x ratio with 0% GSTR-3B tax gap.",
+          "[Stability] Monthly credit volatility CV is 0.05 with 0 consecutive low-credit months and 0% inward bounce friction.",
+          "[Debt Service] Debt Service Coverage Proxy (DSCP) is 4.82x with an EMI burden ratio of 3.74% across 0 new debt facilities.",
+          "[Operational Flags] Payroll regularity: CONSISTENT (Monthly payroll verified); Cash withdrawals: 4%; Circular flow risk: LOW (Clean independent counterparties)."
+        ],
+        "reasoning": "Comprehensive 5-Pillar NTC evaluation: Liquidity buffer is EXCELLENT (0.83x / 23 days runway). Revenue momentum is STABLE at ₹90.6 Lacs run rate. Credit cash flow shows ROBUST stability with a CV of 0.05. Leverage is evaluated as LOW_LEVERAGE with 4.82x debt service coverage."
+      },
+      "decision": {
+        "score": 855,
+        "riskLevel": "LOW",
+        "narrative": "Entity assessed with a LOW risk profile (Score: 855). Strong liquidity cushion with a Cash Buffer Ratio of 0.83x and 23 days minimum runway provide resilient NTC shock absorption.",
+        "reasoning": "Orc Chief Credit Officer synthesis: Pillar 1 liquidity demonstrates EXCELLENT reserves above the 0.15x critical NTC baseline. Cash flow volatility (CV: 0.05) indicates stable merchant deposits with 0% bounce friction. Debt coverage proxy is strong at 4.82x with LOW (Clean independent counterparties).",
+        "citations": [
+          "[Pillar 1: Liquidity] Cash Buffer Ratio is 0.83x with 23 minimum survival buffer days.",
+          "[Pillar 2: Revenue] Annualized run rate verified at ₹90.6 Lacs with GSTR-1 reconciliation at 1x.",
+          "[Pillar 3: Stability] Credit CV is 0.05 with zero inward cheque/NACH dishonors.",
+          "[Pillar 4: Leverage] Debt Service Coverage Proxy (DSCP) is 4.82x with an interest burden ratio of 3.74%.",
+          "[Pillar 5: Operational Flags] Operational payroll consistency is verified with cash withdrawal volume below 5%."
+        ],
+        "agentSafetyAudit": {
+          "dataIntegrityStatus": "VERIFIED_SOUND",
+          "fraudSignalsDetected": 0,
+          "confidenceRating": "99.4%"
+        }
+      },
+      "jevAudit": {
+        "verdict": "APPROPRIATE",
+        "confidenceScore": 99.6,
+        "isAppropriate": true,
+        "integrityFlags": [],
+        "rationale": "JEV System 1 Heuristic Verification: Entity data is complete, statutory GSTIN verified, and cash flows conform to standard institutional banking distributions.",
+        "tamperRisk": "LOW",
+        "injectionDefenseStatus": "PASSED",
+        "gatekeeperTimestamp": "2026-09-23T20:13:58.040Z"
+      },
+      "agent1Telemetry": {
+        "businessName": "M/s. AABP Enterprises (Sole Proprietorship)",
+        "gstin": "27AABPQ1063C1Z5",
+        "monthsAnalyzed": 6,
+        "totalRevenue": 4530000,
+        "totalTaxPaid": 815400,
+        "gstComplianceScore": 100,
+        "bankOpeningBalance": 447525,
+        "bankClosingBalance": 526500,
+        "totalCreditVolume": 4530000,
+        "totalDebitVolume": 3714600,
+        "monthlyCredits": [
+          705000,
+          735000,
+          772500,
+          720000,
+          787500,
+          810000
+        ],
+        "monthlyDebits": [
+          578100,
+          602700,
+          633450,
+          590400,
+          645750,
+          664200
+        ],
+        "dailyClosingBalances": [
+          473850,
+          500175,
+          526500,
+          552825
+        ],
+        "sanctionedOdLimit": 842400,
+        "peakOdUsage": 184275,
+        "gstr1OutwardTaxable": 4530000,
+        "gstr3bTaxPaid": 815400,
+        "gstr1DeclaredTax": 815400,
+        "inwardBounces": 0,
+        "totalDebitAttempts": 140,
+        "outwardBounces": 0,
+        "totalOutwardAttempts": 95,
+        "monthlyEmiObligations": 28200,
+        "newBorrowingCount6M": 0,
+        "transactions": [],
+        "scrapedRegistryData": {
+          "source": "Fetcha Engine (Grok 4.6 Registry Tools: GSTN, MCA21, e-Courts, TReDS)",
+          "timestamp": "2026-09-23T20:13:53.121Z",
+          "gstin": "27AABPQ1063C1Z5",
+          "pan": "AABPQ1063C",
+          "stateCode": "27",
+          "state": "Maharashtra",
+          "entityType": "Sole Proprietorship",
+          "legalEntityName": "M/s. AABP Enterprises (Sole Proprietorship)",
+          "tradeName": "M/s. AABP Enterprises (Sole Proprietorship)",
+          "mcaStatus": "Active",
+          "incorporationDate": "2020-03-15",
+          "cin": "Registered",
+          "filingCompliance": {
+            "gstr1FilingStatus": "On-Time (Last 4 Quarters)",
+            "gstr3bFilingStatus": "Regular",
+            "taxPaymentReliability": "97.5%",
+            "eWayBillMonthlyVolumeAvg": "₹1,400,000",
+            "annualizedTurnoverEstimate": "₹90,00,000"
+          },
+          "litigationRecords": {
+            "activeCourtCases": 0,
+            "drCourtDefaultNotices": 0,
+            "chequeBounceSection138Count": 0,
+            "riskFlag": "Clean"
+          },
+          "tradeLedgerFootprint": {
+            "vendorRelationshipCount": 16,
+            "avgInvoiceSettlementDays": 26,
+            "publicSentimentScore": "Verified Positive (Operational Stability Grounded)"
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "h_1790194319599",
+    "timestamp": "2026-09-23T20:11:59.599Z",
+    "userId": "u_google_1790193309062",
+    "name": "ENVER-AITECH INDIA PRIVATE LIMITED",
+    "score": 855,
+    "risk": "LOW",
+    "revenue": 9744524,
+    "buffer": "0.83x",
+    "compliance": "Excellent",
+    "reason": "Entity assessed with a LOW risk profile (Score: 855). Strong liquidity cushion with a Cash Buffer Ratio of 0.83x and 23 days minimum runway provide resilient NTC shock absorption.",
+    "fullPayload": {
+      "status": "success",
+      "businessName": "ENVER-AITECH INDIA PRIVATE LIMITED",
+      "metrics": {
+        "pillar1_liquidity": {
+          "cashBufferRatio": 0.83,
+          "minimumCashBufferDays": 23,
+          "overdraftLimitUtilization": 21.88,
+          "status": "EXCELLENT",
+          "benchmark": "> 0.15–0.25x (15–25 Days)"
+        },
+        "pillar2_revenue": {
+          "annualizedRevenueRunRate": 9744524,
+          "revenueGrowthRate": 4.75,
+          "gstVsBankReconciliation": 1,
+          "gstr1VsGstr3bGap": 0,
+          "trajectory": "STABLE",
+          "benchmark": "Reconciliation ~ 1.0x, Gap < 5%"
+        },
+        "pillar3_stability": {
+          "creditCoefficientOfVariation": 0.05,
+          "consecutiveLowCreditMonths": 0,
+          "inwardBounceRate": 0,
+          "outwardBounceRate": 0,
+          "status": "ROBUST",
+          "benchmark": "CV < 0.30, Bounces = 0.0%"
+        },
+        "pillar4_leverage": {
+          "debtServiceCoverageProxy": 4.82,
+          "interestEmiBurdenRatio": 3.74,
+          "newBorrowingVelocity": 0,
+          "tier": "LOW_LEVERAGE",
+          "benchmark": "DSCP > 1.50x, Burden < 20%"
+        },
+        "pillar5_operational": {
+          "salaryStaffPaymentConsistency": "CONSISTENT (Monthly payroll verified)",
+          "utilityRentPaymentRegularity": "REGULAR (On-time utility payments)",
+          "highValueCashWithdrawalPct": 4,
+          "circularTransactionRisk": "LOW (Clean independent counterparties)",
+          "suspiciousTimingFlags": "CLEAN (Normal business hour distribution)",
+          "benchmark": "Clean Counterparties, Cash WDL < 15%"
+        },
+        "revenueRunRate": 9744524,
+        "cashBufferRatio": 0.83,
+        "isCashFlowStable": true,
+        "hasBounces": false,
+        "taxCompliance": "Excellent",
+        "debtServiceCapacity": "High",
+        "citations": [
+          "[Liquidity] Cash Buffer Ratio evaluated at 0.83x with 23 minimum survival buffer days (OD utilization: 21.88%).",
+          "[Revenue] Annualized Revenue Run Rate: ₹97,44,524; Trajectory: STABLE (+4.75%).",
+          "[Compliance] GSTR-1 outward taxable supplies reconcile to Bank credit volume at 1x ratio with 0% GSTR-3B tax gap.",
+          "[Stability] Monthly credit volatility CV is 0.05 with 0 consecutive low-credit months and 0% inward bounce friction.",
+          "[Debt Service] Debt Service Coverage Proxy (DSCP) is 4.82x with an EMI burden ratio of 3.74% across 0 new debt facilities.",
+          "[Operational Flags] Payroll regularity: CONSISTENT (Monthly payroll verified); Cash withdrawals: 4%; Circular flow risk: LOW (Clean independent counterparties)."
+        ],
+        "reasoning": "Comprehensive 5-Pillar NTC evaluation: Liquidity buffer is EXCELLENT (0.83x / 23 days runway). Revenue momentum is STABLE at ₹97.4 Lacs run rate. Credit cash flow shows ROBUST stability with a CV of 0.05. Leverage is evaluated as LOW_LEVERAGE with 4.82x debt service coverage."
+      },
+      "decision": {
+        "score": 855,
+        "riskLevel": "LOW",
+        "narrative": "Entity assessed with a LOW risk profile (Score: 855). Strong liquidity cushion with a Cash Buffer Ratio of 0.83x and 23 days minimum runway provide resilient NTC shock absorption.",
+        "reasoning": "Orc Chief Credit Officer synthesis: Pillar 1 liquidity demonstrates EXCELLENT reserves above the 0.15x critical NTC baseline. Cash flow volatility (CV: 0.05) indicates stable merchant deposits with 0% bounce friction. Debt coverage proxy is strong at 4.82x with LOW (Clean independent counterparties).",
+        "citations": [
+          "[Pillar 1: Liquidity] Cash Buffer Ratio is 0.83x with 23 minimum survival buffer days.",
+          "[Pillar 2: Revenue] Annualized run rate verified at ₹97.4 Lacs with GSTR-1 reconciliation at 1x.",
+          "[Pillar 3: Stability] Credit CV is 0.05 with zero inward cheque/NACH dishonors.",
+          "[Pillar 4: Leverage] Debt Service Coverage Proxy (DSCP) is 4.82x with an interest burden ratio of 3.74%.",
+          "[Pillar 5: Operational Flags] Operational payroll consistency is verified with cash withdrawal volume below 5%."
+        ],
+        "agentSafetyAudit": {
+          "dataIntegrityStatus": "VERIFIED_SOUND",
+          "fraudSignalsDetected": 0,
+          "confidenceRating": "99.4%"
+        }
+      },
+      "jevAudit": {
+        "verdict": "APPROPRIATE",
+        "confidenceScore": 99.6,
+        "isAppropriate": true,
+        "integrityFlags": [],
+        "rationale": "JEV System 1 Heuristic Verification: Entity data is complete, statutory GSTIN verified, and cash flows conform to standard institutional banking distributions.",
+        "tamperRisk": "LOW",
+        "injectionDefenseStatus": "PASSED",
+        "gatekeeperTimestamp": "2026-09-23T20:11:48.809Z"
+      },
+      "agent1Telemetry": {
+        "businessName": "ENVER-AITECH INDIA PRIVATE LIMITED",
+        "gstin": "27AAHCE5539J1ZA",
+        "monthsAnalyzed": 6,
+        "totalRevenue": 4872262,
+        "totalTaxPaid": 877008,
+        "gstComplianceScore": 100,
+        "bankOpeningBalance": 481337,
+        "bankClosingBalance": 566279,
+        "totalCreditVolume": 4872262,
+        "totalDebitVolume": 3995254,
+        "monthlyCredits": [
+          758266,
+          790533,
+          830866,
+          774399,
+          846999,
+          871199
+        ],
+        "monthlyDebits": [
+          621778,
+          648237,
+          681310,
+          635007,
+          694539,
+          714383
+        ],
+        "dailyClosingBalances": [
+          509651.10000000003,
+          537965.0499999999,
+          566279,
+          594592.9500000001
+        ],
+        "sanctionedOdLimit": 906046,
+        "peakOdUsage": 198198,
+        "gstr1OutwardTaxable": 4872262,
+        "gstr3bTaxPaid": 877008,
+        "gstr1DeclaredTax": 877008,
+        "inwardBounces": 0,
+        "totalDebitAttempts": 140,
+        "outwardBounces": 0,
+        "totalOutwardAttempts": 95,
+        "monthlyEmiObligations": 30331,
+        "newBorrowingCount6M": 0,
+        "transactions": [],
+        "scrapedRegistryData": {
+          "source": "Fetcha Engine (Grok 4.6 Registry Tools: GSTN, MCA21, e-Courts, TReDS)",
+          "timestamp": "2026-09-23T20:08:22.120Z",
+          "gstin": "27AAHCE5539J1ZA",
+          "pan": "AAHCE5539J",
+          "stateCode": "27",
+          "state": "Maharashtra",
+          "entityType": "Private/Public Limited Company",
+          "legalEntityName": "ENVER-AITECH INDIA PRIVATE LIMITED",
+          "tradeName": "Enver AI Tech",
+          "mcaStatus": "Active",
+          "incorporationDate": "2023-08-14",
+          "cin": "U47190MH2023PTC402519",
+          "filingCompliance": {
+            "gstr1FilingStatus": "Regular & On-Time (100%)",
+            "gstr3bFilingStatus": "Filed Up to Date",
+            "taxPaymentReliability": "99.8%",
+            "eWayBillMonthlyVolumeAvg": "₹1,240,000",
+            "annualizedTurnoverEstimate": "₹96,80,000"
+          },
+          "litigationRecords": {
+            "activeCourtCases": 0,
+            "drCourtDefaultNotices": 0,
+            "chequeBounceSection138Count": 0,
+            "riskFlag": "Clean"
+          },
+          "tradeLedgerFootprint": {
+            "vendorRelationshipCount": 16,
+            "avgInvoiceSettlementDays": 26,
+            "publicSentimentScore": "Verified Positive (Operational Stability Grounded)"
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "h_1790194140987",
+    "timestamp": "2026-09-23T20:09:00.987Z",
+    "userId": "test_officer",
+    "name": "ENVER-AITECH INDIA PRIVATE LIMITED",
+    "score": 855,
+    "risk": "LOW",
+    "revenue": 9744524,
+    "buffer": "0.83x",
+    "compliance": "Excellent",
+    "reason": "Entity assessed with a LOW risk profile (Score: 855). Strong liquidity cushion with a Cash Buffer Ratio of 0.83x and 23 days minimum runway provide resilient NTC shock absorption.",
+    "fullPayload": {
+      "status": "success",
+      "businessName": "ENVER-AITECH INDIA PRIVATE LIMITED",
+      "metrics": {
+        "pillar1_liquidity": {
+          "cashBufferRatio": 0.83,
+          "minimumCashBufferDays": 23,
+          "overdraftLimitUtilization": 21.88,
+          "status": "EXCELLENT",
+          "benchmark": "> 0.15–0.25x (15–25 Days)"
+        },
+        "pillar2_revenue": {
+          "annualizedRevenueRunRate": 9744524,
+          "revenueGrowthRate": 4.75,
+          "gstVsBankReconciliation": 1,
+          "gstr1VsGstr3bGap": 0,
+          "trajectory": "STABLE",
+          "benchmark": "Reconciliation ~ 1.0x, Gap < 5%"
+        },
+        "pillar3_stability": {
+          "creditCoefficientOfVariation": 0.05,
+          "consecutiveLowCreditMonths": 0,
+          "inwardBounceRate": 0,
+          "outwardBounceRate": 0,
+          "status": "ROBUST",
+          "benchmark": "CV < 0.30, Bounces = 0.0%"
+        },
+        "pillar4_leverage": {
+          "debtServiceCoverageProxy": 4.82,
+          "interestEmiBurdenRatio": 3.74,
+          "newBorrowingVelocity": 0,
+          "tier": "LOW_LEVERAGE",
+          "benchmark": "DSCP > 1.50x, Burden < 20%"
+        },
+        "pillar5_operational": {
+          "salaryStaffPaymentConsistency": "CONSISTENT (Monthly payroll verified)",
+          "utilityRentPaymentRegularity": "REGULAR (On-time utility payments)",
+          "highValueCashWithdrawalPct": 4,
+          "circularTransactionRisk": "LOW (Clean independent counterparties)",
+          "suspiciousTimingFlags": "CLEAN (Normal business hour distribution)",
+          "benchmark": "Clean Counterparties, Cash WDL < 15%"
+        },
+        "revenueRunRate": 9744524,
+        "cashBufferRatio": 0.83,
+        "isCashFlowStable": true,
+        "hasBounces": false,
+        "taxCompliance": "Excellent",
+        "debtServiceCapacity": "High",
+        "citations": [
+          "[Liquidity] Cash Buffer Ratio evaluated at 0.83x with 23 minimum survival buffer days (OD utilization: 21.88%).",
+          "[Revenue] Annualized Revenue Run Rate: ₹97,44,524; Trajectory: STABLE (+4.75%).",
+          "[Compliance] GSTR-1 outward taxable supplies reconcile to Bank credit volume at 1x ratio with 0% GSTR-3B tax gap.",
+          "[Stability] Monthly credit volatility CV is 0.05 with 0 consecutive low-credit months and 0% inward bounce friction.",
+          "[Debt Service] Debt Service Coverage Proxy (DSCP) is 4.82x with an EMI burden ratio of 3.74% across 0 new debt facilities.",
+          "[Operational Flags] Payroll regularity: CONSISTENT (Monthly payroll verified); Cash withdrawals: 4%; Circular flow risk: LOW (Clean independent counterparties)."
+        ],
+        "reasoning": "Comprehensive 5-Pillar NTC evaluation: Liquidity buffer is EXCELLENT (0.83x / 23 days runway). Revenue momentum is STABLE at ₹97.4 Lacs run rate. Credit cash flow shows ROBUST stability with a CV of 0.05. Leverage is evaluated as LOW_LEVERAGE with 4.82x debt service coverage."
+      },
+      "decision": {
+        "score": 855,
+        "riskLevel": "LOW",
+        "narrative": "Entity assessed with a LOW risk profile (Score: 855). Strong liquidity cushion with a Cash Buffer Ratio of 0.83x and 23 days minimum runway provide resilient NTC shock absorption.",
+        "reasoning": "Orc Chief Credit Officer synthesis: Pillar 1 liquidity demonstrates EXCELLENT reserves above the 0.15x critical NTC baseline. Cash flow volatility (CV: 0.05) indicates stable merchant deposits with 0% bounce friction. Debt coverage proxy is strong at 4.82x with LOW (Clean independent counterparties).",
+        "citations": [
+          "[Pillar 1: Liquidity] Cash Buffer Ratio is 0.83x with 23 minimum survival buffer days.",
+          "[Pillar 2: Revenue] Annualized run rate verified at ₹97.4 Lacs with GSTR-1 reconciliation at 1x.",
+          "[Pillar 3: Stability] Credit CV is 0.05 with zero inward cheque/NACH dishonors.",
+          "[Pillar 4: Leverage] Debt Service Coverage Proxy (DSCP) is 4.82x with an interest burden ratio of 3.74%.",
+          "[Pillar 5: Operational Flags] Operational payroll consistency is verified with cash withdrawal volume below 5%."
+        ],
+        "agentSafetyAudit": {
+          "dataIntegrityStatus": "VERIFIED_SOUND",
+          "fraudSignalsDetected": 0,
+          "confidenceRating": "99.4%"
+        }
+      },
+      "jevAudit": {
+        "verdict": "APPROPRIATE",
+        "confidenceScore": 99.6,
+        "isAppropriate": true,
+        "integrityFlags": [],
+        "rationale": "JEV System 1 Heuristic Verification: Entity data is complete, statutory GSTIN verified, and cash flows conform to standard institutional banking distributions.",
+        "tamperRisk": "LOW",
+        "injectionDefenseStatus": "PASSED",
+        "gatekeeperTimestamp": "2026-09-23T20:08:54.571Z"
+      },
+      "agent1Telemetry": {
+        "businessName": "ENVER-AITECH INDIA PRIVATE LIMITED",
+        "gstin": "27AAHCE5539J1ZA",
+        "monthsAnalyzed": 6,
+        "totalRevenue": 4872262,
+        "totalTaxPaid": 877008,
+        "gstComplianceScore": 100,
+        "bankOpeningBalance": 481337,
+        "bankClosingBalance": 566279,
+        "totalCreditVolume": 4872262,
+        "totalDebitVolume": 3995254,
+        "monthlyCredits": [
+          758266,
+          790533,
+          830866,
+          774399,
+          846999,
+          871199
+        ],
+        "monthlyDebits": [
+          621778,
+          648237,
+          681310,
+          635007,
+          694539,
+          714383
+        ],
+        "dailyClosingBalances": [
+          509651.10000000003,
+          537965.0499999999,
+          566279,
+          594592.9500000001
+        ],
+        "sanctionedOdLimit": 906046,
+        "peakOdUsage": 198198,
+        "gstr1OutwardTaxable": 4872262,
+        "gstr3bTaxPaid": 877008,
+        "gstr1DeclaredTax": 877008,
+        "inwardBounces": 0,
+        "totalDebitAttempts": 140,
+        "outwardBounces": 0,
+        "totalOutwardAttempts": 95,
+        "monthlyEmiObligations": 30331,
+        "newBorrowingCount6M": 0,
+        "transactions": [],
+        "scrapedRegistryData": {
+          "source": "Fetcha Engine (Grok 4.6 Registry Tools: GSTN, MCA21, e-Courts, TReDS)",
+          "timestamp": "2026-09-23T20:08:22.120Z",
+          "gstin": "27AAHCE5539J1ZA",
+          "pan": "AAHCE5539J",
+          "stateCode": "27",
+          "state": "Maharashtra",
+          "entityType": "Private/Public Limited Company",
+          "legalEntityName": "ENVER-AITECH INDIA PRIVATE LIMITED",
+          "tradeName": "Enver AI Tech",
+          "mcaStatus": "Active",
+          "incorporationDate": "2023-08-14",
+          "cin": "U47190MH2023PTC402519",
+          "filingCompliance": {
+            "gstr1FilingStatus": "Regular & On-Time (100%)",
+            "gstr3bFilingStatus": "Filed Up to Date",
+            "taxPaymentReliability": "99.8%",
+            "eWayBillMonthlyVolumeAvg": "₹1,240,000",
+            "annualizedTurnoverEstimate": "₹96,80,000"
+          },
+          "litigationRecords": {
+            "activeCourtCases": 0,
+            "drCourtDefaultNotices": 0,
+            "chequeBounceSection138Count": 0,
+            "riskFlag": "Clean"
+          },
+          "tradeLedgerFootprint": {
+            "vendorRelationshipCount": 16,
+            "avgInvoiceSettlementDays": 26,
+            "publicSentimentScore": "Verified Positive (Operational Stability Grounded)"
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "h_1790193402380",
+    "timestamp": "2026-09-23T19:56:42.380Z",
+    "userId": "u_google_1790193309062",
+    "name": "ENVER-AITECH INDIA PRIVATE LIMITED",
+    "score": 870,
+    "risk": "LOW",
+    "revenue": 9680000,
+    "buffer": "0.9x",
+    "compliance": "Excellent",
+    "reason": "Entity assessed with a LOW risk profile (Score: 870). Strong liquidity cushion with a Cash Buffer Ratio of 0.9x and 25 days minimum runway provide resilient NTC shock absorption.",
+    "fullPayload": {
+      "status": "success",
+      "businessName": "ENVER-AITECH INDIA PRIVATE LIMITED",
+      "metrics": {
+        "pillar1_liquidity": {
+          "cashBufferRatio": 0.9,
+          "minimumCashBufferDays": 25,
+          "overdraftLimitUtilization": 26.67,
+          "status": "EXCELLENT",
+          "benchmark": "> 0.15–0.25x (15–25 Days)"
+        },
+        "pillar2_revenue": {
+          "annualizedRevenueRunRate": 9680000,
+          "revenueGrowthRate": 5.96,
+          "gstVsBankReconciliation": 1,
+          "gstr1VsGstr3bGap": 0,
+          "trajectory": "STABLE",
+          "benchmark": "Reconciliation ~ 1.0x, Gap < 5%"
+        },
+        "pillar3_stability": {
+          "creditCoefficientOfVariation": 0.06,
+          "consecutiveLowCreditMonths": 0,
+          "inwardBounceRate": 0,
+          "outwardBounceRate": 0,
+          "status": "ROBUST",
+          "benchmark": "CV < 0.30, Bounces = 0.0%"
+        },
+        "pillar4_leverage": {
+          "debtServiceCoverageProxy": 1.96,
+          "interestEmiBurdenRatio": 4.65,
+          "newBorrowingVelocity": 0,
+          "tier": "LOW_LEVERAGE",
+          "benchmark": "DSCP > 1.50x, Burden < 20%"
+        },
+        "pillar5_operational": {
+          "salaryStaffPaymentConsistency": "CONSISTENT (Monthly payroll verified)",
+          "utilityRentPaymentRegularity": "REGULAR (On-time utility payments)",
+          "highValueCashWithdrawalPct": 4,
+          "circularTransactionRisk": "LOW (Clean independent counterparties)",
+          "suspiciousTimingFlags": "CLEAN (Normal business hour distribution)",
+          "benchmark": "Clean Counterparties, Cash WDL < 15%"
+        },
+        "revenueRunRate": 9680000,
+        "cashBufferRatio": 0.9,
+        "isCashFlowStable": true,
+        "hasBounces": false,
+        "taxCompliance": "Excellent",
+        "debtServiceCapacity": "High",
+        "citations": [
+          "[Liquidity] Cash Buffer Ratio evaluated at 0.9x with 25 minimum survival buffer days (OD utilization: 26.67%).",
+          "[Revenue] Annualized Revenue Run Rate: ₹96,80,000; Trajectory: STABLE (+5.96%).",
+          "[Compliance] GSTR-1 outward taxable supplies reconcile to Bank credit volume at 1x ratio with 0% GSTR-3B tax gap.",
+          "[Stability] Monthly credit volatility CV is 0.06 with 0 consecutive low-credit months and 0% inward bounce friction.",
+          "[Debt Service] Debt Service Coverage Proxy (DSCP) is 1.96x with an EMI burden ratio of 4.65% across 0 new debt facilities.",
+          "[Operational Flags] Payroll regularity: CONSISTENT (Monthly payroll verified); Cash withdrawals: 4%; Circular flow risk: LOW (Clean independent counterparties)."
+        ],
+        "reasoning": "Comprehensive 5-Pillar NTC evaluation: Liquidity buffer is EXCELLENT (0.9x / 25 days runway). Revenue momentum is STABLE at ₹96.8 Lacs run rate. Credit cash flow shows ROBUST stability with a CV of 0.06. Leverage is evaluated as LOW_LEVERAGE with 1.96x debt service coverage."
+      },
+      "decision": {
+        "score": 870,
+        "riskLevel": "LOW",
+        "narrative": "Entity assessed with a LOW risk profile (Score: 870). Strong liquidity cushion with a Cash Buffer Ratio of 0.9x and 25 days minimum runway provide resilient NTC shock absorption.",
+        "reasoning": "Orc Chief Credit Officer synthesis: Pillar 1 liquidity demonstrates EXCELLENT reserves above the 0.15x critical NTC baseline. Cash flow volatility (CV: 0.06) indicates stable merchant deposits with 0% bounce friction. Debt coverage proxy is strong at 1.96x with LOW (Clean independent counterparties).",
+        "citations": [
+          "[Pillar 1: Liquidity] Cash Buffer Ratio is 0.9x with 25 minimum survival buffer days.",
+          "[Pillar 2: Revenue] Annualized run rate verified at ₹96.8 Lacs with GSTR-1 reconciliation at 1x.",
+          "[Pillar 3: Stability] Credit CV is 0.06 with zero inward cheque/NACH dishonors.",
+          "[Pillar 4: Leverage] Debt Service Coverage Proxy (DSCP) is 1.96x with an interest burden ratio of 4.65%.",
+          "[Pillar 5: Operational Flags] Operational payroll consistency is verified with cash withdrawal volume below 5%."
+        ],
+        "agentSafetyAudit": {
+          "dataIntegrityStatus": "VERIFIED_SOUND",
+          "fraudSignalsDetected": 0,
+          "confidenceRating": "99.4%"
+        }
+      },
+      "jevAudit": {
+        "verdict": "SUSPICIOUS_FLAGGED",
+        "confidenceScore": 82.5,
+        "isAppropriate": true,
+        "integrityFlags": [
+          "ANOMALY_INVALID_GSTIN: GSTIN checksum structure violates statutory Indian tax format."
+        ],
+        "rationale": "JEV System 1 Flag: ANOMALY_INVALID_GSTIN: GSTIN checksum structure violates statutory Indian tax format.",
+        "tamperRisk": "MODERATE",
+        "injectionDefenseStatus": "PASSED",
+        "gatekeeperTimestamp": "2026-09-23T19:56:36.934Z"
+      },
+      "agent1Telemetry": {
+        "businessName": "ENVER-AITECH INDIA PRIVATE LIMITED",
+        "gstin": "CIN: U47190MH2023PTC402519",
+        "monthsAnalyzed": 6,
+        "totalRevenue": 9680000,
+        "totalTaxPaid": 1742400,
+        "gstComplianceScore": 100,
+        "bankOpeningBalance": 544160,
+        "bankClosingBalance": 680200,
+        "totalCreditVolume": 4840000,
+        "totalDebitVolume": 4400000,
+        "monthlyCredits": [
+          750000,
+          780000,
+          820000,
+          760000,
+          840000,
+          890000
+        ],
+        "monthlyDebits": [
+          680000,
+          710000,
+          740000,
+          690000,
+          760000,
+          820000
+        ],
+        "dailyClosingBalances": [
+          612180,
+          646190,
+          680200,
+          714210
+        ],
+        "sanctionedOdLimit": 1020300,
+        "peakOdUsage": 272080,
+        "gstr1OutwardTaxable": 4840000,
+        "gstr3bTaxPaid": 871200,
+        "gstr1DeclaredTax": 871200,
+        "inwardBounces": 0,
+        "totalDebitAttempts": 120,
+        "outwardBounces": 0,
+        "totalOutwardAttempts": 85,
+        "monthlyEmiObligations": 37500,
+        "newBorrowingCount6M": 0,
+        "transactions": [],
+        "scrapedRegistryData": {
+          "directors": [
+            "Amaan Shaikh (Director - DIN: 10154246)",
+            "Needa Shaikh (Director - DIN: 10154247)"
+          ]
+        }
+      }
+    }
+  },
+  {
+    "id": "h_1790193352851",
+    "timestamp": "2026-09-23T19:55:52.851Z",
+    "userId": "u_google_1790193309062",
+    "name": "Velocity Banking Corporation",
+    "score": 870,
+    "risk": "LOW",
+    "revenue": 9680000,
+    "buffer": "0.9x",
+    "compliance": "Excellent",
+    "reason": "Entity assessed with a LOW risk profile (Score: 870). Strong liquidity cushion with a Cash Buffer Ratio of 0.9x and 25 days minimum runway provide resilient NTC shock absorption.",
+    "fullPayload": {
+      "status": "success",
+      "businessName": "Velocity Banking Corporation",
+      "metrics": {
+        "pillar1_liquidity": {
+          "cashBufferRatio": 0.9,
+          "minimumCashBufferDays": 25,
+          "overdraftLimitUtilization": 26.67,
+          "status": "EXCELLENT",
+          "benchmark": "> 0.15–0.25x (15–25 Days)"
+        },
+        "pillar2_revenue": {
+          "annualizedRevenueRunRate": 9680000,
+          "revenueGrowthRate": 5.96,
+          "gstVsBankReconciliation": 1,
+          "gstr1VsGstr3bGap": 0,
+          "trajectory": "STABLE",
+          "benchmark": "Reconciliation ~ 1.0x, Gap < 5%"
+        },
+        "pillar3_stability": {
+          "creditCoefficientOfVariation": 0.06,
+          "consecutiveLowCreditMonths": 0,
+          "inwardBounceRate": 0,
+          "outwardBounceRate": 0,
+          "status": "ROBUST",
+          "benchmark": "CV < 0.30, Bounces = 0.0%"
+        },
+        "pillar4_leverage": {
+          "debtServiceCoverageProxy": 1.96,
+          "interestEmiBurdenRatio": 4.65,
+          "newBorrowingVelocity": 0,
+          "tier": "LOW_LEVERAGE",
+          "benchmark": "DSCP > 1.50x, Burden < 20%"
+        },
+        "pillar5_operational": {
+          "salaryStaffPaymentConsistency": "CONSISTENT (Monthly payroll verified)",
+          "utilityRentPaymentRegularity": "REGULAR (On-time utility payments)",
+          "highValueCashWithdrawalPct": 4,
+          "circularTransactionRisk": "LOW (Clean independent counterparties)",
+          "suspiciousTimingFlags": "CLEAN (Normal business hour distribution)",
+          "benchmark": "Clean Counterparties, Cash WDL < 15%"
+        },
+        "revenueRunRate": 9680000,
+        "cashBufferRatio": 0.9,
+        "isCashFlowStable": true,
+        "hasBounces": false,
+        "taxCompliance": "Excellent",
+        "debtServiceCapacity": "High",
+        "citations": [
+          "[Liquidity] Cash Buffer Ratio evaluated at 0.9x with 25 minimum survival buffer days (OD utilization: 26.67%).",
+          "[Revenue] Annualized Revenue Run Rate: ₹96,80,000; Trajectory: STABLE (+5.96%).",
+          "[Compliance] GSTR-1 outward taxable supplies reconcile to Bank credit volume at 1x ratio with 0% GSTR-3B tax gap.",
+          "[Stability] Monthly credit volatility CV is 0.06 with 0 consecutive low-credit months and 0% inward bounce friction.",
+          "[Debt Service] Debt Service Coverage Proxy (DSCP) is 1.96x with an EMI burden ratio of 4.65% across 0 new debt facilities.",
+          "[Operational Flags] Payroll regularity: CONSISTENT (Monthly payroll verified); Cash withdrawals: 4%; Circular flow risk: LOW (Clean independent counterparties)."
+        ],
+        "reasoning": "Comprehensive 5-Pillar NTC evaluation: Liquidity buffer is EXCELLENT (0.9x / 25 days runway). Revenue momentum is STABLE at ₹96.8 Lacs run rate. Credit cash flow shows ROBUST stability with a CV of 0.06. Leverage is evaluated as LOW_LEVERAGE with 1.96x debt service coverage."
+      },
+      "decision": {
+        "score": 870,
+        "riskLevel": "LOW",
+        "narrative": "Entity assessed with a LOW risk profile (Score: 870). Strong liquidity cushion with a Cash Buffer Ratio of 0.9x and 25 days minimum runway provide resilient NTC shock absorption.",
+        "reasoning": "Orc Chief Credit Officer synthesis: Pillar 1 liquidity demonstrates EXCELLENT reserves above the 0.15x critical NTC baseline. Cash flow volatility (CV: 0.06) indicates stable merchant deposits with 0% bounce friction. Debt coverage proxy is strong at 1.96x with LOW (Clean independent counterparties).",
+        "citations": [
+          "[Pillar 1: Liquidity] Cash Buffer Ratio is 0.9x with 25 minimum survival buffer days.",
+          "[Pillar 2: Revenue] Annualized run rate verified at ₹96.8 Lacs with GSTR-1 reconciliation at 1x.",
+          "[Pillar 3: Stability] Credit CV is 0.06 with zero inward cheque/NACH dishonors.",
+          "[Pillar 4: Leverage] Debt Service Coverage Proxy (DSCP) is 1.96x with an interest burden ratio of 4.65%.",
+          "[Pillar 5: Operational Flags] Operational payroll consistency is verified with cash withdrawal volume below 5%."
+        ],
+        "agentSafetyAudit": {
+          "dataIntegrityStatus": "VERIFIED_SOUND",
+          "fraudSignalsDetected": 0,
+          "confidenceRating": "99.4%"
+        }
+      },
+      "jevAudit": {
+        "verdict": "APPROPRIATE",
+        "confidenceScore": 99.6,
+        "isAppropriate": true,
+        "integrityFlags": [],
+        "rationale": "JEV System 1 Heuristic Verification: Entity data is complete, statutory GSTIN verified, and cash flows conform to standard institutional banking distributions.",
+        "tamperRisk": "LOW",
+        "injectionDefenseStatus": "PASSED",
+        "gatekeeperTimestamp": "2026-09-23T19:55:47.401Z"
+      },
+      "agent1Telemetry": {
+        "businessName": "Velocity Banking Corporation",
+        "gstin": "27AAHCE5539J1ZA",
+        "monthsAnalyzed": 6,
+        "totalRevenue": 9680000,
+        "totalTaxPaid": 1742400,
+        "gstComplianceScore": 100,
+        "bankOpeningBalance": 544160,
+        "bankClosingBalance": 680200,
+        "totalCreditVolume": 4840000,
+        "totalDebitVolume": 4400000,
+        "monthlyCredits": [
+          750000,
+          780000,
+          820000,
+          760000,
+          840000,
+          890000
+        ],
+        "monthlyDebits": [
+          680000,
+          710000,
+          740000,
+          690000,
+          760000,
+          820000
+        ],
+        "dailyClosingBalances": [
+          612180,
+          646190,
+          680200,
+          714210
+        ],
+        "sanctionedOdLimit": 1020300,
+        "peakOdUsage": 272080,
+        "gstr1OutwardTaxable": 4840000,
+        "gstr3bTaxPaid": 871200,
+        "gstr1DeclaredTax": 871200,
+        "inwardBounces": 0,
+        "totalDebitAttempts": 120,
+        "outwardBounces": 0,
+        "totalOutwardAttempts": 85,
+        "monthlyEmiObligations": 37500,
+        "newBorrowingCount6M": 0,
+        "transactions": [],
+        "scrapedRegistryData": null
+      }
+    }
+  },
+  {
+    "id": "h_1790192538188",
+    "timestamp": "2026-09-23T19:42:18.188Z",
+    "userId": "u_andalaus_master",
+    "name": "IndusBank Limited",
+    "score": 870,
+    "risk": "LOW",
+    "revenue": 9680000,
+    "buffer": "0.9x",
+    "compliance": "Excellent",
+    "reason": "Entity assessed with a LOW risk profile (Score: 870). Strong liquidity cushion with a Cash Buffer Ratio of 0.9x and 25 days minimum runway provide resilient NTC shock absorption.",
+    "fullPayload": {
+      "status": "success",
+      "businessName": "IndusBank Limited",
+      "metrics": {
+        "pillar1_liquidity": {
+          "cashBufferRatio": 0.9,
+          "minimumCashBufferDays": 25,
+          "overdraftLimitUtilization": 26.67,
+          "status": "EXCELLENT",
+          "benchmark": "> 0.15–0.25x (15–25 Days)"
+        },
+        "pillar2_revenue": {
+          "annualizedRevenueRunRate": 9680000,
+          "revenueGrowthRate": 5.96,
+          "gstVsBankReconciliation": 1,
+          "gstr1VsGstr3bGap": 0,
+          "trajectory": "STABLE",
+          "benchmark": "Reconciliation ~ 1.0x, Gap < 5%"
+        },
+        "pillar3_stability": {
+          "creditCoefficientOfVariation": 0.06,
+          "consecutiveLowCreditMonths": 0,
+          "inwardBounceRate": 0,
+          "outwardBounceRate": 0,
+          "status": "ROBUST",
+          "benchmark": "CV < 0.30, Bounces = 0.0%"
+        },
+        "pillar4_leverage": {
+          "debtServiceCoverageProxy": 1.96,
+          "interestEmiBurdenRatio": 4.65,
+          "newBorrowingVelocity": 0,
+          "tier": "LOW_LEVERAGE",
+          "benchmark": "DSCP > 1.50x, Burden < 20%"
+        },
+        "pillar5_operational": {
+          "salaryStaffPaymentConsistency": "CONSISTENT (Monthly payroll verified)",
+          "utilityRentPaymentRegularity": "REGULAR (On-time utility payments)",
+          "highValueCashWithdrawalPct": 4,
+          "circularTransactionRisk": "LOW (Clean independent counterparties)",
+          "suspiciousTimingFlags": "CLEAN (Normal business hour distribution)",
+          "benchmark": "Clean Counterparties, Cash WDL < 15%"
+        },
+        "revenueRunRate": 9680000,
+        "cashBufferRatio": 0.9,
+        "isCashFlowStable": true,
+        "hasBounces": false,
+        "taxCompliance": "Excellent",
+        "debtServiceCapacity": "High",
+        "citations": [
+          "[Liquidity] Cash Buffer Ratio evaluated at 0.9x with 25 minimum survival buffer days (OD utilization: 26.67%).",
+          "[Revenue] Annualized Revenue Run Rate: ₹96,80,000; Trajectory: STABLE (+5.96%).",
+          "[Compliance] GSTR-1 outward taxable supplies reconcile to Bank credit volume at 1x ratio with 0% GSTR-3B tax gap.",
+          "[Stability] Monthly credit volatility CV is 0.06 with 0 consecutive low-credit months and 0% inward bounce friction.",
+          "[Debt Service] Debt Service Coverage Proxy (DSCP) is 1.96x with an EMI burden ratio of 4.65% across 0 new debt facilities.",
+          "[Operational Flags] Payroll regularity: CONSISTENT (Monthly payroll verified); Cash withdrawals: 4%; Circular flow risk: LOW (Clean independent counterparties)."
+        ],
+        "reasoning": "Comprehensive 5-Pillar NTC evaluation: Liquidity buffer is EXCELLENT (0.9x / 25 days runway). Revenue momentum is STABLE at ₹96.8 Lacs run rate. Credit cash flow shows ROBUST stability with a CV of 0.06. Leverage is evaluated as LOW_LEVERAGE with 1.96x debt service coverage."
+      },
+      "decision": {
+        "score": 870,
+        "riskLevel": "LOW",
+        "narrative": "Entity assessed with a LOW risk profile (Score: 870). Strong liquidity cushion with a Cash Buffer Ratio of 0.9x and 25 days minimum runway provide resilient NTC shock absorption.",
+        "reasoning": "Orc Chief Credit Officer synthesis: Pillar 1 liquidity demonstrates EXCELLENT reserves above the 0.15x critical NTC baseline. Cash flow volatility (CV: 0.06) indicates stable merchant deposits with 0% bounce friction. Debt coverage proxy is strong at 1.96x with LOW (Clean independent counterparties).",
+        "citations": [
+          "[Pillar 1: Liquidity] Cash Buffer Ratio is 0.9x with 25 minimum survival buffer days.",
+          "[Pillar 2: Revenue] Annualized run rate verified at ₹96.8 Lacs with GSTR-1 reconciliation at 1x.",
+          "[Pillar 3: Stability] Credit CV is 0.06 with zero inward cheque/NACH dishonors.",
+          "[Pillar 4: Leverage] Debt Service Coverage Proxy (DSCP) is 1.96x with an interest burden ratio of 4.65%.",
+          "[Pillar 5: Operational Flags] Operational payroll consistency is verified with cash withdrawal volume below 5%."
+        ],
+        "agentSafetyAudit": {
+          "dataIntegrityStatus": "VERIFIED_SOUND",
+          "fraudSignalsDetected": 0,
+          "confidenceRating": "99.4%"
+        }
+      },
+      "jevAudit": {
+        "verdict": "APPROPRIATE",
+        "confidenceScore": 99.6,
+        "isAppropriate": true,
+        "integrityFlags": [],
+        "rationale": "JEV System 1 Heuristic Verification: Entity data is complete, statutory GSTIN verified, and cash flows conform to standard institutional banking distributions.",
+        "tamperRisk": "LOW",
+        "injectionDefenseStatus": "PASSED",
+        "gatekeeperTimestamp": "2026-09-23T19:42:04.519Z"
+      },
+      "agent1Telemetry": {
+        "businessName": "IndusBank Limited",
+        "gstin": "27AAHCE5539J1ZA",
+        "monthsAnalyzed": 6,
+        "totalRevenue": 9680000,
+        "totalTaxPaid": 1742400,
+        "gstComplianceScore": 100,
+        "bankOpeningBalance": 544160,
+        "bankClosingBalance": 680200,
+        "totalCreditVolume": 4840000,
+        "totalDebitVolume": 4400000,
+        "monthlyCredits": [
+          750000,
+          780000,
+          820000,
+          760000,
+          840000,
+          890000
+        ],
+        "monthlyDebits": [
+          680000,
+          710000,
+          740000,
+          690000,
+          760000,
+          820000
+        ],
+        "dailyClosingBalances": [
+          612180,
+          646190,
+          680200,
+          714210
+        ],
+        "sanctionedOdLimit": 1020300,
+        "peakOdUsage": 272080,
+        "gstr1OutwardTaxable": 4840000,
+        "gstr3bTaxPaid": 871200,
+        "gstr1DeclaredTax": 871200,
+        "inwardBounces": 0,
+        "totalDebitAttempts": 120,
+        "outwardBounces": 0,
+        "totalOutwardAttempts": 85,
+        "monthlyEmiObligations": 37500,
+        "newBorrowingCount6M": 0,
+        "transactions": [],
+        "scrapedRegistryData": {
+          "directors": [
+            "TRANSFER FROM (DIN: 60750547)",
+            "ICICR (DIN: 62028977)",
+            "TRANSFER TO (DIN: 83541969)",
+            "CNRBR (DIN: 99113252)"
+          ]
+        }
+      }
+    }
+  },
+  {
+    "id": "h_1790190889824",
+    "timestamp": "2026-09-23T19:14:49.824Z",
+    "userId": "u_andalaus_master",
+    "name": "ENVER-AITECH INDIA PRIVATE LIMITED",
+    "score": 870,
+    "risk": "LOW",
+    "revenue": 9680000,
+    "buffer": "0.9x",
+    "compliance": "Excellent",
+    "reason": "Entity assessed with a LOW risk profile (Score: 870). Strong liquidity cushion with a Cash Buffer Ratio of 0.9x and 25 days minimum runway provide resilient NTC shock absorption.",
+    "fullPayload": {
+      "status": "success",
+      "businessName": "ENVER-AITECH INDIA PRIVATE LIMITED",
+      "metrics": {
+        "pillar1_liquidity": {
+          "cashBufferRatio": 0.9,
+          "minimumCashBufferDays": 25,
+          "overdraftLimitUtilization": 26.67,
+          "status": "EXCELLENT",
+          "benchmark": "> 0.15–0.25x (15–25 Days)"
+        },
+        "pillar2_revenue": {
+          "annualizedRevenueRunRate": 9680000,
+          "revenueGrowthRate": 5.96,
+          "gstVsBankReconciliation": 1,
+          "gstr1VsGstr3bGap": 0,
+          "trajectory": "STABLE",
+          "benchmark": "Reconciliation ~ 1.0x, Gap < 5%"
+        },
+        "pillar3_stability": {
+          "creditCoefficientOfVariation": 0.06,
+          "consecutiveLowCreditMonths": 0,
+          "inwardBounceRate": 0,
+          "outwardBounceRate": 0,
+          "status": "ROBUST",
+          "benchmark": "CV < 0.30, Bounces = 0.0%"
+        },
+        "pillar4_leverage": {
+          "debtServiceCoverageProxy": 1.96,
+          "interestEmiBurdenRatio": 4.65,
+          "newBorrowingVelocity": 0,
+          "tier": "LOW_LEVERAGE",
+          "benchmark": "DSCP > 1.50x, Burden < 20%"
+        },
+        "pillar5_operational": {
+          "salaryStaffPaymentConsistency": "CONSISTENT (Monthly payroll verified)",
+          "utilityRentPaymentRegularity": "REGULAR (On-time utility payments)",
+          "highValueCashWithdrawalPct": 4,
+          "circularTransactionRisk": "LOW (Clean independent counterparties)",
+          "suspiciousTimingFlags": "CLEAN (Normal business hour distribution)",
+          "benchmark": "Clean Counterparties, Cash WDL < 15%"
+        },
+        "revenueRunRate": 9680000,
+        "cashBufferRatio": 0.9,
+        "isCashFlowStable": true,
+        "hasBounces": false,
+        "taxCompliance": "Excellent",
+        "debtServiceCapacity": "High",
+        "citations": [
+          "[Liquidity] Cash Buffer Ratio evaluated at 0.9x with 25 minimum survival buffer days (OD utilization: 26.67%).",
+          "[Revenue] Annualized Revenue Run Rate: ₹96,80,000; Trajectory: STABLE (+5.96%).",
+          "[Compliance] GSTR-1 outward taxable supplies reconcile to Bank credit volume at 1x ratio with 0% GSTR-3B tax gap.",
+          "[Stability] Monthly credit volatility CV is 0.06 with 0 consecutive low-credit months and 0% inward bounce friction.",
+          "[Debt Service] Debt Service Coverage Proxy (DSCP) is 1.96x with an EMI burden ratio of 4.65% across 0 new debt facilities.",
+          "[Operational Flags] Payroll regularity: CONSISTENT (Monthly payroll verified); Cash withdrawals: 4%; Circular flow risk: LOW (Clean independent counterparties)."
+        ],
+        "reasoning": "Comprehensive 5-Pillar NTC evaluation: Liquidity buffer is EXCELLENT (0.9x / 25 days runway). Revenue momentum is STABLE at ₹96.8 Lacs run rate. Credit cash flow shows ROBUST stability with a CV of 0.06. Leverage is evaluated as LOW_LEVERAGE with 1.96x debt service coverage."
+      },
+      "decision": {
+        "score": 870,
+        "riskLevel": "LOW",
+        "narrative": "Entity assessed with a LOW risk profile (Score: 870). Strong liquidity cushion with a Cash Buffer Ratio of 0.9x and 25 days minimum runway provide resilient NTC shock absorption.",
+        "reasoning": "Orc Chief Credit Officer synthesis: Pillar 1 liquidity demonstrates EXCELLENT reserves above the 0.15x critical NTC baseline. Cash flow volatility (CV: 0.06) indicates stable merchant deposits with 0% bounce friction. Debt coverage proxy is strong at 1.96x with LOW (Clean independent counterparties).",
+        "citations": [
+          "[Pillar 1: Liquidity] Cash Buffer Ratio is 0.9x with 25 minimum survival buffer days.",
+          "[Pillar 2: Revenue] Annualized run rate verified at ₹96.8 Lacs with GSTR-1 reconciliation at 1x.",
+          "[Pillar 3: Stability] Credit CV is 0.06 with zero inward cheque/NACH dishonors.",
+          "[Pillar 4: Leverage] Debt Service Coverage Proxy (DSCP) is 1.96x with an interest burden ratio of 4.65%.",
+          "[Pillar 5: Operational Flags] Operational payroll consistency is verified with cash withdrawal volume below 5%."
+        ],
+        "agentSafetyAudit": {
+          "dataIntegrityStatus": "VERIFIED_SOUND",
+          "fraudSignalsDetected": 0,
+          "confidenceRating": "99.4%"
+        }
+      },
+      "jevAudit": {
+        "verdict": "SUSPICIOUS_FLAGGED",
+        "confidenceScore": 82.5,
+        "isAppropriate": true,
+        "integrityFlags": [
+          "ANOMALY_INVALID_GSTIN: GSTIN checksum structure violates statutory Indian tax format."
+        ],
+        "rationale": "JEV System 1 Flag: ANOMALY_INVALID_GSTIN: GSTIN checksum structure violates statutory Indian tax format.",
+        "tamperRisk": "MODERATE",
+        "injectionDefenseStatus": "PASSED",
+        "gatekeeperTimestamp": "2026-09-23T19:14:39.317Z"
+      },
+      "agent1Telemetry": {
+        "businessName": "ENVER-AITECH INDIA PRIVATE LIMITED",
+        "gstin": "CIN: U47190MH2023PTC402519",
+        "monthsAnalyzed": 6,
+        "totalRevenue": 9680000,
+        "totalTaxPaid": 1742400,
+        "gstComplianceScore": 100,
+        "bankOpeningBalance": 544160,
+        "bankClosingBalance": 680200,
+        "totalCreditVolume": 4840000,
+        "totalDebitVolume": 4400000,
+        "monthlyCredits": [
+          750000,
+          780000,
+          820000,
+          760000,
+          840000,
+          890000
+        ],
+        "monthlyDebits": [
+          680000,
+          710000,
+          740000,
+          690000,
+          760000,
+          820000
+        ],
+        "dailyClosingBalances": [
+          612180,
+          646190,
+          680200,
+          714210
+        ],
+        "sanctionedOdLimit": 1020300,
+        "peakOdUsage": 272080,
+        "gstr1OutwardTaxable": 4840000,
+        "gstr3bTaxPaid": 871200,
+        "gstr1DeclaredTax": 871200,
+        "inwardBounces": 0,
+        "totalDebitAttempts": 120,
+        "outwardBounces": 0,
+        "totalOutwardAttempts": 85,
+        "monthlyEmiObligations": 37500,
+        "newBorrowingCount6M": 0,
+        "transactions": [],
+        "scrapedRegistryData": {
+          "directors": [
+            "Amaan Shaikh (Director - DIN: 10154246)",
+            "Needa Shaikh (Director - DIN: 10154247)"
+          ]
+        }
+      }
+    }
+  },
+  {
+    "id": "h_1790190818633",
+    "timestamp": "2026-09-23T19:13:38.633Z",
+    "userId": "u_andalaus_master",
+    "name": "IndusBank Limited",
+    "score": 870,
+    "risk": "LOW",
+    "revenue": 9680000,
+    "buffer": "0.9x",
+    "compliance": "Excellent",
+    "reason": "Entity assessed with a LOW risk profile (Score: 870). Strong liquidity cushion with a Cash Buffer Ratio of 0.9x and 25 days minimum runway provide resilient NTC shock absorption.",
+    "fullPayload": {
+      "status": "success",
+      "businessName": "IndusBank Limited",
+      "metrics": {
+        "pillar1_liquidity": {
+          "cashBufferRatio": 0.9,
+          "minimumCashBufferDays": 25,
+          "overdraftLimitUtilization": 26.67,
+          "status": "EXCELLENT",
+          "benchmark": "> 0.15–0.25x (15–25 Days)"
+        },
+        "pillar2_revenue": {
+          "annualizedRevenueRunRate": 9680000,
+          "revenueGrowthRate": 5.96,
+          "gstVsBankReconciliation": 1,
+          "gstr1VsGstr3bGap": 0,
+          "trajectory": "STABLE",
+          "benchmark": "Reconciliation ~ 1.0x, Gap < 5%"
+        },
+        "pillar3_stability": {
+          "creditCoefficientOfVariation": 0.06,
+          "consecutiveLowCreditMonths": 0,
+          "inwardBounceRate": 0,
+          "outwardBounceRate": 0,
+          "status": "ROBUST",
+          "benchmark": "CV < 0.30, Bounces = 0.0%"
+        },
+        "pillar4_leverage": {
+          "debtServiceCoverageProxy": 1.96,
+          "interestEmiBurdenRatio": 4.65,
+          "newBorrowingVelocity": 0,
+          "tier": "LOW_LEVERAGE",
+          "benchmark": "DSCP > 1.50x, Burden < 20%"
+        },
+        "pillar5_operational": {
+          "salaryStaffPaymentConsistency": "CONSISTENT (Monthly payroll verified)",
+          "utilityRentPaymentRegularity": "REGULAR (On-time utility payments)",
+          "highValueCashWithdrawalPct": 4,
+          "circularTransactionRisk": "LOW (Clean independent counterparties)",
+          "suspiciousTimingFlags": "CLEAN (Normal business hour distribution)",
+          "benchmark": "Clean Counterparties, Cash WDL < 15%"
+        },
+        "revenueRunRate": 9680000,
+        "cashBufferRatio": 0.9,
+        "isCashFlowStable": true,
+        "hasBounces": false,
+        "taxCompliance": "Excellent",
+        "debtServiceCapacity": "High",
+        "citations": [
+          "[Liquidity] Cash Buffer Ratio evaluated at 0.9x with 25 minimum survival buffer days (OD utilization: 26.67%).",
+          "[Revenue] Annualized Revenue Run Rate: ₹96,80,000; Trajectory: STABLE (+5.96%).",
+          "[Compliance] GSTR-1 outward taxable supplies reconcile to Bank credit volume at 1x ratio with 0% GSTR-3B tax gap.",
+          "[Stability] Monthly credit volatility CV is 0.06 with 0 consecutive low-credit months and 0% inward bounce friction.",
+          "[Debt Service] Debt Service Coverage Proxy (DSCP) is 1.96x with an EMI burden ratio of 4.65% across 0 new debt facilities.",
+          "[Operational Flags] Payroll regularity: CONSISTENT (Monthly payroll verified); Cash withdrawals: 4%; Circular flow risk: LOW (Clean independent counterparties)."
+        ],
+        "reasoning": "Comprehensive 5-Pillar NTC evaluation: Liquidity buffer is EXCELLENT (0.9x / 25 days runway). Revenue momentum is STABLE at ₹96.8 Lacs run rate. Credit cash flow shows ROBUST stability with a CV of 0.06. Leverage is evaluated as LOW_LEVERAGE with 1.96x debt service coverage."
+      },
+      "decision": {
+        "score": 870,
+        "riskLevel": "LOW",
+        "narrative": "Entity assessed with a LOW risk profile (Score: 870). Strong liquidity cushion with a Cash Buffer Ratio of 0.9x and 25 days minimum runway provide resilient NTC shock absorption.",
+        "reasoning": "Orc Chief Credit Officer synthesis: Pillar 1 liquidity demonstrates EXCELLENT reserves above the 0.15x critical NTC baseline. Cash flow volatility (CV: 0.06) indicates stable merchant deposits with 0% bounce friction. Debt coverage proxy is strong at 1.96x with LOW (Clean independent counterparties).",
+        "citations": [
+          "[Pillar 1: Liquidity] Cash Buffer Ratio is 0.9x with 25 minimum survival buffer days.",
+          "[Pillar 2: Revenue] Annualized run rate verified at ₹96.8 Lacs with GSTR-1 reconciliation at 1x.",
+          "[Pillar 3: Stability] Credit CV is 0.06 with zero inward cheque/NACH dishonors.",
+          "[Pillar 4: Leverage] Debt Service Coverage Proxy (DSCP) is 1.96x with an interest burden ratio of 4.65%.",
+          "[Pillar 5: Operational Flags] Operational payroll consistency is verified with cash withdrawal volume below 5%."
+        ],
+        "agentSafetyAudit": {
+          "dataIntegrityStatus": "VERIFIED_SOUND",
+          "fraudSignalsDetected": 0,
+          "confidenceRating": "99.4%"
+        }
+      },
+      "jevAudit": {
+        "verdict": "APPROPRIATE",
+        "confidenceScore": 99.6,
+        "isAppropriate": true,
+        "integrityFlags": [],
+        "rationale": "JEV System 1 Heuristic Verification: Entity data is complete, statutory GSTIN verified, and cash flows conform to standard institutional banking distributions.",
+        "tamperRisk": "LOW",
+        "injectionDefenseStatus": "PASSED",
+        "gatekeeperTimestamp": "2026-09-23T19:13:26.387Z"
+      },
+      "agent1Telemetry": {
+        "businessName": "IndusBank Limited",
+        "gstin": "27AAHCE5539J1ZA",
+        "monthsAnalyzed": 6,
+        "totalRevenue": 9680000,
+        "totalTaxPaid": 1742400,
+        "gstComplianceScore": 100,
+        "bankOpeningBalance": 544160,
+        "bankClosingBalance": 680200,
+        "totalCreditVolume": 4840000,
+        "totalDebitVolume": 4400000,
+        "monthlyCredits": [
+          750000,
+          780000,
+          820000,
+          760000,
+          840000,
+          890000
+        ],
+        "monthlyDebits": [
+          680000,
+          710000,
+          740000,
+          690000,
+          760000,
+          820000
+        ],
+        "dailyClosingBalances": [
+          612180,
+          646190,
+          680200,
+          714210
+        ],
+        "sanctionedOdLimit": 1020300,
+        "peakOdUsage": 272080,
+        "gstr1OutwardTaxable": 4840000,
+        "gstr3bTaxPaid": 871200,
+        "gstr1DeclaredTax": 871200,
+        "inwardBounces": 0,
+        "totalDebitAttempts": 120,
+        "outwardBounces": 0,
+        "totalOutwardAttempts": 85,
+        "monthlyEmiObligations": 37500,
+        "newBorrowingCount6M": 0,
+        "transactions": [],
+        "scrapedRegistryData": {
+          "directors": [
+            "TRANSFER FROM (DIN: 60750547)",
+            "ICICR (DIN: 62028977)",
+            "TRANSFER TO (DIN: 83541969)",
+            "CNRBR (DIN: 99113252)"
+          ]
+        }
+      }
+    }
+  },
+  {
+    "id": "h_1789854683417",
+    "timestamp": "2026-09-19T21:51:23.417Z",
+    "userId": "u_andalaus_master",
+    "name": "EnverAI Tech Retail Supplies Pvt Ltd",
+    "score": 824,
+    "risk": "LOW",
+    "revenue": 9680000,
+    "buffer": "0.71x",
+    "compliance": "Excellent",
+    "reason": "The business demonstrates a strong NTC credit profile with stable operating cash flows and strong short-term liquidity reserves (Cash Buffer: 0.71x, 18 buffer days). Timely GST compliance and zero cheque return friction support a prime underwriting recommendation.",
+    "fullPayload": {
+      "status": "success",
+      "businessName": "EnverAI Tech Retail Supplies Pvt Ltd",
+      "metrics": {
+        "pillar1_liquidity": {
+          "cashBufferRatio": 0.71,
+          "minimumCashBufferDays": 18,
+          "overdraftLimitUtilization": 32,
+          "status": "EXCELLENT",
+          "benchmark": "> 0.15–0.25x (15–25 Days)"
+        },
+        "pillar2_revenue": {
+          "annualizedRevenueRunRate": 9680000,
+          "revenueGrowthRate": 5.96,
+          "gstVsBankReconciliation": 0.99,
+          "gstr1VsGstr3bGap": 0,
+          "trajectory": "STABLE",
+          "benchmark": "Reconciliation ~ 1.0x, Gap < 5%"
+        },
+        "pillar3_stability": {
+          "creditCoefficientOfVariation": 0.06,
+          "consecutiveLowCreditMonths": 0,
+          "inwardBounceRate": 0,
+          "outwardBounceRate": 0,
+          "status": "ROBUST",
+          "benchmark": "CV < 0.30, Bounces = 0.0%"
+        },
+        "pillar4_leverage": {
+          "debtServiceCoverageProxy": 1.67,
+          "interestEmiBurdenRatio": 5.58,
+          "newBorrowingVelocity": 0,
+          "tier": "LOW_LEVERAGE",
+          "benchmark": "DSCP > 1.50x, Burden < 20%"
+        },
+        "pillar5_operational": {
+          "salaryStaffPaymentConsistency": "CONSISTENT (Monthly payroll verified)",
+          "utilityRentPaymentRegularity": "REGULAR (On-time utility payments)",
+          "highValueCashWithdrawalPct": 4,
+          "circularTransactionRisk": "LOW (Clean independent counterparties)",
+          "suspiciousTimingFlags": "CLEAN (Normal business hour distribution)",
+          "benchmark": "Clean Counterparties, Cash WDL < 15%"
+        },
+        "revenueRunRate": 9680000,
+        "cashBufferRatio": 0.71,
+        "isCashFlowStable": true,
+        "hasBounces": false,
+        "taxCompliance": "Excellent",
+        "debtServiceCapacity": "High",
+        "citations": [
+          "[Liquidity] Cash Buffer Ratio evaluated at 0.71x with 18 minimum survival buffer days (OD utilization: 32%).",
+          "[Revenue] Annualized Revenue Run Rate: ₹96,80,000; Trajectory: STABLE (+5.96%).",
+          "[Compliance] GSTR-1 outward taxable supplies reconcile to Bank credit volume at 0.99x ratio with 0% GSTR-3B tax gap.",
+          "[Stability] Monthly credit volatility CV is 0.06 with 0 consecutive low-credit months and 0% inward bounce friction.",
+          "[Debt Service] Debt Service Coverage Proxy (DSCP) is 1.67x with an EMI burden ratio of 5.58% across 0 new debt facilities.",
+          "[Operational Flags] Payroll regularity: CONSISTENT (Monthly payroll verified); Cash withdrawals: 4%; Circular flow risk: LOW (Clean independent counterparties)."
+        ],
+        "reasoning": "Comprehensive 5-Pillar NTC evaluation: Liquidity buffer is EXCELLENT (0.71x / 18 days runway). Revenue momentum is STABLE at ₹96.8 Lacs run rate. Credit cash flow shows ROBUST stability with a CV of 0.06. Leverage is evaluated as LOW_LEVERAGE with 1.67x debt service coverage."
+      },
+      "decision": {
+        "score": 824,
+        "riskLevel": "LOW",
+        "narrative": "The business demonstrates a strong NTC credit profile with stable operating cash flows and strong short-term liquidity reserves (Cash Buffer: 0.71x, 18 buffer days). Timely GST compliance and zero cheque return friction support a prime underwriting recommendation.",
+        "reasoning": "Orc Synthesis Agent evaluated the enterprise financial health at 824. High revenue stability and a cash buffer ratio of 0.71x provide significant shock absorption against working capital volatility across all 5 financial pillars.",
+        "citations": [
+          "[Liquidity] Cash Buffer Ratio evaluated at 0.71x with 18 minimum survival buffer days (OD utilization: 32%).",
+          "[Revenue] Annualized Revenue Run Rate: ₹96,80,000; Trajectory: STABLE (+5.96%).",
+          "[Compliance] GSTR-1 outward taxable supplies reconcile to Bank credit volume at 0.99x ratio with 0% GSTR-3B tax gap.",
+          "[Stability] Monthly credit volatility CV is 0.06 with 0 consecutive low-credit months and 0% inward bounce friction.",
+          "[Debt Service] Debt Service Coverage Proxy (DSCP) is 1.67x with an EMI burden ratio of 5.58% across 0 new debt facilities.",
+          "[Operational Flags] Payroll regularity: CONSISTENT (Monthly payroll verified); Cash withdrawals: 4%; Circular flow risk: LOW (Clean independent counterparties)."
+        ],
+        "agentSafetyAudit": {
+          "dataIntegrityStatus": "VERIFIED_SOUND",
+          "fraudSignalsDetected": 0,
+          "confidenceRating": "99.4%"
+        }
+      },
+      "agent1Telemetry": {
+        "businessName": "EnverAI Tech Retail Supplies Pvt Ltd",
+        "monthsAnalyzed": 6,
+        "totalRevenue": 9680000,
+        "totalCreditVolume": 4840000,
+        "totalDebitVolume": 4356000,
+        "bankClosingBalance": 680200.75,
+        "inwardBounces": 0
+      }
+    }
+  },
+  {
     "id": "h_1787349121281",
     "timestamp": "2026-08-21T21:52:01.281Z",
     "userId": "u_andalaus_master",

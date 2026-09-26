@@ -1,0 +1,14 @@
+services:
+  artificer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: enverai-artificer-citadel
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - NODE_ENV=production
+      - GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT:-enverai-prod}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+    restart: unless-stopped

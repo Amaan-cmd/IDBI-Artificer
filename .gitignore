@@ -13,6 +13,9 @@ backend/.env
 backend/.env.*
 frontend/.env
 frontend/.env.*
+!.env.example
+!backend/.env.example
+!frontend/.env.example
 *.local
 *.pem
 *.key
@@ -23,6 +26,7 @@ credentials.json
 # Temporary Uploads & Processing Storage
 uploads/
 backend/uploads/
+backend/data/telemetry_logins.json
 *.tmp
 *.log
 
@@ -30,6 +34,7 @@ backend/uploads/
 dist/
 build/
 .vite/
+.firebase/
 
 # System & IDE files
 .DS_Store

@@ -1,0 +1,75 @@
+.skiper-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--brand-navy);
+  text-decoration: none;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+  padding: 4px 0;
+  cursor: pointer;
+  background: none;
+  border: none;
+  overflow: hidden;
+  transition: color 0.25s ease;
+}
+
+.skiper-link:hover {
+  color: var(--brand-orange);
+}
+
+.skiper-link-text {
+  position: relative;
+  display: inline-block;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.skiper-link-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  color: currentColor;
+}
+
+.skiper-link:hover .skiper-link-icon {
+  transform: translate(3px, -3px);
+}
+
+/* Dynamic animated underline (skiper40 signature effect) */
+.skiper-link-underline {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--brand-orange);
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.skiper-link:hover .skiper-link-underline {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+/* Secondary variant: Pill style */
+.skiper-link-pill {
+  padding: 8px 16px;
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.skiper-link-pill:hover {
+  border-color: var(--brand-orange);
+  background: var(--surface-alt);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-soft);
+}

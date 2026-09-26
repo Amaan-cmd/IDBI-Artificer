@@ -1,134 +1,100 @@
 import { useRef, useEffect } from 'react';
 import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { useGSAP } from '@gsap/react';
-
-gsap.registerPlugin(ScrollTrigger, useGSAP);
 
 const SplitText = ({
   text = '',
   className = '',
-  delay = 50,
-  duration = 1.25,
-  ease = 'power3.out',
+  delay = 30,
+  duration = 0.6,
+  ease = 'power2.out',
   splitType = 'chars',
-  from = { opacity: 0, y: 40 },
-  to = { opacity: 1, y: 0 },
-  threshold = 0.1,
-  rootMargin = '-100px',
-  textAlign = 'center',
-  tag = 'p',
-  onLetterAnimationComplete
+  textAlign = 'left',
+  tag: Tag = 'span',
+  onComplete
 }) => {
-  const ref = useRef(null);
-  const animationCompletedRef = useRef(false);
-  const onCompleteRef = useRef(onLetterAnimationComplete);
+  const containerRef = useRef(null);
 
   useEffect(() => {
-    onCompleteRef.current = onLetterAnimationComplete;
-  }, [onLetterAnimationComplete]);
+    if (!containerRef.current || !text) return;
 
-  useGSAP(
-    () => {
-      if (!ref.current || !text) return;
-      if (animationCompletedRef.current) return;
-      
-      const el = ref.current;
-      let targets = [];
-      if (splitType.includes('chars')) {
-        targets = el.querySelectorAll('.split-char');
-      } else {
-        targets = el.querySelectorAll('.split-word');
-      }
+    const el = containerRef.current;
+    const targets = el.querySelectorAll('.split-unit');
 
-      if (targets.length === 0) return;
+    if (targets.length === 0) return;
 
-      const startPct = (1 - threshold) * 100;
-      const marginMatch = /^(-?\d+(?:\.\d+)?)(px|em|rem|%)?$/.exec(rootMargin);
-      const marginValue = marginMatch ? parseFloat(marginMatch[1]) : 0;
-      const marginUnit = marginMatch ? marginMatch[2] || 'px' : 'px';
-      const sign =
-        marginValue === 0
-          ? ''
-          : marginValue < 0
-            ? `-=${Math.abs(marginValue)}${marginUnit}`
-            : `+=${marginValue}${marginUnit}`;
-      const start = `top ${startPct}%${sign}`;
-
-      gsap.fromTo(
-        targets,
-        { ...from },
-        {
-          ...to,
-          duration,
-          ease,
-          stagger: delay / 1000,
-          scrollTrigger: {
-            trigger: el,
-            start,
-            once: true,
-            fastScrollEnd: true,
-            anticipatePin: 0.4
-          },
-          onComplete: () => {
-            animationCompletedRef.current = true;
-            onCompleteRef.current?.();
-          },
-          willChange: 'transform, opacity',
-          force3D: true
+    // Smooth entrance animation that guarantees visibility
+    gsap.fromTo(
+      targets,
+      { opacity: 0, y: 8 },
+      {
+        opacity: 1,
+        y: 0,
+        duration,
+        ease,
+        stagger: delay / 1000,
+        overwrite: 'auto',
+        onComplete: () => {
+          onComplete?.();
         }
-      );
-    },
-    {
-      dependencies: [text, delay, duration, ease, splitType, JSON.stringify(from), JSON.stringify(to), threshold, rootMargin],
-      scope: ref
-    }
-  );
+      }
+    );
 
-  const renderContent = () => {
-    if (!text) return null;
-    const words = text.split(' ');
+    // Failsafe: Ensure text is always 100% visible even if animation is interrupted
+    const timer = setTimeout(() => {
+      targets.forEach(t => {
+        t.style.opacity = '1';
+        t.style.transform = 'none';
+      });
+    }, 1200);
 
-    return words.map((word, wordIdx) => {
-      const chars = word.split('');
-      const wordContent = splitType.includes('chars') ? (
-        chars.map((char, charIdx) => (
-          <span
-            key={`char-${wordIdx}-${charIdx}`}
-            className="split-char"
-            style={{ display: 'inline-block', willChange: 'transform, opacity' }}
-          >
-            {char}
-          </span>
-        ))
-      ) : word;
+    return () => clearTimeout(timer);
+  }, [text, delay, duration, ease, onComplete]);
 
-      return (
-        <span
-          key={`word-${wordIdx}`}
-          className="split-word"
-          style={{ display: 'inline-block', marginRight: '0.25em', whiteSpace: 'nowrap' }}
-        >
-          {wordContent}
-        </span>
-      );
-    });
-  };
+  if (!text) return null;
 
-  const style = {
-    textAlign,
-    overflow: 'hidden',
-    display: 'inline-block',
-    whiteSpace: 'normal',
-    wordWrap: 'break-word',
-    willChange: 'transform, opacity'
-  };
-  const classes = `split-parent ${className}`;
-  const Tag = tag || 'p';
+  const words = text.split(' ');
 
   return (
-    <Tag ref={ref} style={style} className={classes}>
-      {renderContent()}
+    <Tag
+      ref={containerRef}
+      className={`split-text-container ${className}`}
+      style={{
+        display: 'inline-block',
+        textAlign,
+        wordWrap: 'break-word'
+      }}
+    >
+      {words.map((word, wordIdx) => {
+        if (splitType === 'words') {
+          return (
+            <span
+              key={`word-${wordIdx}`}
+              className="split-unit"
+              style={{ display: 'inline-block', marginRight: '0.28em', willChange: 'transform, opacity' }}
+            >
+              {word}
+            </span>
+          );
+        }
+
+        const chars = word.split('');
+        return (
+          <span
+            key={`word-${wordIdx}`}
+            style={{ display: 'inline-block', whiteSpace: 'nowrap', marginRight: '0.28em' }}
+          >
+            {chars.map((char, charIdx) => (
+              <span
+                key={`char-${wordIdx}-${charIdx}`}
+                className="split-unit"
+                style={{ display: 'inline-block', willChange: 'transform, opacity' }}
+              >
+                {char}
+              </span>
+            ))}
+          </span>
+        );
+      })}
     </Tag>
   );
 };

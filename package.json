@@ -5,8 +5,13 @@
   "main": "backend/server.js",
   "scripts": {
     "postinstall": "npm install --prefix backend",
+    "build": "npm --prefix frontend run build",
     "start": "node backend/server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev:backend": "node backend/server.js",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "smoke-test": "node test_smoke_enterprises.js",
+    "deploy:gcloud": "gcloud run deploy enverai-artificer --source . --platform managed --region us-central1 --allow-unauthenticated",
+    "test": "node test_smoke_enterprises.js"
   },
   "keywords": [
     "enverai",
@@ -29,5 +34,8 @@
     "google-auth-library": "^10.9.0",
     "ora": "^5.4.1",
     "pptxgenjs": "^4.0.1"
+  },
+  "devDependencies": {
+    "shadcn": "^4.21.0"
   }
 }

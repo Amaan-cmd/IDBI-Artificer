@@ -38,12 +38,12 @@ const getHistory = async (req, res) => {
     }
   }
 
-  // Fallback
+  // Fallback to local JSON persistence
   let history = getHistoryData();
-  if (userId) {
-    history = history.filter(h => h.userId === userId);
+  if (userId && userId !== 'u_andalaus_master') {
+    history = history.filter(h => h.userId === userId || !h.userId);
   }
-  history.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  history.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
   res.json({ status: 'success', history });
 };
 

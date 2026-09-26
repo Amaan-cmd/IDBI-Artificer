@@ -1,40 +1,116 @@
 {
   "account_type": "CURRENT",
   "bank": "IDBI Bank",
-  "account_holder": "EnverTech Retail Supplies",
+  "account_holder": "EnverTech Retail Supplies Pvt Ltd",
   "period": {
-    "start": "2026-03-01",
-    "end": "2026-05-31"
+    "start": "2026-01-01",
+    "end": "2026-06-30"
   },
   "summary": {
     "opening_balance": 450000.50,
     "closing_balance": 680200.75,
-    "total_credit_volume": 4640000,
+    "total_credit_volume": 4840000.00,
     "total_debit_volume": 4409799.75,
-    "inward_bounces": 1,
-    "outward_bounces": 0
+    "months_analyzed": 6,
+    "monthly_credits": [750000, 780000, 820000, 760000, 840000, 890000],
+    "monthly_debits": [680000, 710000, 740000, 690000, 760000, 829799.75],
+    "daily_closing_balances": [
+      450000, 480000, 510000, 490000, 530000, 560000, 520000, 610000,
+      590000, 640000, 620000, 670000, 650000, 680200.75
+    ],
+    "sanctioned_od_limit": 1000000,
+    "peak_od_usage": 320000,
+    "inward_bounces": 0,
+    "total_debit_attempts": 284,
+    "outward_bounces": 0,
+    "total_outward_attempts": 210,
+    "monthly_emi_obligations": 42500,
+    "new_borrowing_count_6m": 0
   },
   "transactions": [
     {
-      "date": "2026-05-15",
+      "date": "2026-01-10T11:20:00Z",
       "mode": "UPI",
       "type": "CREDIT",
-      "amount": 15000,
-      "narration": "UPI/Client Payment/INV-001"
+      "amount": 45000,
+      "narration": "UPI/RetailSales/JanBatch01"
     },
     {
-      "date": "2026-05-16",
+      "date": "2026-01-28T10:15:00Z",
+      "mode": "IMPS",
+      "type": "DEBIT",
+      "amount": 115000,
+      "narration": "IMPS/Payroll/Salary Jan 2026"
+    },
+    {
+      "date": "2026-02-05T14:30:00Z",
       "mode": "NEFT",
       "type": "DEBIT",
-      "amount": 250000,
-      "narration": "NEFT/Supplier Pmt/VendorX"
+      "amount": 14200,
+      "narration": "NEFT/Utility/BESCOM Electricity"
     },
     {
-      "date": "2026-05-28",
+      "date": "2026-02-28T09:45:00Z",
+      "mode": "IMPS",
+      "type": "DEBIT",
+      "amount": 115000,
+      "narration": "IMPS/Payroll/Salary Feb 2026"
+    },
+    {
+      "date": "2026-03-10T12:00:00Z",
+      "mode": "ACH",
+      "type": "DEBIT",
+      "amount": 42500,
+      "narration": "ACH/IDBI Bank/Machinery Loan EMI"
+    },
+    {
+      "date": "2026-03-28T10:30:00Z",
+      "mode": "IMPS",
+      "type": "DEBIT",
+      "amount": 118000,
+      "narration": "IMPS/Payroll/Salary Mar 2026"
+    },
+    {
+      "date": "2026-04-04T16:10:00Z",
+      "mode": "NEFT",
+      "type": "DEBIT",
+      "amount": 15800,
+      "narration": "NEFT/Utility/Commercial Water & Rent"
+    },
+    {
+      "date": "2026-04-28T11:00:00Z",
       "mode": "IMPS",
       "type": "DEBIT",
       "amount": 120000,
-      "narration": "IMPS/Payroll/Salary May"
+      "narration": "IMPS/Payroll/Salary Apr 2026"
+    },
+    {
+      "date": "2026-05-15T15:20:00Z",
+      "mode": "UPI",
+      "type": "CREDIT",
+      "amount": 85000,
+      "narration": "UPI/Client Payment/INV-2026-44"
+    },
+    {
+      "date": "2026-05-28T10:00:00Z",
+      "mode": "IMPS",
+      "type": "DEBIT",
+      "amount": 122000,
+      "narration": "IMPS/Payroll/Salary May 2026"
+    },
+    {
+      "date": "2026-06-15T12:45:00Z",
+      "mode": "ATM",
+      "type": "DEBIT",
+      "amount": 25000,
+      "narration": "ATM/Cash WDL/Petty Cash Operations"
+    },
+    {
+      "date": "2026-06-28T10:15:00Z",
+      "mode": "IMPS",
+      "type": "DEBIT",
+      "amount": 125000,
+      "narration": "IMPS/Payroll/Salary Jun 2026"
     }
   ]
 }

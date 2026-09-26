@@ -185,3 +185,33 @@ Since IDBI operates on AWS, we have mapped our current GCP-based architecture to
 | **NVIDIA Nemotron 3 Super/Ultra (Analytics)** | **NVIDIA NIM (Nemotron 3 Ultra)** | Nemotron Ultra is optimized for frontier-level logical reasoning and agentic workflows. |
 | **Multer (Local File Storage)** | **Amazon S3** | Secure, temporary bucket storage for uploaded PDFs/CSVs before AI ingestion. |
 | **Local JSON Memory** | **Amazon RDS (PostgreSQL)** | Persistent storage for generated Health Cards and Audit Trails. |
+
+---
+
+## 2026-09-24 Production Readiness & Cloud Deployment Update
+
+### 1. Multi-Agent Fleet Expansion (Kahneman System 1 + System 2)
+The pipeline has been upgraded to a 4-agent cognitive hierarchy:
+1. **Fetcha (Agent 1):** Multi-modal tabular parser & live registry scraper (powered by Grok 4.6 Tools & Gemini Flash).
+2. **JEV (System 1 Gatekeeper):** Reflexive heuristic sanity filter that verifies arithmetic balance continuity ($\text{Opening} + \text{Inflows} - \text{Outflows} \equiv \text{Closing}$), filters non-solvency NPCI NACH dishonor codes (09, 21, 55), and neutralizes adversarial prompt injections.
+3. **Geek (Agent 2):** Quantitative 5-Pillar Telemetry Matrix (Liquidity, Revenue, Stability, Leverage, Operational Discipline).
+4. **Orc (Agent 3):** Chief Credit Officer, continuous multi-pillar credit score synthesis (300-900), immutable forensic citations ledger, and conversational XAI drawer.
+
+### 2. Underwriting Edge Cases Solved & Verified
+- **Pixel-Tampered Statements:** JEV detects balance discontinuity $>1.5\%$ of turnover, and halts statements $>200\%$ as fabricated (`REJECTED_UNFIT`).
+- **Auto-Sweep FDs:** Neutralized from operational turnover, recognized in liquid cash buffer.
+- **Negative Ledger CC/OD Accounts:** Handled via sanctioned drawing power ($\text{Limit} - \text{Peak Utilization}$) to eliminate division-by-zero or negative runway.
+- **Composition Scheme Dealers:** Auto-detected with `CMP-08` quarterly 1% turnover benchmark, suppressing false missing-GSTR penalties.
+- **Adversarial Injections:** Blocked before LLM invocation by instant deterministic regex interceptors.
+
+### 3. Automated Smoke Test Benchmark
+Validated across 8 test cases via `npm run smoke-test` (`test_smoke_enterprises.js`):
+- All 7 legitimate enterprises (Kariman Enterprises, Enver AI, Tata Motors, Surat Textile, Kalyan Agro, Composition Dealer, Auto-Sweep Account) generated distinct, non-colliding scores with 100% verified ledger balance parity.
+- The adversarial prompt injection attack was neutralized immediately.
+
+### 4. Single-Container Cloud Deployment
+The app is now fully containerized via a production multi-stage `Dockerfile`:
+- Builds frontend Vite React assets into `frontend/dist`.
+- Node.js Express backend serves both static assets and API routes on port `8080`.
+- 1-Click deployment to Google Cloud Run via `./deploy_gcloud.sh` or `deploy_gcloud.bat`.
+- Zero-configuration local testing via `docker compose up --build`.

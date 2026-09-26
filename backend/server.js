@@ -8,7 +8,7 @@ const multer = require('multer');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { evaluateMSMECredit } = require('./controllers/creditController');
-const { loginUser, getAllUsers } = require('./controllers/userController');
+const { loginUser, getAllUsers, getLoginTelemetry } = require('./controllers/userController');
 const { getHistory } = require('./controllers/historyController');
 const { trainAgamiPipeline } = require('./controllers/agamiController');
 const { handleXAIChat } = require('./controllers/chatController');
@@ -18,19 +18,32 @@ const upload = multer({ dest: path.join(os.tmpdir(), 'uploads') });
 const app = express();
 
 // Cybersecurity Hardening
-app.use(helmet()); // Secure HTTP headers
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false
+}));
 app.use(cors());
 app.use(express.json());
 
 // API Throttling / DDoS mitigation
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: 200, // limit each IP to 200 requests per windowMs
   message: { error: 'Too many requests from this IP, please try again later.' }
 });
 app.use('/api/', limiter);
 
 const PORT = process.env.PORT || 4000;
+1
+app.get('/api/v1/health', (req, res) => {
+  res.json({ status: 'ok', service: 'EnverAI Artificer Backend', time: new Date().toISOString() });
+});
+
+// Serve compiled frontend in production / container deployment
+const distPath = path.join(__dirname, '..', 'frontend', 'dist');
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
+}
 
 // Load Mock Data
 const aaDataPath = path.join(__dirname, 'mockData', 'aa_bank_statement.json');
@@ -52,17 +65,36 @@ app.get('/api/v1/alternate-data/account-aggregator/:businessId', (req, res) => {
   }
 });
 
-// Simulate GSTN Sandbox Fetch
+const { scrapeBusinessIntelligence, generateGSTTimeline } = require('./services/scraperService');
+
+// Live GSTN Sandbox / Timeline Fetch
 app.get('/api/v1/alternate-data/gst/:gstin', (req, res) => {
   try {
-    const data = JSON.parse(fs.readFileSync(gstDataPath, 'utf8'));
+    const data = generateGSTTimeline(req.params.gstin);
     res.json({
       status: 'success',
-      source: 'GSTN Portal',
+      source: 'Fetcha GSTN Portal Gateway (Grok 4.6 Tools)',
       data: data
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch GST data' });
+  }
+});
+
+// Live GSTIN Radar Probe (Instant Registry & Statutory Check)
+app.get('/api/v1/alternate-data/gstin-probe/:gstin', async (req, res) => {
+  try {
+    const gstin = req.params.gstin.trim().toUpperCase();
+    const registry = await scrapeBusinessIntelligence(gstin);
+    const timeline = generateGSTTimeline(gstin);
+    res.json({
+      status: 'success',
+      gstin,
+      registry,
+      timeline
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to probe GSTIN registry' });
   }
 });
 
@@ -75,12 +107,21 @@ app.post('/api/v1/chat/xai', handleXAIChat);
 // --- User & Profile Endpoints ---
 app.post('/api/v1/users/login', loginUser);
 app.get('/api/v1/users', getAllUsers);
+app.get('/api/v1/telemetry/logins', getLoginTelemetry);
 
 // --- History Endpoints ---
 app.get('/api/v1/history', getHistory);
 
 // --- Agami Pipeline Simulation ---
 app.post('/api/v1/agami/train', trainAgamiPipeline);
+
+// SPA fallback for client routing (Express 5 compatible)
+if (fs.existsSync(distPath)) {
+  app.use((req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+}
 
 // --- Server Startup ---
 if (require.main === module) {

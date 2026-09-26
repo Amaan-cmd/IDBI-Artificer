@@ -1,30 +1,68 @@
 {
   "gstin": "27AADCB2230M1Z2",
-  "businessName": "EnverTech Retail Supplies",
+  "businessName": "EnverTech Retail Supplies Pvt Ltd",
   "filingStatus": "ACTIVE",
+  "period": {
+    "start": "2026-01",
+    "end": "2026-06"
+  },
+  "summary": {
+    "total_gstr1_sales": 4820000,
+    "total_purchases": 3210000,
+    "total_gstr1_tax_declared": 867600,
+    "total_gstr3b_tax_paid": 867600,
+    "delayed_filings_12m": 0,
+    "gstr_gap_percentage": 0.0
+  },
   "returns": [
     {
-      "month": "2026-03",
+      "month": "2026-01",
+      "gstr1_filed": true,
       "gstr3b_filed": true,
-      "total_sales": 1540000,
-      "total_purchases": 980000,
-      "tax_paid": 277200
+      "taxable_sales": 745000,
+      "tax_declared": 134100,
+      "tax_paid": 134100
+    },
+    {
+      "month": "2026-02",
+      "gstr1_filed": true,
+      "gstr3b_filed": true,
+      "taxable_sales": 778000,
+      "tax_declared": 140040,
+      "tax_paid": 140040
+    },
+    {
+      "month": "2026-03",
+      "gstr1_filed": true,
+      "gstr3b_filed": true,
+      "taxable_sales": 815000,
+      "tax_declared": 146700,
+      "tax_paid": 146700
     },
     {
       "month": "2026-04",
+      "gstr1_filed": true,
       "gstr3b_filed": true,
-      "total_sales": 1620000,
-      "total_purchases": 1050000,
-      "tax_paid": 291600
+      "taxable_sales": 762000,
+      "tax_declared": 137160,
+      "tax_paid": 137160
     },
     {
       "month": "2026-05",
+      "gstr1_filed": true,
       "gstr3b_filed": true,
-      "total_sales": 1480000,
-      "total_purchases": 920000,
-      "tax_paid": 266400
+      "taxable_sales": 835000,
+      "tax_declared": 150300,
+      "tax_paid": 150300
+    },
+    {
+      "month": "2026-06",
+      "gstr1_filed": true,
+      "gstr3b_filed": true,
+      "taxable_sales": 885000,
+      "tax_declared": 159300,
+      "tax_paid": 159300
     }
   ],
-  "compliance_score": 98,
-  "delayed_filings_12m": 0
+  "compliance_score": 99.2
 }
