@@ -2,6 +2,7 @@
 .auditor-sidebar {
   width: 260px;
   min-width: 260px;
+  flex-shrink: 0;
   height: 100vh;
   position: sticky;
   top: 0;
@@ -19,6 +20,7 @@
 .auditor-sidebar.collapsed {
   width: 72px;
   min-width: 72px;
+  flex-shrink: 0;
 }
 
 /* Brand Zone */
@@ -64,12 +66,13 @@
   flex-direction: column;
   min-width: 0;
   gap: 2px;
+  white-space: nowrap;
 }
 
 .sidebar-brand-full-logo {
-  height: 25px;
+  height: 26px;
   width: auto;
-  max-width: 120px;
+  max-width: 130px;
   object-fit: contain;
   object-position: left center;
 }
@@ -81,6 +84,7 @@
   letter-spacing: 0.08em;
   color: #E11D48;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .sidebar-collapse-btn {

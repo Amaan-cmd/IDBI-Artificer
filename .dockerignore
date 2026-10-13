@@ -10,10 +10,9 @@ backend/node_modules
 *.pptx
 *.pdf
 .env
-.env.*
-*.env
+*.env.local
 backend/.env*
-frontend/.env*
+frontend/.env.local
 *.local
 *.pem
 *.key
