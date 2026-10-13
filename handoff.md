@@ -289,7 +289,13 @@ EnverAI Artificer has been promoted to the **Autonomous Underwriting Citadel**, 
 
 - **Production Build:** Verified with Vite v8.1.0 — compiled cleanly with code 0 (`npm --prefix frontend run build`).
 - **Containerization:** Multi-stage `Dockerfile` serves static React assets and Express backend on port `8080`.
-- **Azure Container Apps:** Deploys via `deploy_azure.bat` / `deploy_azure.sh` to resource group `rg-artificer` in `centralindia` under target domain `https://artificer.enveraitech.in/`.
+- **Azure Container Apps (LIVE):** Successfully deployed and running in production:
+  - **Live URL:** `https://artificer-enverai.thankfulbay-87f2ee82.centralindia.azurecontainerapps.io/`
+  - **Health Endpoint:** `https://artificer-enverai.thankfulbay-87f2ee82.centralindia.azurecontainerapps.io/api/v1/health` (Verified `HTTP 200 OK`)
+  - **Resource Group:** `rg-artificer` (Region: `centralindia`)
+  - **Container Registry:** `caed530b2b9eacr.azurecr.io`
+  - **Custom Domain Ready:** CNAME pointer `artificer` to `artificer-enverai.thankfulbay-87f2ee82.centralindia.azurecontainerapps.io` for `https://artificer.enveraitech.in/`
 - **Google Cloud Run:** 1-Click deploy via `deploy_gcloud.bat` / `deploy_gcloud.sh` (`enverai-artificer`).
-- **Git Repository:** Synced with [Amaan-cmd/IDBI-Artificer](https://github.com/Amaan-cmd/IDBI-Artificer) on branch `main`.
+- **Git Repository:** Synced with [Amaan-cmd/IDBI-Artificer](https://github.com/Amaan-cmd/IDBI-Artificer) on branch `main` (Commit `f22407f`).
+
 
