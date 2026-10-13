@@ -1,14 +1,44 @@
-.magnetLines-container {
-  display: grid;
-  display: -ms-grid;
-  justify-items: center;
-  align-items: center;
+.magnet-lines {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 
-.magnetLines-container span {
+.magnet-lines--square {
+  height: auto;
+  max-width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: visible;
+}
+
+.magnet-lines__canvas {
+  position: absolute;
   display: block;
-  transform-origin: center;
-  will-change: transform;
-  transform: rotate(var(--rotate, -10deg));
-  transition: transform 0.1s ease-out;
+  pointer-events: none;
+}
+
+.magnet-lines__probe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.magnet-lines-bg-container {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background-color: var(--bg-canvas, #080C14);
+}
+
+.magnet-lines-bg-container .magnet-lines {
+  width: 100%;
+  height: 100%;
 }

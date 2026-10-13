@@ -168,12 +168,12 @@
   align-items: center;
   padding: 0.85rem 1.4rem;
   margin-bottom: 1.75rem;
-  background: rgba(14, 22, 17, 0.75);
+  background: rgba(26, 13, 37, 0.78);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
   gap: 1.25rem;
   flex-wrap: wrap;
 }
@@ -190,13 +190,13 @@
   width: 44px;
   height: 44px;
   border-radius: 10px;
-  background: #080E0B;
+  background: #120919;
   border: 1px solid var(--brand-gold-border);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  box-shadow: 0 0 15px rgba(200, 168, 107, 0.15);
+  box-shadow: 0 0 15px rgba(172, 225, 175, 0.18);
   flex-shrink: 0;
   transition: all 0.3s ease;
 }
@@ -507,7 +507,7 @@
   width: 10px;
   height: 10px;
   background: var(--brand-green);
-  border: 2px solid #080E0B;
+  border: 2px solid #FFFFFF;
   border-radius: 50%;
 }
 
@@ -574,5 +574,58 @@
   color: var(--text-secondary);
   flex: 1;
 }
+
+/* =========================================================================
+   LEFT-SIDEBAR + SPLIT-WORKSPACE ROOT ARCHITECTURE
+   ========================================================================= */
+.citadel-app-layout {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  position: relative;
+  z-index: 10;
+}
+
+.citadel-main-viewport {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  position: relative;
+  min-height: 100vh;
+  background: var(--bg-primary, #F8F9FB);
+}
+
+.citadel-workspace-body {
+  flex: 1;
+  padding: 24px;
+  max-width: 1600px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+@media (min-width: 1025px) {
+  .citadel-workspace-body.split-active-body,
+  .citadel-workspace-body:has(.split-workspace-view) {
+    height: calc(100vh - 56px);
+    max-height: calc(100vh - 56px);
+    overflow: hidden;
+    padding-top: 16px;
+    padding-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 768px) {
+  .citadel-app-layout {
+    flex-direction: column;
+  }
+  .citadel-workspace-body {
+    padding: 16px;
+  }
+}
+
 
 

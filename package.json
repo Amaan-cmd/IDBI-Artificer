@@ -7,10 +7,13 @@
     "postinstall": "npm install --prefix backend",
     "build": "npm --prefix frontend run build",
     "start": "node backend/server.js",
+    "dev": "npm --prefix frontend run dev",
+    "dev:all": "node -e \"const { spawn } = require('child_process'); spawn('node', ['backend/server.js'], { stdio: 'inherit', shell: true }); spawn('npm', ['--prefix', 'frontend', 'run', 'dev'], { stdio: 'inherit', shell: true });\"",
     "dev:backend": "node backend/server.js",
     "dev:frontend": "npm --prefix frontend run dev",
     "smoke-test": "node test_smoke_enterprises.js",
     "deploy:gcloud": "gcloud run deploy enverai-artificer --source . --platform managed --region us-central1 --allow-unauthenticated",
+    "deploy:azure": "deploy_azure.bat",
     "test": "node test_smoke_enterprises.js"
   },
   "keywords": [

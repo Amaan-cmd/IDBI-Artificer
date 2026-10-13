@@ -10,6 +10,7 @@ export default function CountUp({
   className = '',
   startWhen = true,
   separator = '',
+  decimals = undefined,
   onStart,
   onEnd
 }) {
@@ -27,20 +28,21 @@ export default function CountUp({
   const isInView = useInView(ref, { once: true, margin: '0px' });
 
   const getDecimalPlaces = num => {
-    const str = num.toString();
+    if (decimals !== undefined) return decimals;
+    const str = Number(num).toString();
 
     if (str.includes('.')) {
-      const decimals = str.split('.')[1];
-
-      if (parseInt(decimals) !== 0) {
-        return decimals.length;
+      const dec = str.split('.')[1];
+      if (parseInt(dec) !== 0) {
+        // Safe cap at 2 decimal places to prevent floating-point artifacts like .459999999999999
+        return Math.min(dec.length, 2);
       }
     }
 
     return 0;
   };
 
-  const maxDecimals = Math.max(getDecimalPlaces(from), getDecimalPlaces(to));
+  const maxDecimals = decimals !== undefined ? decimals : Math.min(Math.max(getDecimalPlaces(from), getDecimalPlaces(to)), 2);
 
   const formatValue = useCallback(
     latest => {

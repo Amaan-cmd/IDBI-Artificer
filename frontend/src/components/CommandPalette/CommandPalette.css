@@ -1,0 +1,250 @@
+/* CommandPalette.css - Whitish, Silver Ash & Light Cherry Pink Theme */
+.cmd-palette-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 10vh;
+  animation: cmdFadeIn 0.15s ease-out;
+}
+
+@keyframes cmdFadeIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.cmd-palette-modal {
+  width: 100%;
+  max-width: 680px;
+  background: #FFFFFF;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 16px;
+  box-shadow: 0 25px 60px rgba(15, 23, 42, 0.15), 0 0 35px rgba(255, 139, 167, 0.18);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.cmd-palette-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid #E2E8F0;
+  background: #F8FAFC;
+}
+
+.cmd-palette-search-icon {
+  color: #F43F5E;
+  flex-shrink: 0;
+}
+
+.cmd-palette-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: var(--font-primary);
+  font-size: 0.95rem;
+  color: #0F172A;
+}
+
+.cmd-palette-input::placeholder {
+  color: #94A3B8;
+}
+
+.cmd-palette-kbd {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: #475569;
+  background: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.cmd-palette-close-btn {
+  background: transparent;
+  border: none;
+  color: #64748B;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.cmd-palette-close-btn:hover {
+  color: #0F172A;
+  background: #E2E8F0;
+}
+
+.cmd-palette-results {
+  max-height: 380px;
+  overflow-y: auto;
+  padding: 10px;
+  background: #FFFFFF;
+}
+
+.cmd-palette-group-label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  color: #64748B;
+  letter-spacing: 0.06em;
+  padding: 6px 10px;
+  margin-bottom: 4px;
+}
+
+.cmd-palette-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+}
+
+.cmd-palette-item:hover,
+.cmd-palette-item.active {
+  background: #FFF1F4;
+  border-color: #FDA4AF;
+}
+
+.cmd-item-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: #FFF1F4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #E11D48;
+  flex-shrink: 0;
+}
+
+.cmd-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.cmd-item-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #0F172A;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cmd-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: #64748B;
+  margin-top: 2px;
+}
+
+.cmd-meta-gstin {
+  color: #E11D48;
+}
+
+.cmd-item-score-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #ECFDF5;
+  border: 1px solid #A7F3D0;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.cmd-score-val {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #059669;
+}
+
+.cmd-score-tier {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #059669;
+  letter-spacing: 0.04em;
+}
+
+.cmd-enter-hint {
+  color: #F43F5E;
+  opacity: 0;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+
+.cmd-palette-item.active .cmd-enter-hint {
+  opacity: 1;
+}
+
+.cmd-palette-item.dynamic-probe {
+  background: #FFFBEB;
+  border-color: #FDE68A;
+}
+
+.cmd-item-action-tag {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: #D97706;
+  font-weight: 700;
+}
+
+.cmd-palette-empty {
+  padding: 30px 20px;
+  text-align: center;
+  font-size: 0.82rem;
+  color: #64748B;
+  line-height: 1.5;
+}
+
+.cmd-palette-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: #F8FAFC;
+  border-top: 1px solid #E2E8F0;
+  font-size: 0.72rem;
+  color: #64748B;
+}
+
+.cmd-footer-shortcuts {
+  display: flex;
+  gap: 12px;
+}
+
+.cmd-footer-shortcuts kbd {
+  font-family: var(--font-mono);
+  background: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  padding: 1px 4px;
+  border-radius: 3px;
+  margin-right: 3px;
+  color: #334155;
+}
+
+.cmd-footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #E11D48;
+  font-weight: 600;
+  font-size: 0.7rem;
+}

@@ -1,0 +1,352 @@
+/* AuditorSidebar.css - Whitish, Silver Ash & Light Cherry Pink Theme */
+.auditor-sidebar {
+  width: 260px;
+  min-width: 260px;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  left: 0;
+  background: #FFFFFF;
+  border-right: 1px solid #E2E8F0;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1), min-width 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 50;
+  user-select: none;
+  box-shadow: 2px 0 16px rgba(15, 23, 42, 0.03);
+}
+
+.auditor-sidebar.collapsed {
+  width: 72px;
+  min-width: 72px;
+}
+
+/* Brand Zone */
+.sidebar-brand-zone {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 16px;
+  border-bottom: 1px solid #E2E8F0;
+}
+
+.brand-logo-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.brand-gold-crest {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: #FFFFFF;
+  border: 1.5px solid #E2E8F0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
+  flex-shrink: 0;
+  overflow: hidden;
+  padding: 3px;
+}
+
+.sidebar-brand-crest-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.brand-titles {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+
+.sidebar-brand-full-logo {
+  height: 25px;
+  width: auto;
+  max-width: 120px;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.brand-product {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #E11D48;
+  text-transform: uppercase;
+}
+
+.sidebar-collapse-btn {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  color: #64748B;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.sidebar-collapse-btn:hover {
+  background: #FFF1F4;
+  color: #E11D48;
+  border-color: #FDA4AF;
+}
+
+/* Nav Menu */
+.sidebar-nav-section {
+  flex: 1;
+  padding: 16px 10px;
+  overflow-y: auto;
+}
+
+.nav-group-title {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #64748B;
+  padding: 0 10px 8px 10px;
+}
+
+.sidebar-nav-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sidebar-nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+  width: 100%;
+}
+
+.sidebar-nav-item:hover {
+  background: #F8FAFC;
+  color: #0F172A;
+  border-color: #E2E8F0;
+}
+
+.sidebar-nav-item.active {
+  background: #FFF1F4;
+  border-color: #FDA4AF;
+  color: #E11D48;
+}
+
+.nav-item-icon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748B;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.sidebar-nav-item.active .nav-item-icon,
+.sidebar-nav-item:hover .nav-item-icon {
+  color: #F43F5E;
+}
+
+.nav-item-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.nav-item-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.nav-item-sub {
+  font-size: 0.68rem;
+  color: #64748B;
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
+.nav-active-pip {
+  position: absolute;
+  right: 8px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #F43F5E;
+  box-shadow: 0 0 8px rgba(244, 63, 94, 0.4);
+}
+
+/* Telemetry link */
+.sidebar-telemetry-zone {
+  padding: 0 10px 12px 10px;
+}
+
+.sidebar-telemetry-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  background: #FFF1F4;
+  border: 1px solid #FDA4AF;
+  border-radius: 8px;
+  color: #E11D48;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sidebar-telemetry-btn:hover {
+  background: #FFE4E8;
+  border-color: #FB7185;
+}
+
+/* Quota & Footer */
+.sidebar-footer {
+  padding: 12px 10px;
+  border-top: 1px solid #E2E8F0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #F8FAFC;
+}
+
+.sidebar-quota-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.quota-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.quota-label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: #64748B;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+}
+
+.quota-val {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: #F43F5E;
+  font-weight: 700;
+}
+
+.quota-bar-track {
+  height: 4px;
+  background: #E2E8F0;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.quota-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #FF8BA7, #F43F5E);
+  border-radius: 2px;
+}
+
+.quota-meta {
+  font-size: 0.65rem;
+  color: #64748B;
+}
+
+.sidebar-user-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+}
+
+.user-avatar-crest {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: #FFF1F4;
+  color: #E11D48;
+  font-weight: 700;
+  font-size: 0.78rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid #FDA4AF;
+}
+
+.user-details {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.user-name {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #0F172A;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-domain {
+  font-size: 0.65rem;
+  color: #64748B;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-logout-btn {
+  background: transparent;
+  border: none;
+  color: #64748B;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.user-logout-btn:hover {
+  color: #EF4444;
+  background: #FEE2E2;
+}

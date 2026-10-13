@@ -215,3 +215,81 @@ The app is now fully containerized via a production multi-stage `Dockerfile`:
 - Node.js Express backend serves both static assets and API routes on port `8080`.
 - 1-Click deployment to Google Cloud Run via `./deploy_gcloud.sh` or `deploy_gcloud.bat`.
 - Zero-configuration local testing via `docker compose up --build`.
+
+---
+
+## 2026-10-14 Institutional Citadel Overhaul & Autonomous Multi-Agent Underwriting Handoff
+
+### 1. Executive Summary & Design System Evolution
+EnverAI Artificer has been promoted to the **Autonomous Underwriting Citadel**, engineered for institutional credit officers assessing New-to-Credit (NTC) MSMEs under the **RBI Digital Lending Master Direction 2026**.
+
+- **Official Brand Identity:** Installed official `enver.ai` brand logo (`enver_logo.png`) across the Verification Gate, Auditor Sidebar, TopBar, and Cockpit.
+- **Color Scheme & Luxury Palette:** Standardized on **Whitish, Silver Ash, and Light Cherry Pink**:
+  - Primary Background: `#F8F9FB` with dynamic ambient WebGL2 `FloatingLines` in 60fps light mode.
+  - Cards & Surfaces: `#FFFFFF` with `#E2E8F0` silver-ash borders and subtle `#FF8BA7`/`#F43F5E` cherry-pink glows.
+  - Telemetry Accents: `#ACE1AF` (Celadon Green) for verified zero-hallucination ratios.
+  - Buttons & CTAs: `linear-gradient(135deg, #FF8BA7 0%, #F43F5E 100%)`.
+
+---
+
+### 2. Core Architectural & Functional Pillars Delivered
+
+#### A. Orc CCO Intelligence Terminal (`OrcTerminal.jsx` & `orcIntelligence.js`)
+- **Signal Traffic-Light Window Dots Preserved:** Maintained the three prominent signal dots (`●` Red `#FF5F56`, `●` Yellow `#FFBD2E`, `●` Green `#27C93F`) on the titlebar with interactive actions.
+- **Interactive Decision Interrogation (`Why was this decision taken?`):**
+  - Loan officers can interrogate why an evaluation was approved, capped, or flagged.
+  - Step-by-step mathematical attribution starting from benchmark-neutral 750 points across all 5 financial pillars.
+  - Detailed explanations of points withheld (e.g., peak overdraft drawdowns, GSTR tax gaps, or inward bounce events).
+  - Counterfactual sensitivity analysis detailing exact metric improvements required to reach Prime 850+.
+  - Sanction limit rationale anchored to the 20% max EMI burden ratio against monthly credit inflows.
+  - Dynamic enterprise context auto-recalibration across presets (Apex Precision 824, Surat Textiles 765, Kalyan Agro 610, Enver AI Tech 870, Tata Motors 895, Kariman Enterprises 790) and arbitrary probed GSTINs.
+
+#### B. Split Workspace View (Stripe/Bloomberg Style Cockpit)
+- **Independent Column Scrolling:**
+  - Left Verdict Column: Docked and sticky, featuring the 300–900 institutional score dial, risk rating, sanction recommendation, instant executive decision actions (Approve, Conditional, Reject), and one-click Audit Dossier PDF export.
+  - Right Evidence Column: Scrolls independently with sticky category tabs (`All Findings`, `P1 Liquidity`, `P2 Revenue`, `P3 Stability`, `P4 Leverage`, `P5 MCA/Forensics`, `Raw JSON`).
+  - Completely eliminates bottom whitespace on desktop displays.
+
+#### C. ScrollStack Audit Findings Deck (`ScrollStack.jsx`)
+- Interactive stacking card deck in `NewEvaluationView` showcasing all 6 pillars in 3D layered cards with smooth scroll physics and zero layout shifts.
+
+#### D. Institutional SecOps & Verification Gate (`VerificationGate.jsx`)
+- **Client Login:** Username and password authentication with credential masking and lockout rate-limiting (`Andalaus` / `Citadel@296`).
+- **Enterprise Hyperlink:** Embedded link directing new institutional underwriters to `https://enveraitech.com/signup`.
+- **SSO Gateways:** Google Enterprise SSO and Microsoft Entra ID (`enveraitech.com` tenant `bda1a0ee-c558-4d13-a112-18b2d8d1deba`).
+- **Email OTP Verification:** Sandbox OTP generation with inline demo code autofill for offline/demo compliance.
+- **5-Minute Inactivity Sentinel:** Automatically locks the session after 300 seconds of inactivity to protect corporate financial privacy under RBI mandate.
+- **Strict Input Sanitization:** Sanitization utilities (`sanitizeText`, `sanitizePassword`, `sanitizeEmail`, `sanitizeOtpDigits`, `isSafeInput`) prevent XSS, prototype pollution, and prompt injection attacks.
+
+#### E. Saved Businesses & Watchlist Architecture (`WatchlistView.jsx`)
+- Evaluations are persisted per user (`enver_user_evaluations_${userId}`) and synchronized with backend `/api/v1/history`.
+- Grid of enterprise cards with risk badges, annualized turnover, cash buffer metrics, and instant actions (inspect in split workspace, generate PDF, or remove).
+
+---
+
+### 3. Five-Pillar Grounded Financial Telemetry
+
+| Pillar | Metric / Ratio | Prime Benchmark | Score Attribution |
+| :--- | :--- | :--- | :--- |
+| **Pillar 1: Liquidity** | Cash Buffer Ratio & Runway | $\ge 0.25\times$ (15–25 Days) | $+40$ pts ($\ge 0.5\times$) down to $-50$ pts ($< 0.2\times$) |
+| | Overdraft (OD) Headroom | $< 50\%$ drawn | $+25$ pts ($< 50\%$) down to $-45$ pts ($> 85\%$) |
+| **Pillar 2: Revenue** | Annualized Revenue Run Rate | Momentum $\ge 5\%$ | $+30$ pts (expansionary) down to $-35$ pts (contracting) |
+| | GSTR-1 to Bank Reconciliation | $0.90\times – 1.10\times$ | $+35$ pts ($\pm 10\%$) down to $-40$ pts ($> 20\%$) |
+| | GSTR-3B Tax Gap | $\le 2.0\%$ unpaid | $+25$ pts ($\le 2\%$) down to $-45$ pts ($> 5\%$) |
+| **Pillar 3: Stability** | Credit Coefficient of Variation (CV) | $< 0.30$ | $+25$ pts ($\le 0.20$) down to $-30$ pts ($> 0.40$) |
+| | Inward Return Bounces | $0$ return events | $-60$ pts per inward dishonor return event |
+| **Pillar 4: Leverage** | Debt Service Coverage Proxy (DSCP) | $\ge 1.75\times$ | $+35$ pts ($\ge 1.5\times$) down to $-60$ pts ($< 1.0\times$) |
+| | Interest/EMI Burden Ratio | $\le 20.0\%$ of inflow | Caps incremental borrowing lines |
+| **Pillar 5: Operational** | MCA21 Company Status | Active | $-150$ pts if struck-off, dormant, or non-active |
+| | Director DIN & Litigation Hits | Clean DIN, 0 cases | $-40$ pts per court litigation hit |
+
+---
+
+### 4. Build, Deployment & Production Readiness
+
+- **Production Build:** Verified with Vite v8.1.0 — compiled cleanly with code 0 (`npm --prefix frontend run build`).
+- **Containerization:** Multi-stage `Dockerfile` serves static React assets and Express backend on port `8080`.
+- **Azure Container Apps:** Deploys via `deploy_azure.bat` / `deploy_azure.sh` to resource group `rg-artificer` in `centralindia` under target domain `https://artificer.enveraitech.in/`.
+- **Google Cloud Run:** 1-Click deploy via `deploy_gcloud.bat` / `deploy_gcloud.sh` (`enverai-artificer`).
+- **Git Repository:** Synced with [Amaan-cmd/IDBI-Artificer](https://github.com/Amaan-cmd/IDBI-Artificer) on branch `main`.
+

@@ -1,33 +1,58 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Inter:wght@300;400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&display=swap');
 
 :root {
-  /* Brand Palette - Deep Spruce Obsidian & Champagne Gold Citadel Theme */
-  --bg-primary: #080E0B;
-  --bg-secondary: #0D1613;
-  --bg-tertiary: #111C18;
+  /* Brand Palette - Whitish Alabaster, Silver Ash & Light Cherry Pink */
+  --bg-primary: #F8F9FB;
+  --bg-secondary: #F1F3F6;
+  --bg-tertiary: #E8EBF0;
+  --bg-canvas: #F8F9FB;
   
-  --surface: #101B17;
-  --surface-alt: #14221D;
-  --surface-hover: #182A24;
-  --surface-elevated: #16241F;
+  --surface: #FFFFFF;
+  --surface-alt: #F4F6F9;
+  --surface-hover: #ECEFF3;
+  --surface-elevated: #FFFFFF;
 
-  /* Champagne / Brass Gold Accents */
-  --brand-gold: #C8A86B;
-  --brand-gold-light: #DFBE7E;
-  --brand-gold-dark: #A6864B;
-  --brand-gold-dim: rgba(200, 168, 107, 0.12);
-  --brand-gold-border: rgba(200, 168, 107, 0.22);
-  --brand-gold-glow: rgba(200, 168, 107, 0.35);
+  /* Light Cherry Pink (Sakura / Pale Cherry Blossom) Accents */
+  --cherry-pink: #FF8BA7;
+  --cherry-pink-light: #FFCCD5;
+  --cherry-pink-soft: #FFF1F4;
+  --cherry-pink-vibrant: #F43F5E;
+  --cherry-pink-dark: #BE123C;
+  --cherry-pink-dim: rgba(244, 63, 94, 0.1);
+  --cherry-pink-border: rgba(244, 63, 94, 0.28);
+  --cherry-pink-glow: rgba(255, 139, 167, 0.25);
 
-  /* Deep Emerald & Spruce Tones */
-  --spruce-dark: #0B1411;
-  --spruce-mid: #14221D;
-  --spruce-light: #1E332B;
+  /* Silver Ash Tones */
+  --silver-ash-light: #F1F3F6;
+  --silver-ash: #E2E5E9;
+  --silver-ash-dark: #CBD0D8;
+  --silver-ash-deep: #94A3B8;
+
+  /* Aliases mapped to Cherry Pink & Silver Ash */
+  --brand-gold: #F43F5E;
+  --brand-gold-light: #FF8BA7;
+  --brand-gold-dark: #BE123C;
+  --brand-gold-dim: rgba(244, 63, 94, 0.1);
+  --brand-gold-border: rgba(244, 63, 94, 0.28);
+  --brand-gold-glow: rgba(255, 139, 167, 0.25);
+
+  --celadon: #F43F5E;
+  --celadon-light: #FFF1F4;
+  --celadon-pale: #FFF7F9;
+  --celadon-dim: rgba(244, 63, 94, 0.1);
+  --celadon-border: rgba(244, 63, 94, 0.28);
+
+  --aubergine-dark: #F8FAFC;
+  --aubergine-mid: #F1F5F9;
+  --aubergine-surface: #FFFFFF;
+  --aubergine-light: #E2E8F0;
+  --aubergine-accent: #FB7185;
+  --aubergine-glow: rgba(251, 113, 133, 0.2);
 
   /* Risk & Status Colors */
-  --brand-green: #22C55E;
-  --brand-green-dim: rgba(34, 197, 94, 0.12);
-  --brand-green-border: rgba(34, 197, 94, 0.3);
+  --brand-green: #10B981;
+  --brand-green-dim: rgba(16, 185, 129, 0.12);
+  --brand-green-border: rgba(16, 185, 129, 0.3);
 
   --brand-amber: #F59E0B;
   --brand-amber-dim: rgba(245, 158, 11, 0.12);
@@ -37,19 +62,22 @@
   --brand-red-dim: rgba(239, 68, 68, 0.12);
   --brand-red-border: rgba(239, 68, 68, 0.3);
 
-  /* Borders */
-  --border: rgba(200, 168, 107, 0.14);
-  --border-strong: rgba(200, 168, 107, 0.28);
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-focus: #C8A86B;
+  /* Silver Ash Borders */
+  --border: #E2E5E9;
+  --border-strong: #CBD0D8;
+  --border-subtle: #EDF0F4;
+  --border-focus: #F43F5E;
 
-  /* Text Hierarchy */
-  --text-primary: #F5F4EE;
-  --text-secondary: #B4C3BA;
-  --text-muted: #76877E;
-  --text-subtle: #4D5C54;
-  --text-inverse: #080E0B;
-  --text-gold: #C8A86B;
+  /* High Contrast Slate Typography on Whitish Backgrounds */
+  --text-primary: #0F172A;
+  --text-secondary: #334155;
+  --text-muted: #64748B;
+  --text-subtle: #94A3B8;
+  --text-inverse: #FFFFFF;
+  --text-gold: #F43F5E;
+  --text-celadon: #F43F5E;
+  --text-aubergine: #E11D48;
+  --text-pink: #F43F5E;
 
   /* Typography */
   --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -65,11 +93,11 @@
   --radius-xl: 24px;
   --radius-full: 9999px;
 
-  /* Shadows */
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
-  --shadow-soft: 0 8px 24px rgba(0, 0, 0, 0.45);
-  --shadow-hover: 0 14px 36px rgba(0, 0, 0, 0.6);
-  --shadow-gold: 0 0 24px rgba(200, 168, 107, 0.18);
+  /* Soft Ambient Modern Shadows */
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-soft: 0 4px 16px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
+  --shadow-hover: 0 10px 28px rgba(15, 23, 42, 0.09), 0 4px 12px rgba(15, 23, 42, 0.04);
+  --shadow-gold: 0 0 20px rgba(244, 63, 94, 0.2);
 }
 
 * {
@@ -98,12 +126,12 @@ html, body {
   background: var(--bg-primary);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--surface-alt);
+  background: var(--silver-ash-dark);
   border: 1px solid var(--border);
   border-radius: var(--radius-full);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--brand-gold-dark);
+  background: var(--cherry-pink);
 }
 
 /* Application Viewport & Canvas Background */
@@ -112,8 +140,8 @@ html, body {
   min-height: 100vh;
   background-color: var(--bg-primary);
   background-image: 
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(200, 168, 107, 0.07), transparent),
-    radial-gradient(ellipse 60% 40% at 90% 90%, rgba(34, 197, 94, 0.03), transparent);
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(255, 183, 197, 0.22), transparent),
+    radial-gradient(ellipse 60% 40% at 90% 90%, rgba(226, 232, 240, 0.7), transparent);
   color: var(--text-primary);
   z-index: 1;
 }
@@ -242,30 +270,30 @@ html, body {
   }
 }
 
-/* Buttons */
+/* Buttons - Light Cherry Pink & Silver Ash */
 .btn-primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: linear-gradient(135deg, #C8A86B 0%, #DFBE7E 100%);
-  color: #080E0B;
-  border: 1px solid #DFBE7E;
+  background: linear-gradient(135deg, #FF8BA7 0%, #F43F5E 100%);
+  color: #FFFFFF;
+  border: 1px solid #FFCCD5;
   padding: 10px 20px;
   border-radius: var(--radius-sm);
   font-family: var(--font-primary);
-  font-weight: 600;
+  font-weight: 700;
   font-size: 0.82rem;
   letter-spacing: 0.03em;
   text-transform: uppercase;
   cursor: pointer;
-  box-shadow: 0 2px 10px rgba(200, 168, 107, 0.25);
+  box-shadow: 0 2px 10px rgba(244, 63, 94, 0.25);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #DFBE7E 0%, #E8CA8C 100%);
-  box-shadow: 0 4px 18px rgba(200, 168, 107, 0.4);
+  background: linear-gradient(135deg, #FFA3B9 0%, #E11D48 100%);
+  box-shadow: 0 4px 18px rgba(244, 63, 94, 0.4);
   transform: translateY(-1px);
 }
 
@@ -280,23 +308,24 @@ html, body {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: rgba(20, 34, 29, 0.7);
+  background: #FFFFFF;
   color: var(--text-primary);
   border: 1px solid var(--border);
   padding: 10px 18px;
   border-radius: var(--radius-sm);
   font-family: var(--font-primary);
-  font-weight: 500;
+  font-weight: 600;
   font-size: 0.82rem;
   letter-spacing: 0.02em;
   cursor: pointer;
+  box-shadow: var(--shadow-sm);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: var(--surface-hover);
-  border-color: var(--brand-gold);
-  color: var(--brand-gold-light);
+  background: var(--surface-alt);
+  border-color: var(--border-strong);
+  color: var(--cherry-pink-dark);
   transform: translateY(-1px);
 }
 
@@ -310,24 +339,24 @@ html, body {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: linear-gradient(135deg, #C8A86B 0%, #B89758 100%);
-  color: #080E0B;
-  border: 1px solid var(--brand-gold);
+  background: linear-gradient(135deg, #FF8BA7 0%, #E11D48 100%);
+  color: #FFFFFF;
+  border: 1px solid var(--cherry-pink-border);
   padding: 12px 24px;
   border-radius: var(--radius-sm);
   font-family: var(--font-primary);
-  font-weight: 600;
+  font-weight: 700;
   font-size: 0.86rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(200, 168, 107, 0.25);
+  box-shadow: 0 4px 16px rgba(244, 63, 94, 0.25);
   transition: all 0.2s ease;
 }
 
 .btn-accent:hover:not(:disabled) {
-  background: linear-gradient(135deg, #DFBE7E 0%, #C8A86B 100%);
-  box-shadow: 0 6px 22px rgba(200, 168, 107, 0.4);
+  background: linear-gradient(135deg, #FFA3B9 0%, #BE123C 100%);
+  box-shadow: 0 6px 22px rgba(244, 63, 94, 0.4);
   transform: translateY(-1px);
 }
 

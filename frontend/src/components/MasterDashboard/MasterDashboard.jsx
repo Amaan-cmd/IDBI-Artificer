@@ -53,7 +53,8 @@ export default function MasterDashboard({ onBack }) {
   }, [API_BASE]);
 
   const totalCalls = users.reduce((acc, u) => acc + (u.calls || 0), 0) || 538;
-  const totalCost = users.reduce((acc, u) => acc + (Number(u.cost) || 0), 0) || 10.76;
+  const rawCost = users.reduce((acc, u) => acc + (Number(u.cost) || 0), 0) || 10.76;
+  const totalCost = Number(rawCost.toFixed(2));
   const totalEvaluatedVolume = history.reduce((acc, h) => acc + (Number(h.revenue) || 0), 0) || 49180000;
 
   return (
@@ -68,10 +69,10 @@ export default function MasterDashboard({ onBack }) {
           <div className="eyebrow" style={{ marginTop: '1rem', marginBottom: '0.25rem' }}>
             08 — GOVERNANCE & TELEMETRY · CITADEL MASTER
           </div>
-          <h1 className="serif-title" style={{ fontSize: '2.5rem', margin: 0 }}>
-            <SplitText text="Institutional Administration Citadel" textAlign="left" delay={25} duration={0.4} />
+          <h1 className="master-title">
+            Institutional Administration Citadel
           </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: '0.3rem 0 0 0' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', margin: '0.3rem 0 0 0' }}>
             Deterministic multi-agent monitoring, audit trails, and unit economics across the GCP organization.
           </p>
         </div>
@@ -233,7 +234,7 @@ export default function MasterDashboard({ onBack }) {
                   </td>
                   <td style={{ fontFamily: 'var(--font-mono)' }}>{u.calls || 0} runs</td>
                   <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--brand-gold)' }}>
-                    ${Math.round(Number(u.cost || 0) * 100) / 100}
+                    ${Number(u.cost || 0).toFixed(2)}
                   </td>
                   <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                     {u.lastLogin ? new Date(u.lastLogin).toLocaleString() : 'Recent'}
@@ -270,10 +271,10 @@ export default function MasterDashboard({ onBack }) {
                   </td>
                   <td>
                     <div style={{ fontWeight: 600, color: 'var(--brand-gold)', fontSize: '0.82rem' }}>
-                      {h.userEmail ? h.userEmail.split('@')[0] : (h.userName || 'Andalaus')}
+                      {h.userEmail ? h.userEmail.split('@')[0] : (h.userName || 'Institutional Officer')}
                     </div>
                     <code style={{ fontSize: '0.70rem', color: 'var(--text-muted)' }}>
-                      {h.userEmail || h.userId || 'andalaus@enveraitech.com'}
+                      {h.userEmail || h.userId || 'officer@enveraitech.com'}
                     </code>
                   </td>
                   <td>
@@ -385,7 +386,7 @@ export default function MasterDashboard({ onBack }) {
             </div>
             <div className="security-pill">
               <span className="dot-green"></span>
-              FIRESTORE + DUAL LOCAL ARCHIVE ACTIVE
+              AZURE SECURE CITADEL LEDGER ACTIVE
             </div>
           </div>
 
