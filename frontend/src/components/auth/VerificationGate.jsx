@@ -3,8 +3,6 @@ import {
   ShieldAlert, Lock, Eye, EyeOff, ArrowRight, ShieldCheck, 
   Mail, KeyRound, CheckCircle2, RefreshCw, Sparkles, Building2, UserCheck 
 } from 'lucide-react';
-import { auth, googleProvider } from '../../firebase';
-import { signInWithPopup, OAuthProvider } from 'firebase/auth';
 import { sanitizeText, sanitizePassword, sanitizeEmail, sanitizeOtpDigits, isSafeInput } from '../../utils/sanitize';
 import './VerificationGate.css';
 
@@ -32,12 +30,12 @@ export default function VerificationGate({ onVerified }) {
   const [error, setError] = useState(null);
   const [notice, setNotice] = useState(null);
 
-  // Handle redirect to enveraitech.com/signup with return callback
+  // Handle redirect to enveraitech.com/agent-gateway with return callback
   const handleRedirectToEnverSignUp = () => {
     const returnUrl = window.location.origin + window.location.pathname;
     const cleanEmail = sanitizeEmail(emailInput);
     const emailParam = cleanEmail ? `&email=${encodeURIComponent(cleanEmail)}` : '';
-    window.location.href = `https://enveraitech.com/signup?mode=signup&redirect=${encodeURIComponent(returnUrl)}${emailParam}`;
+    window.location.href = `https://enveraitech.com/agent-gateway?mode=signup&redirect=${encodeURIComponent(returnUrl)}${emailParam}`;
   };
 
   // Lockout countdown timer
@@ -172,160 +170,24 @@ export default function VerificationGate({ onVerified }) {
     setAuthLoading(false);
   };
 
-  // 2. Google Enterprise SSO Handler
-  const handleGoogleLogin = async () => {
-    setAuthLoading(true);
+  // 2. Google Enterprise SSO Handler -> Official Enver Sovereign Agent Gateway
+  const handleGoogleLogin = () => {
     setError(null);
-    setNotice(null);
-
-    const isCloudContainer = window.location.hostname.includes('azurecontainerapps.io') || 
-                             window.location.hostname.includes('azurewebsites.net') ||
-                             window.location.hostname.includes('run.app');
-
-    try {
-      let userObj = null;
-
-      // Only attempt popup if on localhost and valid non-dummy Firebase config
-      if (!isCloudContainer && auth && auth.config?.apiKey && !auth.config?.apiKey.includes('dummy')) {
-        try {
-          const result = await signInWithPopup(auth, googleProvider);
-          const user = result.user;
-          const userEmail = sanitizeEmail(user.email || '');
-
-          const handle = userEmail.split('@')[0];
-          const cleanDisplayName = sanitizeText(user.displayName || '', 64);
-          userObj = {
-            id: user.uid || `u_${handle}`,
-            username: cleanDisplayName || handle.split('.').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' '),
-            email: userEmail,
-            role: userEmail.endsWith('@enveraitech.com') ? 'Enterprise Principal Underwriter' : 'Institutional Underwriter',
-            org: userEmail.endsWith('@enveraitech.com') ? 'Enver AI Tech' : 'Institutional Partner',
-            calls: 1,
-            cost: 0.02,
-            lastLogin: new Date().toISOString()
-          };
-        } catch (authErr) {
-          console.warn('Google popup auth error, granting institutional fallback clearance:', authErr);
-        }
-      }
-
-      if (!userObj) {
-        // Immediate clean institutional clearance without broken external popups
-        const fallbackEmail = sanitizeEmail(emailInput || 'officer@enveraitech.com');
-        const handle = fallbackEmail.split('@')[0];
-        userObj = {
-          id: `u_google_${handle}`,
-          username: 'Enver Enterprise Officer',
-          email: fallbackEmail,
-          role: 'Enterprise Institutional Underwriter',
-          org: 'Enver AI Tech · Citadel Underwriting',
-          calls: 142,
-          cost: 2.84,
-          lastLogin: new Date().toISOString()
-        };
-      }
-
-      if (API_BASE) {
-        fetch(`${API_BASE}/api/v1/users/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            username: userObj.username,
-            email: userObj.email,
-            authType: 'google'
-          })
-        }).catch(() => {});
-      }
-
-      if (userObj) {
-        localStorage.setItem('enverai_user_session', JSON.stringify(userObj));
-        localStorage.setItem('enver_user_email', userObj.email);
-        onVerified(userObj);
-      }
-    } catch (err) {
-      setError(err.message || 'Google authentication interrupted.');
-    } finally {
-      setAuthLoading(false);
-    }
+    setNotice('Connecting to Enver Sovereign Agent Gateway for Google Enterprise verification...');
+    const returnUrl = window.location.origin + window.location.pathname;
+    const cleanEmail = sanitizeEmail(emailInput);
+    const emailParam = cleanEmail ? `&email=${encodeURIComponent(cleanEmail)}` : '';
+    window.location.href = `https://enveraitech.com/agent-gateway?mode=signin&provider=google&redirect=${encodeURIComponent(returnUrl)}${emailParam}`;
   };
 
-  // 3. Microsoft Entra ID SSO Handler
-  const handleMicrosoftLogin = async () => {
-    setAuthLoading(true);
+  // 3. Microsoft Entra ID SSO Handler -> Official Enver Sovereign Agent Gateway
+  const handleMicrosoftLogin = () => {
     setError(null);
-    setNotice(null);
-
-    const isCloudContainer = window.location.hostname.includes('azurecontainerapps.io') || 
-                             window.location.hostname.includes('azurewebsites.net') ||
-                             window.location.hostname.includes('run.app');
-
-    try {
-      let userObj = null;
-
-      if (!isCloudContainer && auth && auth.config?.apiKey && !auth.config?.apiKey.includes('dummy')) {
-        try {
-          const microsoftProvider = new OAuthProvider('microsoft.com');
-          microsoftProvider.setCustomParameters({
-            tenant: 'bda1a0ee-c558-4d13-a112-18b2d8d1deba' // enveraitech.com Entra ID Tenant
-          });
-          const result = await signInWithPopup(auth, microsoftProvider);
-          const user = result.user;
-          const userEmail = sanitizeEmail(user.email || '');
-
-          const handle = userEmail.split('@')[0];
-          const cleanDisplayName = sanitizeText(user.displayName || '', 64);
-          userObj = {
-            id: user.uid || `u_ms_${handle}`,
-            username: cleanDisplayName || handle.split('.').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' '),
-            email: userEmail,
-            role: 'Enterprise Institutional Underwriter (Microsoft Entra)',
-            org: 'Enver AI Tech / Azure Tenant',
-            calls: 1,
-            cost: 0.02,
-            lastLogin: new Date().toISOString()
-          };
-        } catch (msErr) {
-          console.warn('Microsoft popup auth error, granting institutional fallback clearance:', msErr);
-        }
-      }
-
-      if (!userObj) {
-        const fallbackEmail = sanitizeEmail(emailInput || 'daddy@enveraitech.com');
-        const handle = fallbackEmail.split('@')[0];
-        userObj = {
-          id: `u_entra_${handle}`,
-          username: 'Azure Underwriting Officer',
-          email: fallbackEmail,
-          role: 'Enterprise Principal Underwriter (Microsoft Entra)',
-          org: 'Enver AI Tech (Azure Tenant)',
-          calls: 98,
-          cost: 1.96,
-          lastLogin: new Date().toISOString()
-        };
-      }
-
-      if (API_BASE) {
-        fetch(`${API_BASE}/api/v1/users/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            username: userObj.username,
-            email: userObj.email,
-            authType: 'microsoft'
-          })
-        }).catch(() => {});
-      }
-
-      if (userObj) {
-        localStorage.setItem('enverai_user_session', JSON.stringify(userObj));
-        localStorage.setItem('enver_user_email', userObj.email);
-        onVerified(userObj);
-      }
-    } catch (err) {
-      setError(err.message || 'Microsoft Entra ID authentication failed.');
-    } finally {
-      setAuthLoading(false);
-    }
+    setNotice('Connecting to Enver Sovereign Agent Gateway for Microsoft Entra ID verification...');
+    const returnUrl = window.location.origin + window.location.pathname;
+    const cleanEmail = sanitizeEmail(emailInput);
+    const emailParam = cleanEmail ? `&email=${encodeURIComponent(cleanEmail)}` : '';
+    window.location.href = `https://enveraitech.com/agent-gateway?mode=signin&provider=microsoft&redirect=${encodeURIComponent(returnUrl)}${emailParam}`;
   };
 
   // 4. Email OTP: Send Verification Code
@@ -515,7 +377,7 @@ export default function VerificationGate({ onVerified }) {
               <path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.173 0 7.548 0 9s.347 2.827.957 4.039l3.007-2.332z" />
               <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z" />
             </svg>
-            <span>Authenticate with Google Enterprise</span>
+            <span>Sign in with Google (Enver Gateway)</span>
           </button>
 
           <button
@@ -530,7 +392,7 @@ export default function VerificationGate({ onVerified }) {
               <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
               <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
             </svg>
-            <span>Authenticate with Microsoft Entra ID</span>
+            <span>Sign in with Microsoft Entra ID (Enver Gateway)</span>
           </button>
         </div>
 
