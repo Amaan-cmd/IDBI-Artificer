@@ -278,28 +278,36 @@ export default function MasterDashboard({ onBack }) {
                       {h.userEmail ? h.userEmail.split('@')[0] : (h.userName || 'Institutional Officer')}
                     </div>
                     <code style={{ fontSize: '0.70rem', color: 'var(--text-muted)' }}>
-                      {h.userEmail || h.userId || 'officer@enveraitech.com'}
+                      {h.userEmail || h.userId || '—'}
                     </code>
                   </td>
                   <td>
-                    <span className="score-pill" style={{ color: h.score >= 750 ? 'var(--brand-green)' : h.score >= 600 ? 'var(--brand-amber)' : 'var(--brand-red)' }}>
-                      {h.score}
-                    </span>
+                    {typeof h.score === 'number' ? (
+                      <span className="score-pill" style={{ color: h.score >= 750 ? 'var(--brand-green)' : h.score >= 600 ? 'var(--brand-amber)' : 'var(--brand-red)' }}>
+                        {h.score}
+                      </span>
+                    ) : (
+                      <span className="score-pill" style={{ color: 'var(--text-muted)' }}>
+                        {h.fullPayload?.reportType === 'REGISTRY_SCREENING' ? 'Screening' : '—'}
+                      </span>
+                    )}
                   </td>
                   <td>
-                    <span className={`badge badge-${h.risk || 'LOW'}`}>
-                      {h.risk || 'LOW'}
-                    </span>
+                    {h.risk ? (
+                      <span className={`badge badge-${h.risk}`}>{h.risk}</span>
+                    ) : (
+                      <span className="badge" style={{ background: 'var(--surface-inset)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>—</span>
+                    )}
                   </td>
                   <td style={{ fontFamily: 'var(--font-mono)' }}>
-                    ₹{Number(h.revenue || 0).toLocaleString()}
+                    {h.revenue != null && Number.isFinite(Number(h.revenue)) ? `₹${Number(h.revenue).toLocaleString()}` : '—'}
                   </td>
-                  <td style={{ fontFamily: 'var(--font-mono)' }}>{h.buffer || '0.71x'}</td>
-                  <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--brand-green)' }}>
-                    {h.compliance || '100% Attested'}
+                  <td style={{ fontFamily: 'var(--font-mono)' }}>{h.buffer || '—'}</td>
+                  <td style={{ fontFamily: 'var(--font-mono)', color: h.compliance ? 'var(--brand-green)' : 'var(--text-muted)' }}>
+                    {h.compliance || '—'}
                   </td>
                   <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                    {h.timestamp ? new Date(h.timestamp).toLocaleDateString() : 'Recent'}
+                    {h.timestamp ? new Date(h.timestamp).toLocaleDateString() : '—'}
                   </td>
                 </tr>
               ))}
@@ -423,11 +431,11 @@ export default function MasterDashboard({ onBack }) {
                       {l.type === 'google_workspace' ? 'Google Workspace SSO' : l.type === 'email_otp' ? 'Email OTP' : (l.type || 'Unknown')}
                     </td>
                     <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                      {l.ip || '127.0.0.1'}
+                      {l.ip || '—'}
                     </td>
                     <td>
-                      <span className={`badge ${l.status === 'AUTHORIZED' || l.status === 'SUCCESS' ? 'badge-LOW' : 'badge-HIGH'}`}>
-                        {l.status || 'AUTHORIZED'}
+                      <span className={`badge ${l.status === 'AUTHORIZED' || l.status === 'SUCCESS' ? 'badge-LOW' : l.status ? 'badge-HIGH' : ''}`}>
+                        {l.status || '—'}
                       </span>
                     </td>
                   </tr>

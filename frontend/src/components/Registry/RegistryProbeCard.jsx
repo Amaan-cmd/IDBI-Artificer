@@ -16,11 +16,11 @@ const formatTime = (iso) => {
   return t && !Number.isNaN(t.getTime()) ? t.toLocaleString('en-IN') : 'unknown time';
 };
 
-export function Provenance({ section }) {
+export function Provenance({ section, label }) {
   if (!section || section.status !== 'ok') return null;
   return (
     <div className="registry-provenance">
-      {section.source || 'Unknown source'} · fetched {formatTime(section.fetchedAt)}
+      {label ? `${label}: ` : ''}{section.source || 'Unknown source'} · fetched {formatTime(section.fetchedAt)}
       {section.transactionId ? ` · txn ${String(section.transactionId).slice(0, 8)}` : ''}
       {section.cached ? ' · cached' : ''}
       {section.partial ? ' · partial' : ''}
@@ -31,9 +31,10 @@ export function Provenance({ section }) {
 // Provenance lines for every registry section that returned data.
 export function ProvenanceList({ report }) {
   if (!report) return null;
-  const sections = [report.gst, report.filings, report.mca].filter(s => s?.status === 'ok');
+  const sections = [['GST registration', report.gst], ['GST returns', report.filings], ['MCA21', report.mca]]
+    .filter(([, s]) => s?.status === 'ok');
   if (!sections.length) return <div className="registry-provenance">No registry source returned data.</div>;
-  return <>{sections.map((s, i) => <Provenance key={i} section={s} />)}</>;
+  return <>{sections.map(([label, s]) => <Provenance key={label} label={label} section={s} />)}</>;
 }
 
 function Unavailable({ section }) {

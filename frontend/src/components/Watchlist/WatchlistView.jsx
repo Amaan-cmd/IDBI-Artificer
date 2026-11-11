@@ -6,6 +6,11 @@ import {
 } from 'lucide-react';
 import './WatchlistView.css';
 
+const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
+const isScreeningRow = (row) => row?.fullPayload?.reportType === 'REGISTRY_SCREENING' || row?.status === 'Registry Screening';
+// Normalises 'LOW' / 'LOW RISK' / null to a display label; null when no risk was assessed.
+const riskLabel = (risk) => (risk ? String(risk).trim().toUpperCase().replace(/\s*RISK$/, '') : null);
+
 export default function WatchlistView({
   history = [],
   currentUser,
@@ -34,7 +39,7 @@ export default function WatchlistView({
     if (q && !name.includes(q) && !gstin.includes(q)) return false;
 
     if (riskFilter !== 'ALL') {
-      const r = (item.risk || 'LOW').toUpperCase();
+      const r = (riskLabel(item.risk) || '');
       if (riskFilter === 'LOW' && !r.includes('LOW')) return false;
       if (riskFilter === 'MODERATE' && !r.includes('MED') && !r.includes('MOD')) return false;
       if (riskFilter === 'HIGH' && !r.includes('HIGH')) return false;
@@ -57,7 +62,7 @@ export default function WatchlistView({
             Saved Businesses & Underwriting History
           </h1>
           <p className="watchlist-subtitle">
-            Immutable audit record of all evaluations executed by <strong style={{ color: '#FAF6EF' }}>{officerName}</strong> with grounded RBI Digital Lending citations.
+            Immutable audit record of all evaluations executed by <strong style={{ color: 'var(--text-primary)' }}>{officerName}</strong> with grounded RBI Digital Lending citations.
           </p>
         </div>
 
@@ -138,13 +143,14 @@ export default function WatchlistView({
             <tbody>
               {filtered.map((row) => {
                 const name = row.name || row.businessName || 'Evaluated Enterprise';
-                const id = row.gstin || row.id || '27AADCB2230M1Z2';
-                const score = row.score || 750;
-                const risk = row.risk || 'LOW';
-                const date = row.evaluatedDate || row.date || 'Oct 13, 2026';
-                const status = row.status || 'Completed';
+                const id = row.gstin || row.id || '—';
+                const screening = isScreeningRow(row);
+                const score = isNum(row.score) ? row.score : null;
+                const risk = riskLabel(row.risk);
+                const date = row.evaluatedDate || row.date || '—';
+                const status = row.status || '—';
 
-                const scoreColorClass = 
+                const scoreColorClass = score === null ? '' :
                   score >= 800 ? 'score-emerald' : 
                   score >= 700 ? 'score-blue' : 
                   score >= 600 ? 'score-amber' : 'score-red';
@@ -156,7 +162,7 @@ export default function WatchlistView({
                       <div className="table-entity-cell">
                         <span className="entity-cell-name">{name}</span>
                         <span className="entity-cell-sector">
-                          {row.compliance || 'MCA Verified · RBI Grounded'}
+                          {screening ? 'Registry Screening' : (row.compliance || '—')}
                         </span>
                       </div>
                     </td>
@@ -178,16 +184,20 @@ export default function WatchlistView({
 
                     {/* Credit Score Pill */}
                     <td>
-                      <div className={`score-pill ${scoreColorClass}`}>
-                        <span className="score-val">{score}</span>
-                        <span className="score-max">/ 900</span>
-                      </div>
+                      {score === null ? (
+                        <span className="score-pill"><span className="score-val" style={{ color: 'var(--text-subtle)' }}>{screening ? 'Screening' : '—'}</span></span>
+                      ) : (
+                        <div className={`score-pill ${scoreColorClass}`}>
+                          <span className="score-val">{score}</span>
+                          <span className="score-max">/ 900</span>
+                        </div>
+                      )}
                     </td>
 
                     {/* Risk Tier */}
                     <td>
-                      <span className={`risk-tier-tag ${risk.toLowerCase()}`}>
-                        {risk} RISK
+                      <span className={`risk-tier-tag ${risk ? risk.toLowerCase() : 'neutral'}`}>
+                        {risk ? `${risk} RISK` : 'NOT SCORED'}
                       </span>
                     </td>
 
@@ -273,12 +283,13 @@ export default function WatchlistView({
         <div className="watchlist-grid">
           {filtered.map(row => {
             const name = row.name || row.businessName || 'Evaluated Enterprise';
-            const gstin = row.gstin || row.id || '27AADCB2230M1Z2';
-            const score = row.score || 780;
-            const risk = row.risk || 'LOW';
-            const date = row.evaluatedDate || row.date || 'Oct 13, 2026';
+            const gstin = row.gstin || row.id || '—';
+            const screening = isScreeningRow(row);
+            const score = isNum(row.score) ? row.score : null;
+            const risk = riskLabel(row.risk);
+            const date = row.evaluatedDate || row.date || '—';
 
-            const scoreColor = score >= 800 ? '#ACE1AF' : score >= 700 ? '#60A5FA' : score >= 600 ? '#FBBF24' : '#F87171';
+            const scoreColor = score === null ? 'var(--border)' : score >= 800 ? 'var(--status-green-text)' : score >= 700 ? 'var(--status-blue-text)' : score >= 600 ? 'var(--status-amber-text)' : 'var(--status-red-text)';
 
             return (
               <div key={row.id || gstin} className="watchlist-card">
@@ -290,25 +301,31 @@ export default function WatchlistView({
                       <button 
                         type="button"
                         onClick={() => handleCopy(gstin, row.id || gstin)}
-                        style={{ background: 'none', border: 'none', color: '#8E7B9E', cursor: 'pointer', padding: 0 }}
+                        style={{ background: 'none', border: 'none', color: 'var(--text-subtle)', cursor: 'pointer', padding: 0 }}
                       >
                         {copiedId === (row.id || gstin) ? <Check size={11} className="text-emerald" /> : <Copy size={11} />}
                       </button>
                     </div>
                   </div>
                   <div className="card-score-badge" style={{ borderColor: scoreColor }}>
-                    <span className="card-score-num" style={{ color: scoreColor }}>{score}</span>
-                    <span className="card-score-denom">/ 900</span>
+                    {score === null ? (
+                      <span className="card-score-num" style={{ color: 'var(--text-subtle)', fontSize: '0.8rem' }}>{screening ? 'Screening' : '—'}</span>
+                    ) : (
+                      <>
+                        <span className="card-score-num" style={{ color: scoreColor }}>{score}</span>
+                        <span className="card-score-denom">/ 900</span>
+                      </>
+                    )}
                   </div>
                 </div>
 
                 <div className="card-reason-snippet">
-                  {row.reason || row.decision?.narrative || 'Evaluated under RBI Digital Lending Guidelines with sound operational cash flow.'}
+                  {row.reason || row.decision?.narrative || row.fullPayload?.decision?.narrative || (screening ? 'Registry Screening' : '—')}
                 </div>
 
                 <div className="card-meta-line">
-                  <span className={`card-risk-pill ${risk.toLowerCase()}`}>
-                    {risk} RISK
+                  <span className={`card-risk-pill ${risk ? risk.toLowerCase() : 'neutral'}`}>
+                    {risk ? `${risk} RISK` : (screening ? 'REGISTRY SCREENING' : 'NOT SCORED')}
                   </span>
                   <span className="card-date">
                     <Clock size={12} />

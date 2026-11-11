@@ -3,13 +3,22 @@
  * Generates an institutional-grade PDF/print audit dossier matching RBI Digital Lending standards.
  */
 
+const NA = 'Not available';
+const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+// Metric display: unavailable values print "Not available" instead of a default.
+const fx = (v, suffix = '') => (isNum(v) ? `${v}${suffix}` : NA);
+
 export function exportAuditReport({ data, auditorNotes = '', officer = null }) {
   if (!data) return;
 
-  const businessName = data.businessName || "Unknown Enterprise";
-  const gstin = data.gstin || "N/A";
-  const score = data.decision?.score || 750;
-  const riskLevel = data.decision?.riskLevel || "LOW";
+  const businessName = esc(data.businessName || "Unknown Enterprise");
+  const gstin = esc(data.gstin || "N/A");
+  const isScreening = data.reportType === 'REGISTRY_SCREENING';
+  const score = isNum(data.decision?.score) ? data.decision.score : null;
+  const riskLevel = data.decision?.riskLevel ? esc(data.decision.riskLevel) : null;
+  const gstSection = data.registryReport?.gst;
+  const registration = gstSection?.status === 'ok' ? esc(gstSection.data?.status || NA) : 'Not verified';
   const evalDate = new Date().toLocaleDateString('en-IN', {
     day: 'numeric',
     month: 'short',
@@ -24,7 +33,7 @@ export function exportAuditReport({ data, auditorNotes = '', officer = null }) {
   const p4 = data.metrics?.pillar4_leverage || {};
   const p5 = data.metrics?.pillar5_operational || {};
 
-  const scoreColor = score >= 800 ? '#10b981' : score >= 700 ? '#3b82f6' : score >= 600 ? '#f59e0b' : '#ef4444';
+  const scoreColor = score === null ? '#64748b' : score >= 800 ? '#10b981' : score >= 700 ? '#3b82f6' : score >= 600 ? '#f59e0b' : '#ef4444';
 
   const printWindow = window.open('', '_blank');
   if (!printWindow) {
@@ -221,25 +230,25 @@ export function exportAuditReport({ data, auditorNotes = '', officer = null }) {
     <div class="meta-box">
       <div><strong>Audit Ref:</strong> AUD-${Date.now().toString(36).toUpperCase()}</div>
       <div><strong>Date:</strong> ${evalDate}</div>
-      <div><strong>Officer:</strong> ${officer?.username || officer?.email || 'Authorized Credit Auditor'}</div>
+      <div><strong>Officer:</strong> ${esc(officer?.username || officer?.email || '—')}</div>
     </div>
   </div>
 
   <div class="hero-grid">
     <div class="score-card">
-      <div class="score-badge">${riskLevel} RISK TIER</div>
-      <div class="score-num">${score}</div>
+      <div class="score-badge">${riskLevel ? `${riskLevel} RISK TIER` : (isScreening ? 'REGISTRY SCREENING' : 'RISK TIER NOT AVAILABLE')}</div>
+      <div class="score-num">${score ?? '—'}</div>
       <div style="font-size: 11px; color: #64748b;">Autonomous Score / 900</div>
     </div>
     <div class="entity-details">
       <h2 class="entity-name">${businessName}</h2>
       <div class="entity-meta">
         <strong>GSTIN:</strong> ${gstin} &nbsp;|&nbsp; 
-        <strong>Registration:</strong> Active &nbsp;|&nbsp; 
+        <strong>GST Registration:</strong> ${registration} &nbsp;|&nbsp; 
         <strong>Model:</strong> Enver Deterministic 5-Pillar Core
       </div>
       <div style="font-size: 12px; color: #334155; line-height: 1.4;">
-        ${data.decision?.narrative || 'Enterprise evaluated with sound operating cash flows, adequate liquidity runway, and zero circular trading flags under RBI Digital Lending Guidelines.'}
+        ${esc(data.decision?.narrative || (isScreening ? 'Registry screening only: no bank statement was analysed, so no credit score was produced.' : NA))}
       </div>
     </div>
   </div>
@@ -248,47 +257,47 @@ export function exportAuditReport({ data, auditorNotes = '', officer = null }) {
   <div class="grid-2">
     <div class="card">
       <div class="card-title">Pillar 1: Liquidity & Runway</div>
-      <div class="metric-row"><span>Cash Buffer Ratio:</span><span class="metric-val">${p1.cashBufferRatio || '0.71'}x</span></div>
-      <div class="metric-row"><span>Minimum Buffer Days:</span><span class="metric-val">${p1.minimumCashBufferDays || 18} Days</span></div>
-      <div class="metric-row"><span>OD Utilization:</span><span class="metric-val">${p1.overdraftLimitUtilization || 42}%</span></div>
-      <div class="metric-row"><span>Liquidity Posture:</span><span class="metric-val">${p1.status || 'COMFORTABLE'}</span></div>
+      <div class="metric-row"><span>Cash Buffer Ratio:</span><span class="metric-val">${fx(p1.cashBufferRatio, 'x')}</span></div>
+      <div class="metric-row"><span>Minimum Buffer Days:</span><span class="metric-val">${fx(p1.minimumCashBufferDays, ' Days')}</span></div>
+      <div class="metric-row"><span>OD Utilization:</span><span class="metric-val">${fx(p1.overdraftLimitUtilization, '%')}</span></div>
+      <div class="metric-row"><span>Liquidity Posture:</span><span class="metric-val">${esc(p1.status || NA)}</span></div>
     </div>
 
     <div class="card">
       <div class="card-title">Pillar 2: Revenue & GST Match</div>
-      <div class="metric-row"><span>Annualized Run Rate:</span><span class="metric-val">₹${(p2.annualizedRevenueRunRate || 9680000).toLocaleString('en-IN')}</span></div>
-      <div class="metric-row"><span>Revenue Growth (3M):</span><span class="metric-val">${p2.revenueGrowthRate || '+4.8'}%</span></div>
-      <div class="metric-row"><span>GSTR-1 to Bank Ratio:</span><span class="metric-val">${p2.gstVsBankReconciliation || '1.01'}x</span></div>
-      <div class="metric-row"><span>Tax Gap (GSTR-1 vs 3B):</span><span class="metric-val">${p2.gstr1VsGstr3bGap || 0.0}%</span></div>
+      <div class="metric-row"><span>Annualized Run Rate:</span><span class="metric-val">${isNum(p2.annualizedRevenueRunRate) ? `₹${p2.annualizedRevenueRunRate.toLocaleString('en-IN')}` : NA}</span></div>
+      <div class="metric-row"><span>Revenue Growth (3M):</span><span class="metric-val">${fx(p2.revenueGrowthRate, '%')}</span></div>
+      <div class="metric-row"><span>GSTR-1 to Bank Ratio:</span><span class="metric-val">${fx(p2.gstVsBankReconciliation, 'x')}</span></div>
+      <div class="metric-row"><span>Tax Gap (GSTR-1 vs 3B):</span><span class="metric-val">${fx(p2.gstr1VsGstr3bGap, '%')}</span></div>
     </div>
 
     <div class="card">
       <div class="card-title">Pillar 3: Cash Flow Volatility</div>
-      <div class="metric-row"><span>Credit Volatility (CV):</span><span class="metric-val">${p3.creditCoefficientOfVariation || '0.05'}</span></div>
-      <div class="metric-row"><span>Inward Cheque Bounces:</span><span class="metric-val">${p3.inwardBounceRate || 0} Events</span></div>
-      <div class="metric-row"><span>Consecutive Low Months:</span><span class="metric-val">${p3.consecutiveLowCreditMonths || 0}</span></div>
-      <div class="metric-row"><span>Stability Status:</span><span class="metric-val">${p3.status || 'SOUND'}</span></div>
+      <div class="metric-row"><span>Credit Volatility (CV):</span><span class="metric-val">${fx(p3.creditCoefficientOfVariation)}</span></div>
+      <div class="metric-row"><span>Inward Bounce Rate:</span><span class="metric-val">${fx(p3.inwardBounceRate, '%')}</span></div>
+      <div class="metric-row"><span>Consecutive Low Months:</span><span class="metric-val">${fx(p3.consecutiveLowCreditMonths)}</span></div>
+      <div class="metric-row"><span>Stability Status:</span><span class="metric-val">${esc(p3.status || NA)}</span></div>
     </div>
 
     <div class="card">
       <div class="card-title">Pillar 4: Debt Capacity & Leverage</div>
-      <div class="metric-row"><span>Debt Service Proxy (DSCP):</span><span class="metric-val">${p4.debtServiceCoverageProxy || '2.10'}x</span></div>
-      <div class="metric-row"><span>Monthly EMI Burden:</span><span class="metric-val">${p4.interestEmiBurdenRatio || '5.1'}%</span></div>
-      <div class="metric-row"><span>New Borrowing Velocity:</span><span class="metric-val">${p4.newBorrowingVelocity || 0}</span></div>
-      <div class="metric-row"><span>Leverage Tier:</span><span class="metric-val">${p4.tier || 'PRIME'}</span></div>
+      <div class="metric-row"><span>Debt Service Proxy (DSCP):</span><span class="metric-val">${fx(p4.debtServiceCoverageProxy, 'x')}</span></div>
+      <div class="metric-row"><span>Monthly EMI Burden:</span><span class="metric-val">${fx(p4.interestEmiBurdenRatio, '%')}</span></div>
+      <div class="metric-row"><span>New Borrowing Velocity:</span><span class="metric-val">${fx(p4.newBorrowingVelocity)}</span></div>
+      <div class="metric-row"><span>Leverage Tier:</span><span class="metric-val">${esc(p4.tier || NA)}</span></div>
     </div>
   </div>
 
   ${auditorNotes ? `
   <div class="notes-box">
     <div class="notes-title">Auditor Observations & Committee Override Notes</div>
-    <div class="notes-content">"${auditorNotes}"</div>
+    <div class="notes-content">"${esc(auditorNotes)}"</div>
   </div>
   ` : ''}
 
   <div class="section-title">Explainability Citations & Regulatory Audit Trail</div>
   <ul class="citations-list">
-    ${(data.decision?.citations || []).map(c => `<li>${c}</li>`).join('')}
+    ${(data.decision?.citations || []).map(c => `<li>${esc(c)}</li>`).join('') || `<li>${NA}</li>`}
   </ul>
 
   <div class="footer">
