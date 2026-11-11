@@ -163,7 +163,7 @@ You may interrogate why this specific decision was taken, the 300–900 points b
     { label: "🔍 Pillar 1–5 Decision Rationale", query: "Provide a detailed Pillar 1 to Pillar 5 audit breakdown of this underwriting decision." },
     { label: "⚠️ Downside Risks & Friction", query: `What risk friction or negative factors prevented a higher score for ${targetName}?` },
     { label: "📈 Sensitivity: What raises the score?", query: `What counterfactual changes would upgrade ${targetName} to Prime (850+)?` },
-    { label: `💰 Sanction Limit Rationale${companyData ? ` (${companyData.recommendedLimit})` : ''}`, query: `Why was the sanction limit recommended for ${targetName}?` },
+    { label: `💰 Sanction Limit Rationale${companyData ? ` (${companyData.referredForRedFlags ? 'Referred: red flags' : companyData.limitLabel})` : ''}`, query: `Why was the sanction limit recommended for ${targetName}?` },
     { label: "🏛️ RBI Policy Attestation", query: "What RBI Digital Lending policies and zero-hallucination rules govern this credit decision?" }
   ];
 

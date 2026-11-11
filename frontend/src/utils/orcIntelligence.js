@@ -329,22 +329,40 @@ export function getCompanyDecisionData(businessName, gstin, probeData = null, ev
   const riskTier = riskTierFromLevel(decision?.riskLevel)
     || (finalScore >= 750 ? 'LOW RISK' : finalScore >= 600 ? 'MODERATE RISK' : 'HIGH RISK');
 
-  // Indicative limit: a share of the annualized run rate, only when that run rate is known.
+  // Red flags from the backend decision block any approval wording: the case is referred
+  // to a credit officer and no limit is suggested until the flags are resolved.
+  const redFlags = Array.isArray(decision?.redFlags) ? decision.redFlags : [];
+  const registryAdjustments = Array.isArray(decision?.registryAdjustments) ? decision.registryAdjustments : [];
+  const gstInactiveFlag = registryAdjustments.some(a => /gst registration (cancel|suspend)/i.test(a?.label || ''));
+  const referredForRedFlags = redFlags.length > 0
+    || (String(decision?.riskLevel || '').toUpperCase().startsWith('HIGH') && gstInactiveFlag);
+
+  // Indicative limit: a client-side heuristic share of the annualized run rate by score band,
+  // only when that run rate is known.
   const limitAt = (share) => (isNum(annualizedRevenue)
     ? `₹${Math.round((annualizedRevenue * share) / RUPEES_PER_LAKH)} Lakhs`
     : NA);
+  const verdictLimit = (limit) => (limit === NA ? '' : ` (INDICATIVE ${limit.toUpperCase()})`);
   let recommendedLimit;
   let sanctionVerdict;
+  // True only when recommendedLimit is the score-band heuristic (not a referral or decline).
+  let limitIsIndicative = false;
 
-  if (finalScore >= 850) {
+  if (referredForRedFlags) {
+    recommendedLimit = 'Not recommended until red flags are resolved';
+    sanctionVerdict = 'REFER TO CREDIT OFFICER — RED FLAGS PRESENT';
+  } else if (finalScore >= 850) {
     recommendedLimit = limitAt(0.45);
-    sanctionVerdict = `EXPEDITED SOVEREIGN SANCTION (${recommendedLimit})`;
+    limitIsIndicative = true;
+    sanctionVerdict = `EXPEDITED SOVEREIGN SANCTION${verdictLimit(recommendedLimit)}`;
   } else if (finalScore >= 750) {
     recommendedLimit = limitAt(0.35);
-    sanctionVerdict = `APPROVED: WORKING CAPITAL FACILITY (${recommendedLimit})`;
+    limitIsIndicative = true;
+    sanctionVerdict = `APPROVED: WORKING CAPITAL FACILITY${verdictLimit(recommendedLimit)}`;
   } else if (finalScore >= 600) {
     recommendedLimit = limitAt(0.20);
-    sanctionVerdict = `CONDITIONAL APPROVAL: CAPPED WORKING CAPITAL (${recommendedLimit})`;
+    limitIsIndicative = true;
+    sanctionVerdict = `CONDITIONAL APPROVAL: CAPPED WORKING CAPITAL${verdictLimit(recommendedLimit)}`;
   } else {
     recommendedLimit = '₹0.0 Lakhs (Declined)';
     sanctionVerdict = 'REJECTED: EXCESSIVE RISK PROFILE';
@@ -361,12 +379,15 @@ export function getCompanyDecisionData(businessName, gstin, probeData = null, ev
     riskTier,
     sanctionVerdict,
     recommendedLimit,
+    limitIsIndicative,
+    limitLabel: limitIsIndicative && recommendedLimit !== NA ? `${recommendedLimit} (indicative)` : recommendedLimit,
+    referredForRedFlags,
     mathDrivers,
     unavailableInputs,
     sampleData,
-    registryAdjustments: Array.isArray(decision?.registryAdjustments) ? decision.registryAdjustments : [],
+    registryAdjustments,
     caveats: Array.isArray(decision?.caveats) ? decision.caveats : [],
-    redFlags: Array.isArray(decision?.redFlags) ? decision.redFlags : [],
+    redFlags,
     narrative: decision?.narrative || null,
     metrics: {
       annualizedRevenue,
@@ -443,7 +464,9 @@ export function generateOrcResponse(userQuery, companyData) {
     return `[ORC CCO UNDERWRITING MEMO — ${c.name.toUpperCase()}]:
 AUDIT STATUS: ${c.sanctionVerdict}
 FINAL INSTITUTIONAL CREDIT SCORE: ${c.score} / 900 (${c.riskTier})
-RECOMMENDED EXPOSURE: ${c.recommendedLimit} Working Capital Line
+${c.referredForRedFlags
+    ? `RECOMMENDED EXPOSURE: ${c.recommendedLimit}\nRED FLAGS (credit officer review required):\n${bullet(c.redFlags.length ? c.redFlags : ['High risk with GST registration cancelled / suspended'], '⚠')}`
+    : `RECOMMENDED EXPOSURE: ${c.limitLabel} Working Capital Line${c.limitIsIndicative ? ' (client-side heuristic: share of annualized run rate by score band)' : ''}`}
 ${c.narrative ? `\nDECISION NARRATIVE: ${c.narrative}\n` : ''}
 1. WHY THIS DECISION WAS TAKEN (Primary Positive Drivers):
 ${positives}
@@ -534,8 +557,16 @@ The actual uplift depends on the next full evaluation; no projected score is ass
     q.includes('why capped')
   ) {
     const maxDebtService = isNum(m.avgMonthlyCredit) ? m.avgMonthlyCredit * 0.20 : null;
+    const facilityLine = c.referredForRedFlags
+      ? `Recommended Facility: ${c.recommendedLimit}.
+Verdict: ${c.sanctionVerdict}
+RED FLAGS:
+${bullet(c.redFlags.length ? c.redFlags : ['High risk with GST registration cancelled / suspended'], '⚠')}`
+      : c.limitIsIndicative
+        ? `Indicative Facility: ${c.limitLabel} Working Capital / Overdraft (client-side heuristic: share of annualized run rate by score band; not a sanction)`
+        : `Recommended Facility: ${c.recommendedLimit}`;
     return `[CREDIT LIMIT EXPOSURE DETERMINATION — ${c.name}]:
-Recommended Facility: ${c.recommendedLimit} Working Capital / Overdraft (indicative share of annualized run rate by score band)
+${facilityLine}
 Policy Metric: EMI Burden Ratio <= 20.0% of verified monthly credit inflows.
 
 Calculation Telemetry:

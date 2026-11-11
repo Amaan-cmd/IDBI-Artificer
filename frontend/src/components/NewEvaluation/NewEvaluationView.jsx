@@ -132,7 +132,15 @@ export default function NewEvaluationView({
   const isScreening = evaluationData?.reportType === 'REGISTRY_SCREENING';
   const previewDecision = isScreening ? null : getCompanyDecisionData(businessName, gstinToDisplay, gstinProbeData, evaluationData);
   const previewColor = previewDecision ? (previewDecision.score >= 750 ? 'var(--status-green-text)' : previewDecision.score >= 620 ? 'var(--status-amber-text)' : 'var(--status-red-text)') : undefined;
-  const previewBadge = previewDecision ? (previewDecision.score >= 750 ? 'badge-comfortable' : previewDecision.score >= 620 ? 'badge-moderate' : 'badge-stressed') : '';
+  const previewBadge = previewDecision ? (previewDecision.referredForRedFlags ? 'badge-stressed' : previewDecision.score >= 750 ? 'badge-comfortable' : previewDecision.score >= 620 ? 'badge-moderate' : 'badge-stressed') : '';
+  // Limit tile text, derived from the single computed verdict in getCompanyDecisionData.
+  const limitTileLabel = previewDecision?.limitIsIndicative ? 'INDICATIVE LIMIT' : 'RECOMMENDED LIMIT';
+  const limitTileValue = previewDecision?.referredForRedFlags ? '—' : previewDecision?.recommendedLimit;
+  const limitTileSub = previewDecision?.referredForRedFlags
+    ? 'Not recommended until red flags are resolved'
+    : previewDecision?.limitIsIndicative
+      ? 'Indicative: share of annualized run rate by score band'
+      : 'Working Capital / OD';
   const m = previewDecision?.metrics || {};
   const [pillar1, pillar2, pillar3, pillar4, pillar5] = pillarBadges(m, previewDecision?.mcaStatus);
   const selectCin = (cin) => onProbeGSTIN(gstinProbeData?.gstin || gstinInput, { cin });
@@ -590,9 +598,9 @@ export default function NewEvaluationView({
                     <div className="finding-metric-sub">Max cap: 20.0% of inflow</div>
                   </div>
                   <div className="finding-metric-box">
-                    <div className="finding-metric-label">INDICATIVE LIMIT</div>
-                    <div className="finding-metric-value">{previewDecision.recommendedLimit}</div>
-                    <div className="finding-metric-sub">Share of annualized run rate</div>
+                    <div className="finding-metric-label">{limitTileLabel}</div>
+                    <div className="finding-metric-value">{limitTileValue}</div>
+                    <div className="finding-metric-sub">{limitTileSub}</div>
                   </div>
                 </div>
                 <div className="finding-citation-box">
@@ -655,13 +663,13 @@ export default function NewEvaluationView({
                     <div className="finding-metric-sub">{previewDecision.score >= 750 ? 'Prime NTC Category' : previewDecision.score >= 620 ? 'Moderate Risk Category' : 'High Friction Stressed Tier'}</div>
                   </div>
                   <div className="finding-metric-box">
-                    <div className="finding-metric-label">SANCTION RECOMMENDED</div>
-                    <div className="finding-metric-value">{previewDecision.recommendedLimit}</div>
-                    <div className="finding-metric-sub">Working Capital / OD</div>
+                    <div className="finding-metric-label">{limitTileLabel}</div>
+                    <div className="finding-metric-value">{limitTileValue}</div>
+                    <div className="finding-metric-sub">{limitTileSub}</div>
                   </div>
                 </div>
                 {previewDecision.redFlags.length > 0 && <RedFlagBanner flags={previewDecision.redFlags} compact />}
-                <div className="finding-citation-box" style={{ background: previewDecision.score >= 750 ? 'var(--status-green-bg)' : 'var(--status-red-bg)', borderColor: previewColor }}>
+                <div className="finding-citation-box" style={{ background: !previewDecision.referredForRedFlags && previewDecision.score >= 750 ? 'var(--status-green-bg)' : 'var(--status-red-bg)', borderColor: previewColor }}>
                   <strong>Decision summary:</strong> Score of {previewDecision.score} across 5 financial pillars. Cash Buffer Ratio {fmt(m.cashBufferRatio, 'x')}; inward return events {fmt(m.inwardBounces)}; peak OD utilization {fmt(m.odUtilization, '%')}.
                   {previewDecision.registryAdjustments.length > 0 && (
                     <>
