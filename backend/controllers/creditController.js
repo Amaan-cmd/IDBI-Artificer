@@ -10,6 +10,8 @@ const { addHistoryRecord } = require('./historyController');
 const { sendSlackNotification } = require('../services/slackNotifier');
 
 async function evaluateMSMECredit(req, res) {
+  // Declared here so the outer catch can always stop the SSE heartbeat.
+  let cleanup = () => {};
   try {
     const file = req.file;
     const manualData = req.body.manualData;
@@ -46,7 +48,7 @@ async function evaluateMSMECredit(req, res) {
       } catch {}
     }, 4000);
 
-    const cleanup = () => {
+    cleanup = () => {
       clearInterval(heartbeat);
     };
     req.on('close', cleanup);

@@ -134,7 +134,7 @@ app.get('/api/v1/telemetry/logins', requireSession, requireAdmin, getLoginTeleme
 app.get('/api/v1/history', requireSession, getHistory);
 
 // --- Agami Pipeline Simulation ---
-app.post('/api/v1/agami/train', trainAgamiPipeline);
+app.post('/api/v1/agami/train', requireSession, requireAdmin, trainAgamiPipeline);
 
 // SPA fallback for client routing (Express 5 compatible)
 if (fs.existsSync(distPath)) {

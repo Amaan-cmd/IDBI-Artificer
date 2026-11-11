@@ -10,6 +10,7 @@ const telemetryLoginsPath = path.join(__dirname, '../data/telemetry_logins.json'
 
 // In-memory verification code store for email OTP authentication
 const otpCache = new Map();
+const MAX_OTP_ATTEMPTS = 5;
 
 const getUsers = () => {
   try {
@@ -72,7 +73,13 @@ const sendOtp = async (req, res) => {
     expiresAt: Date.now() + 10 * 60 * 1000 // 10 minutes expiry
   });
 
-  console.log(`[Auth Sentinel] Dispatching verification code for ${cleanEmail}: ${code}`);
+  // No email sender exists yet, so outside production the console is the only
+  // way to read the code locally. Never log the code in production.
+  if (process.env.NODE_ENV === 'production') {
+    console.log(`[Auth Sentinel] Verification code issued for ${cleanEmail}`);
+  } else {
+    console.log(`[Auth Sentinel] Dispatching verification code for ${cleanEmail}: ${code}`);
+  }
 
   const isDevOrDemo = process.env.NODE_ENV !== 'production' && process.env.ENABLE_DEMO_OTP === 'true';
 
@@ -100,9 +107,16 @@ const verifyOtp = async (req, res) => {
 
   const cached = otpCache.get(cleanEmail);
 
-  const isValid = Boolean(cached && cached.expiresAt > Date.now() && cached.code === cleanCode);
+  if (cached && cached.expiresAt <= Date.now()) otpCache.delete(cleanEmail);
+  const live = cached && cached.expiresAt > Date.now() ? cached : null;
+  const isValid = Boolean(live && crypto.timingSafeEqual(Buffer.from(live.code), Buffer.from(cleanCode)));
 
   if (!isValid) {
+    // Brute-force guard: a code is burned after MAX_OTP_ATTEMPTS wrong guesses.
+    if (live) {
+      live.attempts = (live.attempts || 0) + 1;
+      if (live.attempts >= MAX_OTP_ATTEMPTS) otpCache.delete(cleanEmail);
+    }
     return res.status(401).json({ error: 'Invalid or expired verification code. Please request a new code.' });
   }
 

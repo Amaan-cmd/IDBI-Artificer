@@ -53,6 +53,69 @@ test('valid OTP returns a session token', () => withServer(async (base) => {
   }
 }));
 
+async function withEnv(vars, fn) {
+  const prev = {};
+  for (const k of Object.keys(vars)) prev[k] = process.env[k];
+  for (const [k, v] of Object.entries(vars)) { if (v === undefined) delete process.env[k]; else process.env[k] = v; }
+  try { return await fn(); } finally {
+    for (const [k, v] of Object.entries(prev)) { if (v === undefined) delete process.env[k]; else process.env[k] = v; }
+  }
+}
+
+async function captureLogs(fn) {
+  const lines = [];
+  const orig = { log: console.log, info: console.info, warn: console.warn };
+  for (const k of Object.keys(orig)) console[k] = (...a) => { lines.push(a.map(String).join(' ')); };
+  try { await fn(); } finally { Object.assign(console, orig); }
+  return lines;
+}
+
+test('send-code never logs the OTP in production', () => withServer(async (base) => {
+  await withEnv({ NODE_ENV: 'production', ENABLE_DEMO_OTP: undefined }, async () => {
+    const lines = await captureLogs(async () => {
+      const res = await post(base, '/api/v1/auth/send-code', { email: 'prod-user@x.com' });
+      assert.equal(res.status, 200);
+      const body = await res.json();
+      assert.equal(body.demoCode, undefined);
+    });
+    assert.ok(!lines.some(l => /\b\d{6}\b/.test(l)), `OTP-like code leaked to logs: ${lines.join(' | ')}`);
+  });
+}));
+
+test('send-code logs the OTP outside production (local use)', () => withServer(async (base) => {
+  await withEnv({ NODE_ENV: 'test', ENABLE_DEMO_OTP: 'true' }, async () => {
+    let code;
+    const lines = await captureLogs(async () => {
+      code = (await (await post(base, '/api/v1/auth/send-code', { email: 'dev-user@x.com' })).json()).demoCode;
+    });
+    assert.ok(code);
+    assert.ok(lines.some(l => l.includes(code)));
+  });
+}));
+
+test('OTP is invalidated after 5 wrong attempts', () => withServer(async (base) => {
+  await withEnv({ NODE_ENV: 'test', ENABLE_DEMO_OTP: 'true' }, async () => {
+    const email = 'brute-target@x.com';
+    const { demoCode } = await (await post(base, '/api/v1/auth/send-code', { email })).json();
+    const wrong = String(((Number(demoCode) - 100000 + 1) % 900000) + 100000);
+    for (let i = 0; i < 5; i++) {
+      assert.equal((await post(base, '/api/v1/auth/verify-code', { email, code: wrong })).status, 401);
+    }
+    const res = await post(base, '/api/v1/auth/verify-code', { email, code: demoCode });
+    assert.equal(res.status, 401, 'correct code must be rejected once the attempt cap is hit');
+  });
+}));
+
+test('OTP still verifies after fewer than 5 wrong attempts', () => withServer(async (base) => {
+  await withEnv({ NODE_ENV: 'test', ENABLE_DEMO_OTP: 'true' }, async () => {
+    const email = 'typo-user@x.com';
+    const { demoCode } = await (await post(base, '/api/v1/auth/send-code', { email })).json();
+    const wrong = String(((Number(demoCode) - 100000 + 1) % 900000) + 100000);
+    for (let i = 0; i < 4; i++) await post(base, '/api/v1/auth/verify-code', { email, code: wrong });
+    assert.equal((await post(base, '/api/v1/auth/verify-code', { email, code: demoCode })).status, 200);
+  });
+}));
+
 test('no hardcoded master passwords remain in source', { todo: 'frontend cleanup in Task 8b' }, () => {
   const roots = [path.join(__dirname, '..', 'controllers'), path.join(__dirname, '..', '..', 'frontend', 'src')];
   const offenders = [];
