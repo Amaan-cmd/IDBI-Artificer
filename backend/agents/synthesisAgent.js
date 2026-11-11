@@ -130,6 +130,8 @@ function deterministicDecision(agent1Data, agent2Matrix, externalOverrides) {
   const taxGap = metric(p2.gstr1VsGstr3bGap, 'gstr1DeclaredTax', 'gstr3bTaxPaid');
   const cv = series ? metric(p3.creditCoefficientOfVariation) : null;
   const dscp = metric(p4.debtServiceCoverageProxy, 'monthlyEmiObligations', 'monthlyDebits');
+  // EMI genuinely 0 in the statement: DSCP is undefined, so it is labelled, not scored.
+  const noDebtService = p4.tier === 'NO_DEBT_SERVICE_OBSERVED' && !anyGap('monthlyEmiObligations');
   const emiBurden = metric(p4.interestEmiBurdenRatio, 'monthlyEmiObligations');
 
   let baseScore = 670;
@@ -185,7 +187,8 @@ function deterministicDecision(agent1Data, agent2Matrix, externalOverrides) {
   else baseScore -= 30;
 
   // 4. Pillar 4: Leverage & Debt Service Coverage Proxy
-  if (dscp === null) notScored('debt service coverage proxy');
+  if (noDebtService) caveats.push('Not scored: debt service coverage proxy (no EMI / debt service observed in the statement)');
+  else if (dscp === null) notScored('debt service coverage proxy');
   else if (dscp >= 1.80) baseScore += 20;
   else if (dscp >= 1.40) baseScore += 12;
   else if (dscp >= 1.00) baseScore -= 10;
@@ -234,12 +237,12 @@ function deterministicDecision(agent1Data, agent2Matrix, externalOverrides) {
     score: finalScore,
     riskLevel,
     narrative: `Entity assessed with a ${riskLevel} risk profile (Score: ${finalScore}). Cash Buffer Ratio: ${fmt(cashBuffer, 'x')}; minimum cash buffer: ${bufferDays === null ? NA : `${bufferDays} days`}.${caveats.length ? ` ${caveats.length} input(s) could not be verified or scored; see caveats.` : ''}`,
-    reasoning: `Deterministic 5-pillar synthesis: liquidity status ${cashBuffer === null ? NA : (p1.status || NA)}; credit CV ${fmt(cv)}; ${bounceText}; DSCP ${fmt(dscp, 'x')}; counterparty circularity ${circularRisk || 'not assessed'}.`,
+    reasoning: `Deterministic 5-pillar synthesis: liquidity status ${cashBuffer === null ? NA : (p1.status || NA)}; credit CV ${fmt(cv)}; ${bounceText}; DSCP ${noDebtService ? 'not applicable (no debt service observed)' : fmt(dscp, 'x')}; counterparty circularity ${circularRisk || 'not assessed'}.`,
     citations: [
       `[Pillar 1: Liquidity] Cash Buffer Ratio is ${fmt(cashBuffer, 'x')} with ${daysText}${isNum(agent1Data.sweepDeposits) && agent1Data.sweepDeposits > 0 ? ` (inclusive of ₹${(agent1Data.sweepDeposits / 100000).toFixed(1)}L auto-sweep liquid reserves)` : ''}.`,
       `[Pillar 2: Revenue] Annualized run rate ${runRate === null ? NA : `₹${(runRate / 100000).toFixed(1)} Lacs`} ${reconText}.`,
       `[Pillar 3: Stability] Credit CV is ${fmt(cv)} with ${bounceText}${agent1Data.technicalBouncesExcluded ? ` (${agent1Data.technicalBouncesExcluded} technical bounce(s) excluded)` : ''}.`,
-      `[Pillar 4: Leverage] Debt Service Coverage Proxy (DSCP) is ${fmt(dscp, 'x')} with an interest burden ratio of ${fmt(emiBurden, '%')}.`,
+      `[Pillar 4: Leverage] Debt Service Coverage Proxy (DSCP) is ${noDebtService ? 'not applicable (no EMI / debt service observed in the statement)' : fmt(dscp, 'x')} with an interest burden ratio of ${fmt(emiBurden, '%')}.`,
       `[Pillar 5: Operational Flags] ${circularRisk ? `Counterparty circularity: ${circularRisk}.` : 'Counterparty circularity not assessed (no transaction list).'}`
     ],
     caveats,

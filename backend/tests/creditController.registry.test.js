@@ -21,7 +21,7 @@ stub('agents/ingestionAgent', { ingestAlternateData: (...a) => ingestion.ingestA
 const history = [];
 stub('controllers/historyController', { addHistoryRecord: (r) => history.push(r) });
 stub('controllers/userController', { incrementUserUsage: () => {} });
-stub('services/slackNotifier', { sendSlackNotification: () => {} });
+stub('services/slackNotifier', { sendSlackNotification: (...a) => slackNotifier.sendSlackNotification(...a) });
 stub('utils/azureStorage', { azureStorage: { saveStatementFile: () => {} } });
 const jev = {
   evaluateAppropriateness: async () => ({ isAppropriate: true }),
@@ -31,7 +31,10 @@ stub('agents/jevGatekeeper', {
   evaluateAppropriateness: (...a) => jev.evaluateAppropriateness(...a),
   runDeterministicSanityCheck: (...a) => jev.runDeterministicSanityCheck(...a)
 });
-stub('agents/analysisAgent', { analyzeFinancials: async () => ({ revenueRunRate: 1, cashBufferRatio: 1, taxCompliance: 'OK' }) });
+const analysis = { analyzeFinancials: async () => ({ revenueRunRate: 1, cashBufferRatio: 1, taxCompliance: 'OK' }) };
+stub('agents/analysisAgent', { analyzeFinancials: (...a) => analysis.analyzeFinancials(...a) });
+const slack = [];
+const slackNotifier = { sendSlackNotification: (n) => slack.push(n) };
 const synthesis = {
   synthesizeScore: async () => ({ score: 700, riskLevel: 'MEDIUM', narrative: 'n', citations: [] })
 };
@@ -177,4 +180,110 @@ test('JEV rejection still ends the stream with step 99', async () => {
   }
   assert.equal(res.ended, true);
   assert.equal(res.events[res.events.length - 1].step, 99);
+});
+
+const NULL_METRICS = {
+  revenueRunRate: null, cashBufferRatio: null, taxCompliance: 'NOT_ASSESSED',
+  pillar1_liquidity: { cashBufferRatio: null, minimumCashBufferDays: null, status: 'NOT_ASSESSED' }
+};
+
+test('unavailable metrics are saved and notified as "not available", never null/NaN/0x', async () => {
+  history.length = 0;
+  slack.length = 0;
+  ingestion.ingestAlternateData = async () => ({ businessName: 'Real Co', gstin: REPORT.gstin, registryReport: null });
+  const orig = analysis.analyzeFinancials;
+  analysis.analyzeFinancials = async () => NULL_METRICS;
+  const res = fakeRes();
+  try {
+    await quiet(() => evaluateMSMECredit(fakeReq({ manualData: 'statement text' }), res));
+  } finally {
+    analysis.analyzeFinancials = orig;
+  }
+  assert.ok(res.events.find(e => e.step === 4), 'step 4 emitted');
+  const rec = history[0];
+  assert.equal(rec.buffer, 'not available');
+  assert.equal(rec.revenue, null);
+  assert.equal(rec.compliance, 'NOT_ASSESSED');
+  const slackText = JSON.stringify(slack[0].fields);
+  assert.ok(!/null|NaN|undefined/.test(slackText), slackText);
+  assert.match(slackText, /not available/);
+});
+
+test('fallback path saves real telemetry for a gapped statement without null text', async () => {
+  history.length = 0;
+  let calls = 0;
+  ingestion.ingestAlternateData = async () => {
+    calls += 1;
+    if (calls === 1) throw new Error('LLM outage');
+    return {
+      businessName: 'Real Co', gstin: REPORT.gstin, monthlyCredits: [100000, 110000, 120000], monthlyDebits: [],
+      dailyClosingBalances: [], gstr1OutwardTaxable: 0, gstr3bTaxPaid: 0, gstr1DeclaredTax: 0, monthlyEmiObligations: 0,
+      transactions: [], dataGaps: ['monthlyDebits', 'dailyClosingBalances', 'gstr1OutwardTaxable', 'gstr3bTaxPaid', 'gstr1DeclaredTax', 'monthlyEmiObligations', 'transactions'],
+      registryReport: null
+    };
+  };
+  const res = fakeRes();
+  await quiet(() => evaluateMSMECredit(fakeReq({ manualData: 'statement text' }), res));
+  assert.ok(res.events.find(e => e.step === 4), 'step 4 emitted');
+  const rec = history[0];
+  assert.equal(rec.buffer, 'not available');
+  assert.equal(rec.compliance, 'NOT_ASSESSED');
+  assert.equal(rec.revenue, 1320000);
+});
+
+test('fallback path honours a deterministic JEV rejection', async () => {
+  history.length = 0;
+  let calls = 0;
+  ingestion.ingestAlternateData = async () => {
+    calls += 1;
+    if (calls === 1) throw new Error('LLM outage');
+    return { businessName: 'X', monthlyCredits: [1, 2, 3] };
+  };
+  const orig = jev.runDeterministicSanityCheck;
+  jev.runDeterministicSanityCheck = () => ({ isAppropriate: false, verdict: 'REJECTED_UNFIT', rationale: 'injection' });
+  const res = fakeRes();
+  try {
+    await quiet(() => evaluateMSMECredit(fakeReq({ manualData: 'x' }), res));
+  } finally {
+    jev.runDeterministicSanityCheck = orig;
+  }
+  assert.equal(res.ended, true);
+  assert.equal(res.events[res.events.length - 1].step, 99);
+  assert.ok(!res.events.some(e => e.step === 4));
+  assert.equal(history.length, 0);
+});
+
+test('an unexpected failure inside the fallback path still ends with step 99', async () => {
+  let calls = 0;
+  ingestion.ingestAlternateData = async () => {
+    calls += 1;
+    if (calls === 1) throw new Error('LLM outage');
+    return { businessName: 'X', monthlyCredits: [1, 2, 3] };
+  };
+  const orig = synthesis.synthesizeScore;
+  synthesis.synthesizeScore = async () => { throw new Error('boom'); };
+  const res = fakeRes();
+  try {
+    await quiet(() => evaluateMSMECredit(fakeReq({ manualData: 'x' }), res));
+  } finally {
+    synthesis.synthesizeScore = orig;
+  }
+  assert.equal(res.ended, true);
+  const last = res.events[res.events.length - 1];
+  assert.equal(last.step, 99);
+  assert.ok(last.error);
+});
+
+test('GSTIN-only request with a malformed GSTIN is rejected with 400 before streaming', async () => {
+  let called = false;
+  ingestion.ingestAlternateData = async () => { called = true; return {}; };
+  let statusCode = null;
+  let body = null;
+  const res = fakeRes();
+  res.status = (c) => { statusCode = c; return res; };
+  res.json = (b) => { body = b; return res; };
+  await quiet(() => evaluateMSMECredit(fakeReq({ gstin: 'abc123' }), res));
+  assert.equal(statusCode, 400);
+  assert.match(body.error, /GSTIN/);
+  assert.equal(called, false);
 });

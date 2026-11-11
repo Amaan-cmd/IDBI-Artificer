@@ -9,6 +9,20 @@ const { incrementUserUsage } = require('./userController');
 const { addHistoryRecord } = require('./historyController');
 const { sendSlackNotification } = require('../services/slackNotifier');
 const { applyRegistryAdjustments } = require('../services/registry/registryAdjustments');
+const { GSTIN_RE } = require('./registryController');
+
+const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
+
+// History / notification summary of the metrics. Values telemetry could not
+// compute are null in the payload and rendered as "not available" here.
+function metricSummary(metrics) {
+  const m = metrics || {};
+  return {
+    revenue: isNum(m.revenueRunRate) ? m.revenueRunRate : null,
+    buffer: isNum(m.cashBufferRatio) ? `${Math.round(m.cashBufferRatio * 100) / 100}x` : 'not available',
+    compliance: typeof m.taxCompliance === 'string' && m.taxCompliance ? m.taxCompliance : 'NOT_ASSESSED'
+  };
+}
 
 async function evaluateMSMECredit(req, res) {
   // Declared here so the outer catch can always stop the SSE heartbeat.
@@ -22,6 +36,9 @@ async function evaluateMSMECredit(req, res) {
 
     if (!file && !manualData && !gstin) {
       return res.status(400).json({ error: 'No input provided. Please enter a GSTIN, upload a file, or enter manual data.' });
+    }
+    if (!file && !manualData && !GSTIN_RE.test(String(gstin).trim().toUpperCase())) {
+      return res.status(400).json({ code: 'INVALID_GSTIN', error: 'Enter a valid 15-character GSTIN.' });
     }
 
     // Set SSE headers
@@ -139,6 +156,7 @@ async function evaluateMSMECredit(req, res) {
         agent1Telemetry: structuredData
       };
 
+      const summary = metricSummary(responsePayload.metrics);
       const recordToSave = {
         userId,
         userEmail,
@@ -148,9 +166,7 @@ async function evaluateMSMECredit(req, res) {
         gstin: structuredData.gstin || gstin || null,
         score: responsePayload.decision.score,
         risk: responsePayload.decision.riskLevel,
-        revenue: responsePayload.metrics?.revenueRunRate || 0,
-        buffer: `${Math.round(Number(responsePayload.metrics?.cashBufferRatio || 0) * 100) / 100}x`,
-        compliance: responsePayload.metrics?.taxCompliance || 'Unknown',
+        ...summary,
         reason: responsePayload.decision?.narrative || 'No narrative provided.',
         fullPayload: responsePayload
       };
@@ -165,8 +181,8 @@ async function evaluateMSMECredit(req, res) {
         fields: [
           { title: "Entity Name", value: responsePayload.businessName, short: true },
           { title: "Credit Score", value: `${responsePayload.decision.score} / 900`, short: true },
-          { title: "Cash Buffer", value: `${responsePayload.metrics.cashBufferRatio}x`, short: true },
-          { title: "Tax Compliance", value: responsePayload.metrics.taxCompliance, short: true }
+          { title: "Cash Buffer", value: summary.buffer, short: true },
+          { title: "Tax Compliance", value: summary.compliance, short: true }
         ],
         color: responsePayload.decision.riskLevel === 'LOW' ? '#3A9A3C' : (responsePayload.decision.riskLevel === 'MEDIUM' ? '#E8660A' : '#CC0000')
       });
@@ -199,6 +215,20 @@ async function evaluateMSMECredit(req, res) {
 
       res.write(`data: ${JSON.stringify({ step: 1, agent: 'JEV' })}\n\n`);
       const jevReport = runDeterministicSanityCheck(fallbackStructured);
+      if (!jevReport.isAppropriate) {
+        console.warn('[Credit Engine] JEV deterministic check rejected fallback extraction:', jevReport.rationale);
+        if (file && fs.existsSync(file.path)) fs.unlinkSync(file.path);
+        res.write(`data: ${JSON.stringify({
+          step: 99,
+          error: `JEV System 1 Gatekeeper: Document rejected as inappropriate/fraudulent. ${jevReport.rationale}`,
+          jevReport
+        })}\n\n`);
+        cleanup();
+        return res.end();
+      }
+      for (const k of ['solvencyBouncesVerified', 'technicalBouncesExcluded', 'balanceContinuity']) {
+        if (jevReport[k] !== undefined) fallbackStructured[k] = jevReport[k];
+      }
 
       res.write(`data: ${JSON.stringify({ step: 2, agent: 'GEEK', jevReport })}\n\n`);
       const deterministic = computeFinancialTelemetry(fallbackStructured);
@@ -233,9 +263,7 @@ async function evaluateMSMECredit(req, res) {
         gstin: responsePayload.gstin,
         score: responsePayload.decision.score,
         risk: responsePayload.decision.riskLevel,
-        revenue: responsePayload.metrics.revenueRunRate,
-        buffer: `${responsePayload.metrics.cashBufferRatio}x`,
-        compliance: responsePayload.metrics.taxCompliance,
+        ...metricSummary(responsePayload.metrics),
         reason: responsePayload.decision.narrative,
         fullPayload: responsePayload
       };
@@ -253,7 +281,10 @@ async function evaluateMSMECredit(req, res) {
     if (!res.headersSent) {
       res.status(500).json({ error: error.message || 'Failed to evaluate credit profile' });
     } else {
-      res.write(`data: ${JSON.stringify({ error: error.message || 'Failed to evaluate credit profile' })}\n\n`);
+      // step 99 is the client's terminal-error signal.
+      try {
+        res.write(`data: ${JSON.stringify({ step: 99, error: error.message || 'Failed to evaluate credit profile' })}\n\n`);
+      } catch { /* stream already closed */ }
       cleanup();
       res.end();
     }

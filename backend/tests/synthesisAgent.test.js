@@ -65,7 +65,7 @@ test('dataGaps from ingestion become caveats and suppress dependent metrics', as
   const d = await synthesizeScore(input, matrix, null, DET);
   assert.ok(d.caveats.includes('Not found in statement: monthlyEmiObligations'));
   assert.ok(d.caveats.includes('Not found in statement: gstr1OutwardTaxable'));
-  // Telemetry reports 99.9x DSCP when EMI is 0; that must not be cited as fact.
+  // A gapped EMI (placeholder 0) must never surface as a DSCP figure.
   assert.ok(!d.citations.join(' ').includes('99.9'));
   assert.match(d.citations.find(c => c.startsWith('[Pillar 4')), /not available/);
 });
@@ -75,4 +75,25 @@ test('computed values are cited as computed', async () => {
   const d = await synthesizeScore(FULL, matrix, null, DET);
   assert.ok(d.citations.some(c => c.includes(`${matrix.pillar1_liquidity.cashBufferRatio}x`)));
   assert.ok(d.citations.some(c => c.includes(`${matrix.pillar4_leverage.debtServiceCoverageProxy}x`)));
+});
+
+test('no EMI observed: DSCP is neither scored nor cited as a number, and is labelled', async () => {
+  const input = { ...FULL, monthlyEmiObligations: 0 };
+  const matrix = computeFinancialTelemetry(input);
+  const d = await synthesizeScore(input, matrix, null, DET);
+  const withEmi = await synthesizeScore(FULL, computeFinancialTelemetry(FULL), null, DET);
+  const p4 = d.citations.find(c => c.startsWith('[Pillar 4'));
+  assert.match(p4, /no EMI \/ debt service observed/i);
+  assert.ok(!/99\.9|\bnull\b|NaN/.test([d.narrative, d.reasoning, ...d.citations, ...d.caveats].join(' ')));
+  assert.ok(d.caveats.some(c => /no EMI \/ debt service observed/i.test(c)));
+  // FULL's DSCP (5.75x) earns +20; with no debt service DSCP is unscored.
+  // EMI burden: FULL 1.9% (+8) vs 0% (+8), unchanged.
+  assert.equal(d.score, withEmi.score - 20);
+});
+
+test('telemetry from an empty statement renders no null/NaN text in the decision', async () => {
+  const input = { businessName: 'X', monthlyCredits: [100000, 110000, 120000], dataGaps: ['monthlyDebits', 'dailyClosingBalances', 'monthlyEmiObligations', 'transactions'] };
+  const d = await synthesizeScore(input, computeFinancialTelemetry(input), null, DET);
+  const text = [d.narrative, d.reasoning, ...d.citations, ...d.caveats].join(' ');
+  assert.ok(!/\bnull\b|NaN|undefined/.test(text), text);
 });

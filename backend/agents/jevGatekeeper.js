@@ -31,9 +31,11 @@ function runDeterministicSanityCheck(data = {}) {
 
   // 3. Cash flow plausibility
   const totalRevenue = Number(data.totalRevenue) || Number(data.totalCreditVolume) || 0;
+  const gaps = Array.isArray(data.dataGaps) ? data.dataGaps : [];
+  const known = (k) => typeof data[k] === 'number' && Number.isFinite(data[k]) && !gaps.includes(k);
   const totalDebits = Number(data.totalDebitVolume) || 0;
-  const openingBal = Number(data.bankOpeningBalance);
-  const closingBal = Number(data.bankClosingBalance);
+  const openingBal = known('bankOpeningBalance') ? data.bankOpeningBalance : NaN;
+  const closingBal = known('bankClosingBalance') ? data.bankClosingBalance : NaN;
 
   if (totalRevenue <= 0 && totalDebits <= 0) {
     flags.push('REJECT_EMPTY_CASH_FLOW: Extracted document contains zero financial activity.');
@@ -49,7 +51,8 @@ function runDeterministicSanityCheck(data = {}) {
   }
 
   // 5. Arithmetic Balance Continuity Engine (Anti-Forgery / Anti-Pixel Editing Shield)
-  let balanceContinuity = { verified: true, variance: 0, status: 'VERIFIED_PARITY' };
+  // Only reported as verified when the arithmetic check actually ran.
+  let balanceContinuity = { verified: null, variance: null, status: 'NOT_ASSESSED' };
   if (!isNaN(openingBal) && !isNaN(closingBal) && totalRevenue > 0 && totalDebits > 0) {
     const calculatedClosing = openingBal + totalRevenue - totalDebits;
     const discrepancy = Math.abs(calculatedClosing - closingBal);
@@ -71,7 +74,7 @@ function runDeterministicSanityCheck(data = {}) {
 
   // 6. NPCI NACH Reason Code Discrimination
   let technicalBouncesExcluded = 0;
-  let solvencyBouncesVerified = data.inwardBounces || 0;
+  let solvencyBouncesVerified = known('inwardBounces') ? data.inwardBounces : null;
   if (Array.isArray(data.transactions) && data.transactions.length > 0) {
     let solBounces = 0;
     let techBounces = 0;
@@ -141,13 +144,15 @@ function runDeterministicSanityCheck(data = {}) {
   return {
     verdict: verdict === 'APPROPRIATE_WITH_NOTICES' ? 'APPROPRIATE' : verdict,
     confidenceScore,
+    // Fixed value per verdict tier; not a statistical confidence.
+    confidenceBasis: 'HEURISTIC_VERDICT_TIER',
     isAppropriate: verdict !== 'REJECTED_UNFIT',
     integrityFlags: flags,
     balanceContinuity,
     technicalBouncesExcluded,
     solvencyBouncesVerified,
     rationale: verdict === 'APPROPRIATE' || verdict === 'APPROPRIATE_WITH_NOTICES'
-      ? `JEV System 1 Heuristic Verification: Entity data is complete, statutory GSTIN verified, arithmetic ledger continuity verified (Variance: ₹${balanceContinuity.variance}), and cash flows conform to institutional banking distributions.`
+      ? `JEV System 1 Heuristic Verification: no blocking anomalies; GSTIN format ${data.gstin && data.gstin !== 'NA' ? 'checked' : 'not provided'}; ${balanceContinuity.status === 'NOT_ASSESSED' ? 'arithmetic ledger continuity not assessed (opening/closing balance or debit total unavailable)' : `arithmetic ledger continuity verified (Variance: ₹${balanceContinuity.variance})`}.${flags.length ? ` Notices: ${flags.join('; ')}` : ''}`
       : `JEV System 1 Flag: ${flags.join('; ')}`
   };
 }
@@ -248,9 +253,11 @@ Output strictly in JSON schema:
       });
 
       const answers = evaluation.answers;
-      const verdict = answers.verdict?.choice || 'APPROPRIATE';
-      const confidenceScore = Math.round((answers.verdict?.confidence || 0.96) * 100);
-      const tamperRisk = answers.tamperRisk?.choice || 'LOW';
+      // A response without a verdict is not a pass: fall through to the next route.
+      const verdict = answers?.verdict?.choice;
+      if (!verdict) throw new Error('TypeSafe response contained no verdict');
+      const confidenceScore = typeof answers.verdict.confidence === 'number' ? Math.round(answers.verdict.confidence * 100) : null;
+      const tamperRisk = answers.tamperRisk?.choice || 'NOT_ASSESSED';
       const isInjection = (answers.isInjection?.noul || 0) > 0.5;
       const isAppropriate = verdict !== 'REJECTED_UNFIT' && !isInjection;
 
@@ -263,7 +270,7 @@ Output strictly in JSON schema:
         tamperRisk,
         injectionDefenseStatus: isInjection ? 'FLAGGED' : 'PASSED',
         rationale: isAppropriate
-          ? `TypeSafe Jev System 1 Verification: Data verified appropriate (Confidence: ${confidenceScore}%, Tamper Risk: ${tamperRisk}). Arithmetic ledger parity verified (Variance: ₹${deterministicVerdict.balanceContinuity.variance}).`
+          ? `TypeSafe Jev System 1 Verification: Data verified appropriate (Confidence: ${confidenceScore === null ? 'not reported' : `${confidenceScore}%`}, Tamper Risk: ${tamperRisk}). ${deterministicVerdict.balanceContinuity.status === 'VERIFIED_PARITY' ? `Arithmetic ledger parity verified (Variance: ₹${deterministicVerdict.balanceContinuity.variance}).` : 'Arithmetic ledger parity not assessed.'}`
           : `TypeSafe Jev Flagged: ${verdict} (Injection probability: ${Math.round((answers.isInjection?.noul || 0) * 100)}%, Tamper Risk: ${tamperRisk}).`,
         integrityFlags: deterministicVerdict.integrityFlags,
         balanceContinuity: deterministicVerdict.balanceContinuity,

@@ -67,14 +67,14 @@ Output strictly in valid JSON matching this schema:
     const jsonMatch = rawText.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0]);
-      // Ensure deterministic pillar data is securely preserved
-      parsed.pillar1_liquidity = parsed.pillar1_liquidity || deterministicMatrix.pillar1_liquidity;
-      parsed.pillar2_revenue = parsed.pillar2_revenue || deterministicMatrix.pillar2_revenue;
-      parsed.pillar3_stability = parsed.pillar3_stability || deterministicMatrix.pillar3_stability;
-      parsed.pillar4_leverage = parsed.pillar4_leverage || deterministicMatrix.pillar4_leverage;
-      parsed.pillar5_operational = parsed.pillar5_operational || deterministicMatrix.pillar5_operational;
+      // The deterministic matrix is authoritative for every figure and status;
+      // the LLM contributes only narrative reasoning and citations.
       console.log('[Agent 2] 5-Pillar Financial Calculation Matrix computed successfully.');
-      return parsed;
+      return {
+        ...deterministicMatrix,
+        reasoning: typeof parsed.reasoning === 'string' && parsed.reasoning ? parsed.reasoning : deterministicMatrix.reasoning,
+        citations: Array.isArray(parsed.citations) && parsed.citations.length ? parsed.citations : deterministicMatrix.citations
+      };
     }
   } catch (error) {
     console.warn(`[Agent 2] Live LLM inference notice (${error.message}). Deploying verified deterministic matrix.`);
