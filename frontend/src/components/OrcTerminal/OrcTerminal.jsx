@@ -5,15 +5,19 @@ import { getCompanyDecisionData, generateOrcResponse } from '../../utils/orcInte
 
 import { apiFetch } from '../../utils/apiClient';
 
-export default function OrcTerminal({ currentBusiness, onQuickInspect }) {
-  // Compute enriched decision data for the currently selected business
-  const companyData = useMemo(() => {
-    return getCompanyDecisionData(
-      currentBusiness?.name,
-      currentBusiness?.gstin,
-      currentBusiness?.probeData
-    );
-  }, [currentBusiness?.name, currentBusiness?.gstin, currentBusiness?.probeData]);
+const NO_EVALUATION = 'No evaluation yet. Run an evaluation, then interrogate Orc about the decision.';
+
+const describeTarget = (c) => `${c.name} (GSTIN: ${c.gstin || 'Not available'} · Score: ${c.score}/900 · ${c.riskTier}${c.sampleData ? ' · SAMPLE DATA' : ''})`;
+
+export default function OrcTerminal({ currentBusiness, evaluationPayload = null, onQuickInspect }) {
+  // Decision data derived from the real evaluation payload (or demo presets in demo mode); null otherwise.
+  const companyData = useMemo(() => getCompanyDecisionData(
+    currentBusiness?.name, currentBusiness?.gstin, currentBusiness?.probeData, evaluationPayload
+  ), [currentBusiness?.name, currentBusiness?.gstin, currentBusiness?.probeData, evaluationPayload]);
+
+  const targetName = companyData?.name || currentBusiness?.name || 'No target';
+  const targetGstin = companyData?.gstin || (currentBusiness?.gstin || '').trim().toUpperCase();
+  const scoreLabel = companyData ? String(companyData.score) : '—';
 
   const [messages, setMessages] = useState([
     {
@@ -26,35 +30,43 @@ Deterministic 5-Pillar Financial Analysis Engine Online.`
     {
       id: 'init-2',
       sender: 'orc',
-      text: `Greetings Officer. I am Orc, Chief Credit Officer agent. I have synthesized bank statements, GSTR filings, and MCA records for ${companyData.name} (GSTIN: ${companyData.gstin} · Score: ${companyData.score}/900 · ${companyData.riskTier}).
+      text: companyData
+        ? `Greetings Officer. I am Orc, Chief Credit Officer agent. Loaded the evaluation for ${describeTarget(companyData)}.
 
 You may interrogate why this specific decision was taken, the 300–900 points breakdown, downside friction factors, or any credit ratio.`
+        : NO_EVALUATION
     }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef(null);
-  const prevGstinRef = useRef(companyData.gstin);
+  const contextKey = companyData ? `${companyData.gstin}|${companyData.score}` : null;
+  const prevContextRef = useRef(contextKey);
 
   // Announce context switch when user picks a different enterprise
+  // Announce context switch when the evaluated target (or its decision) changes
   useEffect(() => {
-    if (prevGstinRef.current !== companyData.gstin) {
-      prevGstinRef.current = companyData.gstin;
-      setMessages(prev => [
-        ...prev,
-        {
-          id: `ctx_${Date.now()}`,
-          sender: 'system',
-          text: `[CONTEXT SWITCHED]: Target Entity recalibrated to: ${companyData.name} (${companyData.gstin}) · Score: ${companyData.score} (${companyData.riskTier}) · Verdict: ${companyData.sanctionVerdict}`
-        },
-        {
-          id: `orc_ctx_${Date.now()}`,
-          sender: 'orc',
-          text: `Ready to audit ${companyData.name}. Ask me: "Why was this decision taken?", "Why is the score ${companyData.score}?", or select a quick directive below.`
-        }
-      ]);
+    if (prevContextRef.current === contextKey) return;
+    prevContextRef.current = contextKey;
+    if (!companyData) {
+      setMessages(prev => [...prev, { id: `ctx_${Date.now()}`, sender: 'orc', text: NO_EVALUATION }]);
+      return;
     }
-  }, [companyData.gstin, companyData.name, companyData.score, companyData.riskTier, companyData.sanctionVerdict]);
+    setMessages(prev => [
+      ...prev,
+      {
+        id: `ctx_${Date.now()}`,
+        sender: 'system',
+        text: `[CONTEXT SWITCHED]: Target Entity recalibrated to: ${describeTarget(companyData)} · Verdict: ${companyData.sanctionVerdict}`
+      },
+      {
+        id: `orc_ctx_${Date.now()}`,
+        sender: 'orc',
+        text: `Ready to audit ${companyData.name}. Ask me: "Why was this decision taken?", "Why is the score ${companyData.score}?", or select a quick directive below.`
+      }
+    ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contextKey]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -84,7 +96,9 @@ You may interrogate why this specific decision was taken, the 300–900 points b
         {
           id: `sys_${Date.now()}`,
           sender: 'system',
-          text: `Terminal cleared. Orc CCO daemon active for ${companyData.name} (${companyData.gstin}).`
+          text: companyData
+            ? `Terminal cleared. Orc CCO daemon active for ${companyData.name} (${companyData.gstin || 'GSTIN not available'}).`
+            : `Terminal cleared. ${NO_EVALUATION}`
         }
       ]);
       setLoading(false);
@@ -98,16 +112,23 @@ You may interrogate why this specific decision was taken, the 300–900 points b
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             query: textToSend,
-            evaluationPayload: {
-              businessName: companyData.name,
-              gstin: companyData.gstin,
-              score: companyData.score,
-              riskTier: companyData.riskTier,
-              sanctionVerdict: companyData.sanctionVerdict,
-              recommendedLimit: companyData.recommendedLimit,
-              metrics: companyData.metrics,
-              mathDrivers: companyData.mathDrivers
-            }
+            // Real evaluation payload when present; demo presets send the flattened sample;
+            // otherwise null so the backend reports that there is nothing to explain yet.
+            evaluationPayload: evaluationPayload?.decision
+              ? evaluationPayload
+              : companyData
+                ? {
+                    businessName: companyData.name,
+                    gstin: companyData.gstin,
+                    score: companyData.score,
+                    riskTier: companyData.riskTier,
+                    sanctionVerdict: companyData.sanctionVerdict,
+                    recommendedLimit: companyData.recommendedLimit,
+                    metrics: companyData.metrics,
+                    mathDrivers: companyData.mathDrivers,
+                    sampleData: companyData.sampleData
+                  }
+                : null
           })
         });
         const data = await res.json();
@@ -123,7 +144,7 @@ You may interrogate why this specific decision was taken, the 300–900 points b
       throw new Error();
     } catch {
       // High-precision grounded intelligence engine
-      const response = generateOrcResponse(textToSend, companyData);
+      const response = companyData ? generateOrcResponse(textToSend, companyData) : NO_EVALUATION;
 
       setTimeout(() => {
         setMessages(prev => [
@@ -137,12 +158,12 @@ You may interrogate why this specific decision was taken, the 300–900 points b
 
   // Quick Directive chips tailored specifically for decision interrogation
   const QUICK_PROMPTS = [
-    { label: "🎯 Why was this decision taken?", query: `Why was this decision taken for ${companyData.name}? Explain the complete credit verdict and rationale.` },
-    { label: `📊 Score Drivers (${companyData.score} pts)`, query: `Why is the score ${companyData.score} for ${companyData.name}? Show the step-by-step mathematical points calculation.` },
+    { label: "🎯 Why was this decision taken?", query: `Why was this decision taken for ${targetName}? Explain the complete credit verdict and rationale.` },
+    { label: `📊 Score Drivers (${scoreLabel} pts)`, query: `Why is the score ${scoreLabel} for ${targetName}? Show the step-by-step mathematical points calculation.` },
     { label: "🔍 Pillar 1–5 Decision Rationale", query: "Provide a detailed Pillar 1 to Pillar 5 audit breakdown of this underwriting decision." },
-    { label: "⚠️ Downside Risks & Friction", query: `What risk friction or negative factors prevented a higher score for ${companyData.name}?` },
-    { label: "📈 Sensitivity: What raises the score?", query: `What counterfactual changes would upgrade ${companyData.name} to Prime (850+)?` },
-    { label: `💰 Sanction Limit Rationale (${companyData.recommendedLimit})`, query: `Why was ${companyData.recommendedLimit} limit recommended for ${companyData.name}?` },
+    { label: "⚠️ Downside Risks & Friction", query: `What risk friction or negative factors prevented a higher score for ${targetName}?` },
+    { label: "📈 Sensitivity: What raises the score?", query: `What counterfactual changes would upgrade ${targetName} to Prime (850+)?` },
+    { label: `💰 Sanction Limit Rationale${companyData ? ` (${companyData.recommendedLimit})` : ''}`, query: `Why was the sanction limit recommended for ${targetName}?` },
     { label: "🏛️ RBI Policy Attestation", query: "What RBI Digital Lending policies and zero-hallucination rules govern this credit decision?" }
   ];
 
@@ -173,10 +194,10 @@ You may interrogate why this specific decision was taken, the 300–900 points b
           <span>orc@enver-citadel:~$ /bin/orc-intelligence --mode=institutional</span>
         </div>
 
-        <div className="terminal-target-badge" title={`Active Target: ${companyData.name}`}>
+        <div className="terminal-target-badge" title={`Active Target: ${targetName}${targetGstin ? ` (${targetGstin})` : ''}${companyData?.sampleData ? ' · SAMPLE DATA' : ''}`}>
           <Building2 size={12} className="text-celadon" />
-          <span className="target-name-truncated">{companyData.name.split(' ')[0]}</span>
-          <span className="target-score-pill">{companyData.score}</span>
+          <span className="target-name-truncated">{targetName.split(' ')[0]}</span>
+          <span className="target-score-pill">{scoreLabel}</span>
         </div>
 
         <div className="terminal-status-pill">
@@ -242,7 +263,9 @@ You may interrogate why this specific decision was taken, the 300–900 points b
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder={`Ask Orc why this decision was taken for ${companyData.name.split(' ')[0]}, why score is ${companyData.score}, or type 'clear'...`}
+          placeholder={companyData
+            ? `Ask Orc why this decision was taken for ${targetName.split(' ')[0]}, why score is ${companyData.score}, or type 'clear'...`
+            : 'No evaluation yet. Run an evaluation, then ask Orc about the decision...'}
           className="orc-cli-input"
           disabled={loading}
         />

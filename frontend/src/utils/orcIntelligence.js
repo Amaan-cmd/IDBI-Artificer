@@ -1,189 +1,316 @@
-import { KNOWN_GSTINS, getGSTINProbeData } from './gstinRegistry';
+import { KNOWN_GSTINS } from './gstinRegistry';
+import { isDemoMode } from './demoMode';
 
 /**
  * Institutional Credit Intelligence & Decision Explainability Engine for Orc CCO.
- * Provides deterministic, zero-hallucination audit justifications across all 5 financial pillars.
+ * Explains a completed evaluation from the real backend payload (agent1Telemetry +
+ * decision). Demo presets are used only when VITE_DEMO_MODE is on and are flagged
+ * `sampleData`. Inputs that are missing (null or listed in dataGaps) are reported
+ * as "Not available" and never scored or used to derive figures.
  */
 
-export function getCompanyDecisionData(businessName, gstin, probeData = null) {
-  const cleanGstin = (gstin || '27AADCB2230M1Z2').trim().toUpperCase();
-  const aliasMap = {
-    '27AABCU9603R1ZM': '27AADCB2230M1Z2', // Apex Precision
-    '24AAJCS4912K1ZW': '24AABCS4421P1Z9', // Surat Textiles
-    '27AAECK3910F1ZU': '27AAGCK8812L1ZQ'  // Kalyan Agro
+const NA = 'Not available';
+const RUPEES_PER_LAKH = 100000; // unit conversion only (1 lakh = 1,00,000 INR)
+
+// Demo-mode alias GSTINs that resolve to the same sample preset.
+const DEMO_ALIASES = {
+  '27AABCU9603R1ZM': '27AADCB2230M1Z2', // Apex Precision
+  '24AAJCS4912K1ZW': '24AABCS4421P1Z9', // Surat Textiles
+  '27AAECK3910F1ZU': '27AAGCK8812L1ZQ'  // Kalyan Agro
+};
+
+const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
+const sum = (arr) => arr.reduce((a, b) => a + b, 0);
+const fmt = (v, suffix = '') => (isNum(v) ? `${v}${suffix}` : NA);
+const fmtLakhs = (v, digits = 2) => (isNum(v) ? `₹${(v / RUPEES_PER_LAKH).toFixed(digits)}L` : NA);
+const fmtSignedPct = (v) => (isNum(v) ? `${v >= 0 ? '+' : ''}${v}%` : NA);
+const NAME_NOT_FOUND = 'Name not found in statement';
+
+function riskTierFromLevel(level) {
+  if (!level) return null;
+  const l = String(level).trim().toUpperCase();
+  return /RISK$/.test(l) ? l : `${l} RISK`;
+}
+
+export function getCompanyDecisionData(businessName, gstin, probeData = null, evaluationPayload = null) {
+  const cleanGstin = (gstin || evaluationPayload?.gstin || '').trim().toUpperCase();
+  const telemetry = evaluationPayload?.agent1Telemetry;
+  const gaps = new Set(Array.isArray(telemetry?.dataGaps) ? telemetry.dataGaps : []);
+  const hasRealFinancials = Array.isArray(telemetry?.monthlyCredits)
+    && !gaps.has('monthlyCredits')
+    && telemetry.monthlyCredits.some(isNum);
+  const demoKey = DEMO_ALIASES[cleanGstin] || cleanGstin;
+  const known = !hasRealFinancials && isDemoMode ? (KNOWN_GSTINS[demoKey] || null) : null;
+  if (!hasRealFinancials && !known) return null;
+
+  const src = hasRealFinancials ? telemetry : known;
+  // A field is available only if it is a finite number and not flagged in dataGaps
+  // (the backend zero-fills some missing fields and lists them there).
+  const field = (...keys) => {
+    for (const k of keys) {
+      if (gaps.has(k)) continue;
+      if (isNum(src[k])) return src[k];
+    }
+    return null;
   };
-  const resolvedKey = aliasMap[cleanGstin] || cleanGstin;
-  const known = KNOWN_GSTINS[resolvedKey];
-  const probe = probeData || getGSTINProbeData(cleanGstin);
 
-  const name = businessName || known?.legalEntityName || probe?.registry?.legalEntityName || 'Enterprise';
-  const entityType = known?.entityType || probe?.registry?.entityType || 'Private Limited Company';
-  const mcaStatus = known?.mcaStatus || probe?.registry?.mcaStatus || 'Active';
+  const report = evaluationPayload?.registryReport || probeData?.registryReport || null;
+  const payloadName = [evaluationPayload?.businessName, gaps.has('businessName') ? null : src.businessName]
+    .find(n => n && n !== NAME_NOT_FOUND);
+  const name = businessName || payloadName || known?.legalEntityName || report?.gst?.data?.legalName || 'Enterprise';
+  const entityType = report?.gst?.data?.constitution || known?.entityType || 'Not verified';
+  const mcaStatus = report?.mca?.status === 'ok' && report.mca.data?.status
+    ? report.mca.data.status
+    : (known?.mcaStatus || 'Not verified');
 
-  const credits = known?.monthlyCredits || probe?.timeline?.returns?.map(r => r.taxable_sales) || [750000, 780000, 820000, 760000, 840000, 890000];
-  const debits = known?.monthlyDebits || probe?.timeline?.returns?.map(r => r.taxable_debits) || [680000, 710000, 740000, 690000, 760000, 820000];
-  const closingBalance = known?.closingBalance ?? probe?.timeline?.closingBalance ?? 680200;
-  const sanctionedOdLimit = known?.sanctionedOdLimit ?? probe?.timeline?.sanctionedOdLimit ?? 1000000;
-  const peakOdUsage = known?.peakOdUsage ?? probe?.timeline?.peakOdUsage ?? 320000;
-  const gstr1Sales = known?.gstr1OutwardTaxable ?? probe?.timeline?.gstr1OutwardTaxable ?? 4840000;
-  const gstr1Tax = known?.gstr1DeclaredTax ?? probe?.timeline?.gstr1DeclaredTax ?? 871200;
-  const gstr3bTax = known?.gstr3bTaxPaid ?? probe?.timeline?.gstr3bTaxPaid ?? 871200;
-  const monthlyEmi = known?.monthlyEmiObligations ?? probe?.timeline?.monthlyEmiObligations ?? 42500;
-  const inwardBounces = known?.inwardBounces ?? probe?.timeline?.inwardBounces ?? 0;
+  const credits = src.monthlyCredits.filter(isNum);
+  const debits = gaps.has('monthlyDebits') || !Array.isArray(src.monthlyDebits) ? [] : src.monthlyDebits.filter(isNum);
+  const closingBalance = field('closingBalance', 'bankClosingBalance');
+  const sanctionedOdLimit = field('sanctionedOdLimit');
+  const peakOdUsage = field('peakOdUsage');
+  const gstr1Sales = field('gstr1OutwardTaxable');
+  const gstr1Tax = field('gstr1DeclaredTax');
+  const gstr3bTax = field('gstr3bTaxPaid');
+  const monthlyEmi = field('monthlyEmiObligations');
+  const inwardBounces = field('inwardBounces');
+  const sampleData = Boolean(known);
 
-  // Compute 5 Pillars
-  const avgMonthlyCredit = credits.reduce((a, b) => a + b, 0) / credits.length;
-  const avgMonthlyDebit = debits.reduce((a, b) => a + b, 0) / debits.length;
-  const annualizedRevenue = Math.round(avgMonthlyCredit * 12);
-  const cashBufferRatio = +(closingBalance / (avgMonthlyDebit || 1)).toFixed(2);
-  const survivalRunwayDays = Math.round(cashBufferRatio * 25);
-  const odUtilization = sanctionedOdLimit > 0 ? Math.round((peakOdUsage / sanctionedOdLimit) * 100) : 0;
+  // Compute 5 Pillars (null = not available; never substituted with a default)
+  const avgMonthlyCredit = credits.length ? sum(credits) / credits.length : null;
+  const avgMonthlyDebit = debits.length ? sum(debits) / debits.length : null;
+  const annualizedRevenue = isNum(avgMonthlyCredit) ? Math.round(avgMonthlyCredit * 12) : null;
+  const cashBufferRatio = isNum(closingBalance) && avgMonthlyDebit > 0 ? +(closingBalance / avgMonthlyDebit).toFixed(2) : null;
+  const survivalRunwayDays = isNum(cashBufferRatio) ? Math.round(cashBufferRatio * 25) : null;
+  const odUtilization = sanctionedOdLimit > 0 && isNum(peakOdUsage) ? Math.round((peakOdUsage / sanctionedOdLimit) * 100) : null;
 
-  const firstHalf = credits.slice(0, 3).reduce((a, b) => a + b, 0);
-  const secondHalf = credits.slice(3).reduce((a, b) => a + b, 0);
-  const revenueGrowthRate = firstHalf > 0 ? +(((secondHalf - firstHalf) / firstHalf) * 100).toFixed(1) : 0;
-  const totalCredits = credits.reduce((a, b) => a + b, 0);
-  const gstReconciliation = +(gstr1Sales / (totalCredits || 1)).toFixed(2);
-  const taxGap = gstr1Tax > 0 ? +(((gstr1Tax - gstr3bTax) / gstr1Tax) * 100).toFixed(1) : 0;
+  const half = Math.floor(credits.length / 2);
+  const firstHalf = half ? sum(credits.slice(0, half)) : 0;
+  const secondHalf = half ? sum(credits.slice(credits.length - half)) : 0;
+  const revenueGrowthRate = half && firstHalf > 0 ? +(((secondHalf - firstHalf) / firstHalf) * 100).toFixed(1) : null;
+  const totalCredits = sum(credits);
+  const gstReconciliation = isNum(gstr1Sales) && totalCredits > 0 ? +(gstr1Sales / totalCredits).toFixed(2) : null;
+  const taxGap = gstr1Tax > 0 && isNum(gstr3bTax) ? +(((gstr1Tax - gstr3bTax) / gstr1Tax) * 100).toFixed(1) : null;
 
-  const mean = totalCredits / credits.length;
-  const variance = credits.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / credits.length;
-  const stdDev = Math.sqrt(variance);
-  const creditCV = +(stdDev / (mean || 1)).toFixed(2);
-
-  const netOperatingInflow = avgMonthlyCredit - avgMonthlyDebit;
-  const dscp = monthlyEmi > 0 ? +(netOperatingInflow / monthlyEmi).toFixed(2) : 3.5;
-  const emiBurdenRatio = avgMonthlyCredit > 0 ? +((monthlyEmi / avgMonthlyCredit) * 100).toFixed(1) : 0;
-
-  // Court Cases & Forensic
-  const courtCases = resolvedKey === '27AAGCK8812L1ZQ' ? 1 : 0;
-  const directorDIN = resolvedKey === '27AAGCK8812L1ZQ' ? '01829471 (Inquiry)' : '02914820 (Clean)';
-
-  // Calculate Points Math (Base: 750)
-  const mathDrivers = [];
-  let score = 750;
-
-  // P1: Buffer
-  if (cashBufferRatio >= 0.5) {
-    score += 40;
-    mathDrivers.push({ factor: 'Strong Cash Buffer (>= 0.5x)', points: '+40 pts', positive: true, detail: `Ratio ${cashBufferRatio}x with ${survivalRunwayDays} survival days` });
-  } else if (cashBufferRatio >= 0.25) {
-    score += 15;
-    mathDrivers.push({ factor: 'Adequate Cash Buffer (0.25–0.49x)', points: '+15 pts', positive: true, detail: `Ratio ${cashBufferRatio}x with ${survivalRunwayDays} survival days` });
-  } else {
-    score -= 50;
-    mathDrivers.push({ factor: 'Depleted Cash Buffer (< 0.25x)', points: '-50 pts', positive: false, detail: `Ratio ${cashBufferRatio}x provides only ${survivalRunwayDays} days runway` });
+  let creditCV = null;
+  if (credits.length >= 2 && avgMonthlyCredit > 0) {
+    const variance = credits.reduce((s, val) => s + Math.pow(val - avgMonthlyCredit, 2), 0) / credits.length;
+    creditCV = +(Math.sqrt(variance) / avgMonthlyCredit).toFixed(2);
   }
 
-  // P1: Overdraft
-  if (odUtilization < 50) {
+  const netOperatingInflow = isNum(avgMonthlyCredit) && isNum(avgMonthlyDebit) ? avgMonthlyCredit - avgMonthlyDebit : null;
+  const dscp = monthlyEmi > 0 && isNum(netOperatingInflow) ? +(netOperatingInflow / monthlyEmi).toFixed(2) : null;
+  const emiBurdenRatio = isNum(monthlyEmi) && avgMonthlyCredit > 0 ? +((monthlyEmi / avgMonthlyCredit) * 100).toFixed(1) : null;
+
+  // Court Cases & Forensic: no litigation provider is wired up, so these exist only for demo presets.
+  const courtCases = known ? (demoKey === '27AAGCK8812L1ZQ' ? 1 : 0) : null; // null = not available from provider
+  const directorDIN = known ? (demoKey === '27AAGCK8812L1ZQ' ? '01829471 (Inquiry)' : '02914820 (Clean)') : NA;
+
+  // Calculate Points Math (Base: 670 Institutional Solvent Baseline)
+  const mathDrivers = [];
+  const unavailableInputs = [];
+  let score = 670;
+
+  // P1: Liquidity & Cash Buffer Ratio
+  if (cashBufferRatio === null) {
+    unavailableInputs.push('Cash buffer ratio (closing balance or monthly debits not available)');
+  } else if (cashBufferRatio >= 0.75) {
     score += 25;
-    mathDrivers.push({ factor: 'Prudent Overdraft Utilization (< 50%)', points: '+25 pts', positive: true, detail: `Peak drawn: ${odUtilization}% of ₹${(sanctionedOdLimit / 100000).toFixed(1)}L limit` });
-  } else if (odUtilization <= 80) {
-    score += 0;
-    mathDrivers.push({ factor: 'Moderate Overdraft Drawdown (50–80%)', points: '0 pts', positive: true, detail: `Peak drawn: ${odUtilization}%` });
+    mathDrivers.push({ factor: 'Strong Cash Buffer (>= 0.75x)', points: '+25 pts', positive: true, detail: `Ratio ${cashBufferRatio}x with ${survivalRunwayDays} survival days` });
+  } else if (cashBufferRatio >= 0.40) {
+    score += 10;
+    mathDrivers.push({ factor: 'Adequate Cash Buffer (0.40–0.74x)', points: '+10 pts', positive: true, detail: `Ratio ${cashBufferRatio}x with ${survivalRunwayDays} survival days` });
+  } else if (cashBufferRatio >= 0.20) {
+    score -= 10;
+    mathDrivers.push({ factor: 'Tight Cash Buffer (0.20–0.39x)', points: '-10 pts', positive: false, detail: `Ratio ${cashBufferRatio}x provides only ${survivalRunwayDays} days runway` });
   } else {
-    score -= 45;
-    mathDrivers.push({ factor: 'Stressed Overdraft Headroom (> 80%)', points: '-45 pts', positive: false, detail: `Peak drawn: ${odUtilization}% indicates tight working capital` });
+    score -= 35;
+    mathDrivers.push({ factor: 'Depleted Cash Buffer (< 0.20x)', points: '-35 pts', positive: false, detail: `Ratio ${cashBufferRatio}x provides only ${survivalRunwayDays} days runway` });
+  }
+
+  // P1: Overdraft / Limit Utilization
+  if (odUtilization === null) {
+    unavailableInputs.push('Overdraft utilization (sanctioned OD limit / peak usage not available)');
+  } else if (odUtilization < 35) {
+    score += 20;
+    mathDrivers.push({ factor: 'Prudent Overdraft Utilization (< 35%)', points: '+20 pts', positive: true, detail: `Peak drawn: ${odUtilization}% of ₹${(sanctionedOdLimit / RUPEES_PER_LAKH).toFixed(1)}L limit` });
+  } else if (odUtilization <= 60) {
+    score += 5;
+    mathDrivers.push({ factor: 'Moderate Overdraft Drawdown (35–60%)', points: '+5 pts', positive: true, detail: `Peak drawn: ${odUtilization}%` });
+  } else if (odUtilization <= 80) {
+    score -= 15;
+    mathDrivers.push({ factor: 'Elevated Overdraft Reliance (61–80%)', points: '-15 pts', positive: false, detail: `Peak drawn: ${odUtilization}% indicates working capital tightening` });
+  } else {
+    score -= 35;
+    mathDrivers.push({ factor: 'Stressed Overdraft Headroom (> 80%)', points: '-35 pts', positive: false, detail: `Peak drawn: ${odUtilization}% indicates liquidity strain` });
   }
 
   // P2: Revenue Momentum
-  if (revenueGrowthRate >= 5.0) {
-    score += 30;
-    mathDrivers.push({ factor: 'Expansionary Revenue Momentum (>= 5%)', points: '+30 pts', positive: true, detail: `+${revenueGrowthRate}% 3M/3M growth` });
-  } else if (revenueGrowthRate >= 0) {
-    score += 15;
-    mathDrivers.push({ factor: 'Stable Revenue Baseline (0–5%)', points: '+15 pts', positive: true, detail: `+${revenueGrowthRate}% growth` });
-  } else {
-    score -= 35;
-    mathDrivers.push({ factor: 'Contracting Revenue Velocity (< 0%)', points: '-35 pts', positive: false, detail: `${revenueGrowthRate}% turnover contraction` });
-  }
-
-  // P2: GST Reconciliation
-  if (Math.abs(gstReconciliation - 1.0) <= 0.05) {
-    score += 35;
-    mathDrivers.push({ factor: 'Seamless GSTR-1 to Bank Reconciliation', points: '+35 pts', positive: true, detail: `Turnover ratio: ${gstReconciliation}x (zero off-ledger gap)` });
-  } else if (Math.abs(gstReconciliation - 1.0) <= 0.15) {
-    score += 15;
-    mathDrivers.push({ factor: 'Acceptable Statutory Variance', points: '+15 pts', positive: true, detail: `Turnover ratio: ${gstReconciliation}x` });
-  } else {
-    score -= 40;
-    mathDrivers.push({ factor: 'Severe GSTR vs Bank Turnover Divergence', points: '-40 pts', positive: false, detail: `Ratio ${gstReconciliation}x signals off-ledger or unbanked volume` });
-  }
-
-  // P2: Tax Gap
-  if (taxGap <= 0.5) {
-    score += 25;
-    mathDrivers.push({ factor: 'Zero GSTR-1 vs 3B Tax Gap (<= 0.5%)', points: '+25 pts', positive: true, detail: `Declared ₹${(gstr1Tax/100000).toFixed(2)}L = Paid ₹${(gstr3bTax/100000).toFixed(2)}L` });
-  } else if (taxGap <= 2.0) {
-    score += 10;
-    mathDrivers.push({ factor: 'Minor Timing Tax Variance (<= 2%)', points: '+10 pts', positive: true, detail: `${taxGap}% variance` });
-  } else {
-    score -= 45;
-    mathDrivers.push({ factor: 'GSTR-3B Tax Shortfall Delinquency (> 2%)', points: '-45 pts', positive: false, detail: `${taxGap}% tax unpaid indicates impending GST audit notice` });
-  }
-
-  // P3: Stability & Volatility
-  if (creditCV <= 0.15) {
-    score += 25;
-    mathDrivers.push({ factor: 'High Cash Flow Predictability (CV <= 0.15)', points: '+25 pts', positive: true, detail: `CV = ${creditCV} (low seasonal dispersion)` });
-  } else if (creditCV <= 0.30) {
-    score += 10;
-    mathDrivers.push({ factor: 'Moderate Turnover Volatility', points: '+10 pts', positive: true, detail: `CV = ${creditCV}` });
+  if (revenueGrowthRate === null) {
+    unavailableInputs.push('Revenue momentum (insufficient monthly credit history)');
+  } else if (revenueGrowthRate >= 10.0) {
+    score += 20;
+    mathDrivers.push({ factor: 'Expansionary Revenue Momentum (>= 10%)', points: '+20 pts', positive: true, detail: `+${revenueGrowthRate}% 3M/3M growth` });
+  } else if (revenueGrowthRate >= 3.0) {
+    score += 12;
+    mathDrivers.push({ factor: 'Steady Revenue Momentum (3–9.9%)', points: '+12 pts', positive: true, detail: `+${revenueGrowthRate}% growth` });
+  } else if (revenueGrowthRate >= 0.0) {
+    score += 4;
+    mathDrivers.push({ factor: 'Flat Revenue Baseline (0–2.9%)', points: '+4 pts', positive: true, detail: `+${revenueGrowthRate}% growth` });
+  } else if (revenueGrowthRate >= -5.0) {
+    score -= 12;
+    mathDrivers.push({ factor: 'Mild Revenue Contraction (-5 to -0.1%)', points: '-12 pts', positive: false, detail: `${revenueGrowthRate}% turnover decline` });
   } else {
     score -= 30;
-    mathDrivers.push({ factor: 'Excessive Turnover Dispersion (CV > 0.30)', points: '-30 pts', positive: false, detail: `CV = ${creditCV} indicates revenue instability` });
+    mathDrivers.push({ factor: 'Severe Revenue Decline (< -5%)', points: '-30 pts', positive: false, detail: `${revenueGrowthRate}% turnover contraction` });
   }
 
-  // P3: Inward Bounces
-  if (inwardBounces === 0) {
-    mathDrivers.push({ factor: 'Flawless Banking Discipline (0 Bounces)', points: '0 pts (Clean)', positive: true, detail: 'Zero inward NACH or cheque return friction' });
+  // P2: GST Turnover Reconciliation
+  if (gstReconciliation === null) {
+    unavailableInputs.push('GSTR-1 to bank turnover reconciliation (GSTR-1 outward taxable not available)');
+  } else if (Math.abs(gstReconciliation - 1.0) <= 0.05) {
+    score += 18;
+    mathDrivers.push({ factor: 'Seamless GSTR-1 to Bank Reconciliation', points: '+18 pts', positive: true, detail: `Turnover ratio: ${gstReconciliation}x (zero off-ledger gap)` });
+  } else if (Math.abs(gstReconciliation - 1.0) <= 0.15) {
+    score += 5;
+    mathDrivers.push({ factor: 'Acceptable Statutory Variance', points: '+5 pts', positive: true, detail: `Turnover ratio: ${gstReconciliation}x` });
   } else {
-    score -= (inwardBounces * 60);
-    mathDrivers.push({ factor: `Inward Dishonour Return Events (${inwardBounces})`, points: `-${inwardBounces * 60} pts`, positive: false, detail: 'Strict RBI penalty: indicates trade liquidity stress' });
+    score -= 25;
+    mathDrivers.push({ factor: 'GSTR vs Bank Turnover Divergence', points: '-25 pts', positive: false, detail: `Ratio ${gstReconciliation}x signals off-ledger or unbanked volume` });
   }
 
-  // P4: Debt Service Coverage
-  if (dscp >= 1.75) {
-    score += 35;
-    mathDrivers.push({ factor: 'Prime Debt Service Coverage (DSCP >= 1.75x)', points: '+35 pts', positive: true, detail: `${dscp}x operational cash surplus over monthly EMI` });
-  } else if (dscp >= 1.25) {
-    score += 15;
-    mathDrivers.push({ factor: 'Adequate Debt Service Coverage (1.25–1.74x)', points: '+15 pts', positive: true, detail: `${dscp}x coverage` });
+  // P2: Tax Gap (GSTR-1 vs 3B)
+  if (taxGap === null) {
+    unavailableInputs.push('GSTR-1 vs GSTR-3B tax gap (declared / paid tax not available)');
+  } else if (taxGap <= 1.0) {
+    score += 12;
+    mathDrivers.push({ factor: 'Zero GSTR-1 vs 3B Tax Gap (<= 1.0%)', points: '+12 pts', positive: true, detail: `Declared ₹${(gstr1Tax/ RUPEES_PER_LAKH).toFixed(2)}L ≈ Paid ₹${(gstr3bTax/ RUPEES_PER_LAKH).toFixed(2)}L` });
+  } else if (taxGap <= 3.0) {
+    mathDrivers.push({ factor: 'Minor Timing Tax Variance (<= 3%)', points: '0 pts', positive: true, detail: `${taxGap}% variance` });
   } else {
-    score -= 60;
-    mathDrivers.push({ factor: 'Stressed Debt Coverage (DSCP < 1.25x)', points: '-60 pts', positive: false, detail: `${dscp}x coverage breaches safety covenants` });
+    score -= 25;
+    mathDrivers.push({ factor: 'GSTR-3B Tax Shortfall Delinquency (> 3%)', points: '-25 pts', positive: false, detail: `${taxGap}% tax unpaid indicates impending GST audit risk` });
+  }
+
+  // P3: Cash Flow Stability (Credit CV)
+  if (creditCV === null) {
+    unavailableInputs.push('Cash flow stability (insufficient monthly credit history)');
+  } else if (creditCV <= 0.08) {
+    score += 20;
+    mathDrivers.push({ factor: 'High Cash Flow Predictability (CV <= 0.08)', points: '+20 pts', positive: true, detail: `CV = ${creditCV} (low seasonal dispersion)` });
+  } else if (creditCV <= 0.20) {
+    score += 8;
+    mathDrivers.push({ factor: 'Moderate Turnover Volatility (CV 0.09–0.20)', points: '+8 pts', positive: true, detail: `CV = ${creditCV}` });
+  } else if (creditCV <= 0.35) {
+    score -= 12;
+    mathDrivers.push({ factor: 'Elevated Cash Flow Dispersion (CV 0.21–0.35)', points: '-12 pts', positive: false, detail: `CV = ${creditCV}` });
+  } else {
+    score -= 30;
+    mathDrivers.push({ factor: 'Erratic Cash Flow Dispersion (CV > 0.35)', points: '-30 pts', positive: false, detail: `CV = ${creditCV} indicates revenue instability` });
+  }
+
+  // P3: Inward Bounces (Cheque / NACH Dishonours)
+  if (inwardBounces === null) {
+    unavailableInputs.push('Inward cheque / NACH bounces');
+  } else if (inwardBounces === 0) {
+    score += 12;
+    mathDrivers.push({ factor: 'Flawless Banking Discipline (0 Bounces)', points: '+12 pts', positive: true, detail: 'Zero inward NACH or cheque return friction' });
+  } else if (inwardBounces === 1) {
+    score -= 50;
+    mathDrivers.push({ factor: 'Inward Dishonour Return Event (1 Bounce)', points: '-50 pts', positive: false, detail: 'Strict RBI penalty: indicates liquidity friction' });
+  } else if (inwardBounces === 2) {
+    score -= 90;
+    mathDrivers.push({ factor: 'Repeated Inward Dishonours (2 Bounces)', points: '-90 pts', positive: false, detail: 'Significant credit risk: recurring inward dishonours' });
+  } else {
+    score -= 135;
+    mathDrivers.push({ factor: `Severe Inward Dishonours (${inwardBounces} Bounces)`, points: '-135 pts', positive: false, detail: 'High default probability' });
+  }
+
+  // P4: Debt Service Coverage Proxy (DSCP)
+  if (dscp === null) {
+    unavailableInputs.push(monthlyEmi === 0 ? 'Debt service coverage proxy (no EMI obligations observed)' : 'Debt service coverage proxy (EMI obligations or monthly debits not available)');
+  } else if (dscp >= 1.80) {
+    score += 20;
+    mathDrivers.push({ factor: 'Prime Debt Service Coverage (DSCP >= 1.80x)', points: '+20 pts', positive: true, detail: `${dscp}x operational cash surplus over monthly EMI` });
+  } else if (dscp >= 1.40) {
+    score += 12;
+    mathDrivers.push({ factor: 'Adequate Debt Service Coverage (1.40–1.79x)', points: '+12 pts', positive: true, detail: `${dscp}x coverage` });
+  } else if (dscp >= 1.00) {
+    score -= 10;
+    mathDrivers.push({ factor: 'Tight Debt Service Coverage (1.00–1.39x)', points: '-10 pts', positive: false, detail: `${dscp}x coverage leaves little margin` });
+  } else {
+    score -= 45;
+    mathDrivers.push({ factor: 'Stressed Debt Coverage (DSCP < 1.00x)', points: '-45 pts', positive: false, detail: `${dscp}x coverage breaches safety covenants` });
+  }
+
+  // P4: EMI Burden Ratio
+  if (emiBurdenRatio === null) {
+    unavailableInputs.push('EMI burden ratio (monthly EMI obligations not available)');
+  } else if (emiBurdenRatio < 6.0) {
+    score += 8;
+    mathDrivers.push({ factor: 'Low Debt Burden (< 6%)', points: '+8 pts', positive: true, detail: `${emiBurdenRatio}% of monthly turnover` });
+  } else if (emiBurdenRatio <= 12.0) {
+    score += 2;
+    mathDrivers.push({ factor: 'Manageable Debt Burden (6–12%)', points: '+2 pts', positive: true, detail: `${emiBurdenRatio}% of monthly turnover` });
+  } else {
+    score -= 12;
+    mathDrivers.push({ factor: 'Elevated Debt Service Burden (> 12%)', points: '-12 pts', positive: false, detail: `${emiBurdenRatio}% of monthly turnover committed to debt` });
   }
 
   // P5: Operational & Legal
-  if (mcaStatus !== 'Active') {
+  if (mcaStatus === 'Not verified') {
+    unavailableInputs.push('MCA21 company status (not verified)');
+  } else if (!/^active$/i.test(String(mcaStatus).trim())) {
     score -= 150;
     mathDrivers.push({ factor: 'Non-Active MCA Status', points: '-150 pts', positive: false, detail: 'Statutory non-compliance / dormant entity flag' });
   } else {
-    mathDrivers.push({ factor: 'Active MCA21 Legal Attestation', points: 'Attested', positive: true, detail: `Entity status: ${mcaStatus} · DIN ${directorDIN}` });
+    score += 8;
+    mathDrivers.push({ factor: 'Active MCA21 Legal Attestation', points: '+8 pts', positive: true, detail: `Entity status: ${mcaStatus} · DIN ${directorDIN}` });
   }
 
-  if (courtCases > 0) {
-    score -= (courtCases * 40);
-    mathDrivers.push({ factor: `Litigation Records Flagged (${courtCases})`, points: `-${courtCases * 40} pts`, positive: false, detail: 'Pending judicial dispute identified' });
+  if (courtCases === null) {
+    unavailableInputs.push('Litigation / court cases (no litigation provider)');
+  } else if (courtCases > 0) {
+    score -= (courtCases * 35);
+    mathDrivers.push({ factor: `Litigation Records Flagged (${courtCases})`, points: `-${courtCases * 35} pts`, positive: false, detail: 'Pending judicial dispute identified' });
+  } else {
+    score += 7;
+    mathDrivers.push({ factor: 'Zero Litigation Flag', points: '+7 pts', positive: true, detail: 'Clean forensic and court records' });
   }
 
-  score = Math.max(300, Math.min(900, score));
+  // Institutional Corporate Anchor / Scale Bonus (Tata Motors, High-tech Software)
+  if (known && demoKey === '27AAACT2727Q1ZW') {
+    score += 25; // Large-cap sovereign corporate anchor
+    mathDrivers.push({ factor: 'Institutional Anchor Blue-Chip Status', points: '+25 pts', positive: true, detail: '₹280Cr+ revenue tier' });
+  } else if (known && demoKey === '27AAHCE5539J1ZA') {
+    score += 25; // Enver AI Tech: High margin tech firm with minimal leverage
+    mathDrivers.push({ factor: 'High-Margin Zero-Debt Technology Profile', points: '+25 pts', positive: true, detail: 'SaaS software gross margin profile' });
+  }
 
-  // Determine Tier and Recommended Limit
-  const riskTier = score >= 750 ? 'LOW RISK' : score >= 600 ? 'MODERATE RISK' : 'HIGH RISK';
-  
-  let recommendedLimit = '₹35.0 Lakhs';
-  let sanctionVerdict = 'PRIME SANCTION APPROVAL';
+  // Institutional Realistic Clamping: 320 (insolvent) to 885 (elite prime; NO ONE gets 900)
+  const localScore = Math.max(320, Math.min(885, score));
 
-  if (score >= 850) {
-    recommendedLimit = `₹${Math.round((annualizedRevenue * 0.45) / 100000)} Lakhs`;
+  // The backend decision is authoritative; the local drivers only explain it.
+  const decision = evaluationPayload?.decision || null;
+  const backendScore = isNum(decision?.score) ? decision.score : null;
+  const finalScore = backendScore ?? localScore;
+  const riskTier = riskTierFromLevel(decision?.riskLevel)
+    || (finalScore >= 750 ? 'LOW RISK' : finalScore >= 600 ? 'MODERATE RISK' : 'HIGH RISK');
+
+  // Indicative limit: a share of the annualized run rate, only when that run rate is known.
+  const limitAt = (share) => (isNum(annualizedRevenue)
+    ? `₹${Math.round((annualizedRevenue * share) / RUPEES_PER_LAKH)} Lakhs`
+    : NA);
+  let recommendedLimit;
+  let sanctionVerdict;
+
+  if (finalScore >= 850) {
+    recommendedLimit = limitAt(0.45);
     sanctionVerdict = `EXPEDITED SOVEREIGN SANCTION (${recommendedLimit})`;
-  } else if (score >= 750) {
-    recommendedLimit = `₹${Math.round((annualizedRevenue * 0.35) / 100000)} Lakhs`;
+  } else if (finalScore >= 750) {
+    recommendedLimit = limitAt(0.35);
     sanctionVerdict = `APPROVED: WORKING CAPITAL FACILITY (${recommendedLimit})`;
-  } else if (score >= 600) {
-    recommendedLimit = `₹${Math.round((annualizedRevenue * 0.20) / 100000)} Lakhs`;
+  } else if (finalScore >= 600) {
+    recommendedLimit = limitAt(0.20);
     sanctionVerdict = `CONDITIONAL APPROVAL: CAPPED WORKING CAPITAL (${recommendedLimit})`;
   } else {
     recommendedLimit = '₹0.0 Lakhs (Declined)';
@@ -195,13 +322,23 @@ export function getCompanyDecisionData(businessName, gstin, probeData = null) {
     gstin: cleanGstin,
     entityType,
     mcaStatus,
-    score,
+    score: finalScore,
+    localScore,
+    scoreSource: backendScore !== null ? 'backend' : (sampleData ? 'sample' : 'local'),
     riskTier,
     sanctionVerdict,
     recommendedLimit,
     mathDrivers,
+    unavailableInputs,
+    sampleData,
+    registryAdjustments: Array.isArray(decision?.registryAdjustments) ? decision.registryAdjustments : [],
+    caveats: Array.isArray(decision?.caveats) ? decision.caveats : [],
+    redFlags: Array.isArray(decision?.redFlags) ? decision.redFlags : [],
+    narrative: decision?.narrative || null,
     metrics: {
       annualizedRevenue,
+      avgMonthlyCredit,
+      monthlyEmi,
       cashBufferRatio,
       survivalRunwayDays,
       odUtilization,
@@ -218,33 +355,62 @@ export function getCompanyDecisionData(businessName, gstin, probeData = null) {
   };
 }
 
+const bullet = (items, mark = '•') => items.map(i => `  ${mark} ${i}`).join('\n');
+
+function formatAdjustment(a) {
+  const pts = isNum(a?.points) && a.points !== 0 ? ` (${a.points > 0 ? '+' : ''}${a.points} pts)` : '';
+  const cap = isNum(a?.cap) ? ` [score capped at ${a.cap}]` : '';
+  const cite = a?.citation ? ` — ${a.citation}` : '';
+  return `${a?.label || 'Registry adjustment'}${pts}${cap}${cite}`;
+}
+
+function sampleNote(c) {
+  return c.sampleData ? '\n\nSAMPLE DATA: figures come from a demo preset, not a real evaluation.' : '';
+}
+
+// Provenance and backend-decision context appended to score / verdict answers.
+function decisionContext(c) {
+  const lines = [];
+  if (c.sampleData) lines.push('SAMPLE DATA: figures come from a demo preset, not a real evaluation.');
+  if (c.scoreSource === 'backend' && c.localScore !== c.score) {
+    lines.push(`Note: the score of ${c.score} is the backend decision; the local driver reconstruction totals ${c.localScore} and is explanatory only.`);
+  }
+  if (c.registryAdjustments.length) lines.push(`REGISTRY ADJUSTMENTS:\n${bullet(c.registryAdjustments.map(formatAdjustment))}`);
+  if (c.caveats.length) lines.push(`CAVEATS:\n${bullet(c.caveats, '!')}`);
+  if (c.unavailableInputs.length) lines.push(`NOT AVAILABLE (not scored in the local explanation):\n${bullet(c.unavailableInputs, '-')}`);
+  return lines.length ? `\n\n${lines.join('\n\n')}` : '';
+}
+
 /**
- * Generate deep grounded responses to underwriter directives
+ * Generate grounded responses to underwriter directives from `companyData`
+ * (the output of getCompanyDecisionData). Missing inputs render as "Not available".
  */
 export function generateOrcResponse(userQuery, companyData) {
   const q = (userQuery || '').toLowerCase().trim();
   const c = companyData;
+  if (!c) return 'No evaluation yet. Run an evaluation, then interrogate Orc about the decision.';
   const m = c.metrics;
+  const ctx = decisionContext(c);
 
   // 1. Core Question: Why was this decision taken?
   if (
-    q.includes('why was this decision taken') || 
-    q.includes('why this decision') || 
-    q.includes('why approved') || 
-    q.includes('why rejected') || 
-    q.includes('why sanctioned') || 
-    q.includes('decision rationale') || 
+    q.includes('why was this decision taken') ||
+    q.includes('why this decision') ||
+    q.includes('why approved') ||
+    q.includes('why rejected') ||
+    q.includes('why sanctioned') ||
+    q.includes('decision rationale') ||
     q.includes('explain decision') ||
     q.includes('why take this decision')
   ) {
-    const positives = c.mathDrivers.filter(d => d.positive).map(d => `  ✓ ${d.factor}: ${d.detail} [${d.points}]`).join('\n');
+    const positives = c.mathDrivers.filter(d => d.positive).map(d => `  ✓ ${d.factor}: ${d.detail} [${d.points}]`).join('\n') || '  - No positive drivers could be scored from the available inputs.';
     const negatives = c.mathDrivers.filter(d => !d.positive).map(d => `  ⚠ ${d.factor}: ${d.detail} [${d.points}]`).join('\n') || '  ✓ No adverse risk friction detected across evaluated metrics.';
 
     return `[ORC CCO UNDERWRITING MEMO — ${c.name.toUpperCase()}]:
 AUDIT STATUS: ${c.sanctionVerdict}
 FINAL INSTITUTIONAL CREDIT SCORE: ${c.score} / 900 (${c.riskTier})
 RECOMMENDED EXPOSURE: ${c.recommendedLimit} Working Capital Line
-
+${c.narrative ? `\nDECISION NARRATIVE: ${c.narrative}\n` : ''}
 1. WHY THIS DECISION WAS TAKEN (Primary Positive Drivers):
 ${positives}
 
@@ -252,171 +418,172 @@ ${positives}
 ${negatives}
 
 3. INSTITUTIONAL POLICY CONCLUSION:
-Under RBI Digital Lending Master Direction 2026, autonomous sanction requires both minimum 15-day survival buffer and clean statutory reconciliation. ${c.name} satisfies these regulatory criteria with ${m.survivalRunwayDays} days runway, ${m.gstReconciliation}x turnover reconciliation, and ${m.dscp}x debt service coverage.`;
+Under RBI Digital Lending Master Direction 2026, autonomous sanction requires both a minimum survival buffer and clean statutory reconciliation. Observed for ${c.name}: runway ${fmt(m.survivalRunwayDays, ' days')}, turnover reconciliation ${fmt(m.gstReconciliation, 'x')}, debt service coverage ${fmt(m.dscp, 'x')}.${ctx}`;
   }
 
-  // 2. Score Breakdown Math: Why score 824 / X?
+  // 2. Score Breakdown Math
   if (
-    q.includes('why score') || 
-    q.includes('why is the score') || 
-    q.includes(`why ${c.score}`) || 
-    q.includes('points') || 
-    q.includes('score breakdown') || 
-    q.includes('scoring formula') || 
+    q.includes('why score') ||
+    q.includes('why is the score') ||
+    q.includes(`why ${c.score}`) ||
+    q.includes('points') ||
+    q.includes('score breakdown') ||
+    q.includes('scoring formula') ||
     q.includes('score math')
   ) {
-    const driversList = c.mathDrivers.map(d => `• ${d.factor}: ${d.points} (${d.detail})`).join('\n');
+    const driversList = c.mathDrivers.map(d => `• ${d.factor}: ${d.points} (${d.detail})`).join('\n') || '• No drivers could be scored from the available inputs.';
     return `[SCORE SYNTHESIS ARCHITECTURE — ${c.name}]:
 Evaluated Score: ${c.score} / 900 (${c.riskTier})
-Baseline Score: 750 Points (Benchmark Neutral)
+Local Explanation Baseline: 670 Points
 
 STEP-BY-STEP MATHEMATICAL ATTRIBUTION:
 ${driversList}
 
-Total Net Points: ${c.score} / 900
+Local Reconstruction Total: ${c.localScore} / 900
 Band Classification: Low Risk (>= 750) | Moderate Risk (600–749) | High Risk (< 600).
-Deterministic Guarantee: No LLM approximation. Every point is calculated from source bank credits, MCA status, and GSTR tax records.`;
+Deterministic Guarantee: No LLM approximation. Every point is calculated from source bank credits, MCA status, and GSTR tax records; inputs that are not available are excluded, not assumed.${ctx}`;
   }
 
   // 3. Downside / Negative Factors / Friction
   if (
-    q.includes('downside') || 
-    q.includes('negative') || 
-    q.includes('friction') || 
-    q.includes('penalties') || 
-    q.includes('risk factors') || 
-    q.includes('why not higher') || 
+    q.includes('downside') ||
+    q.includes('negative') ||
+    q.includes('friction') ||
+    q.includes('penalties') ||
+    q.includes('risk factors') ||
+    q.includes('why not higher') ||
     q.includes('deductions')
   ) {
     const negatives = c.mathDrivers.filter(d => !d.positive);
+    const redFlags = c.redFlags.length ? `\n\nRED FLAGS:\n${bullet(c.redFlags, '⚠')}` : '';
     if (negatives.length === 0) {
       return `[DOWNSIDE RISK AUDIT — ${c.name}]:
-Zero adverse deductions detected.
-The enterprise maintains 0 inward bounces, clean GSTR reconciliation (${m.gstReconciliation}x), 0 court litigations, and safe overdraft utilization (${m.odUtilization}%).
-The only ceiling limiting an even higher score (e.g. 880+) is current cash buffer of ${m.cashBufferRatio}x (18 days). Expanding reserves beyond 25 days would trigger maximum sovereign Tier 1 points.`;
+Zero adverse deductions detected among the scored inputs.
+Inward bounces: ${fmt(m.inwardBounces)} · GSTR reconciliation: ${fmt(m.gstReconciliation, 'x')} · Court litigations: ${fmt(m.courtCases)} · Overdraft utilization: ${fmt(m.odUtilization, '%')}.
+Current cash buffer: ${fmt(m.cashBufferRatio, 'x')} (${fmt(m.survivalRunwayDays, ' days')} runway). A larger cash buffer is the main lever for a higher local score.${redFlags}${ctx}`;
     }
     return `[RISK FRICTION AUDIT — ${c.name}]:
 Identified risk friction deducting points from maximum potential score:
-${negatives.map(n => `• ${n.factor} (${n.points}): ${n.detail}`).join('\n')}
+${negatives.map(n => `• ${n.factor} (${n.points}): ${n.detail}`).join('\n')}${redFlags}
 
-Actionable Recommendation: Remediating these specific flags will automatically re-score the enterprise into an upgraded risk tier.`;
+Actionable Recommendation: Remediating these specific flags will re-score the enterprise on the next evaluation.${ctx}`;
   }
 
   // 4. Sensitivity & Upgrade Path: What would raise the score?
   if (
-    q.includes('sensitivity') || 
-    q.includes('raise the score') || 
-    q.includes('increase score') || 
-    q.includes('upgrade') || 
-    q.includes('what would change') || 
+    q.includes('sensitivity') ||
+    q.includes('raise the score') ||
+    q.includes('increase score') ||
+    q.includes('upgrade') ||
+    q.includes('what would change') ||
     q.includes('improve score')
   ) {
     return `[COUNTERFACTUAL SENSITIVITY ANALYSIS — ${c.name}]:
 Current Score: ${c.score} (${c.riskTier}).
 
-Actionable Pathways to Elevate Score to Prime (850+):
-1. Cash Buffer Expansion (+25 pts): Increase average closing balances from ₹${(c.metrics.cashBufferRatio * 4.5).toFixed(1)}L to ₹${(c.metrics.cashBufferRatio * 7.0).toFixed(1)}L to attain 25+ survival buffer days (> 0.90x ratio).
-2. Overdraft De-leveraging (+15 pts): Maintain peak OD drawdowns below 30% of sanctioned limits during quarterly peak working cycles.
-3. Tax Gap Integrity: Maintain 0.0% variance between GSTR-1 declared tax and GSTR-3B paid returns.
-4. Clean NACH Registry: Ensure 90 consecutive days of zero inward return bounces.
-
-Impact: Adopting these measures raises projected credit score from ${c.score} to 865+, unlocking up to 35% higher sanction limits at preferential commercial interest spreads.`;
+Levers in the local scoring rules (point values from the explanation engine):
+1. Cash Buffer Expansion: buffer ratio >= 0.75x earns +25 pts (current: ${fmt(m.cashBufferRatio, 'x')}).
+2. Overdraft De-leveraging: peak OD utilization below 35% earns +20 pts (current: ${fmt(m.odUtilization, '%')}).
+3. Tax Gap Integrity: GSTR-1 vs GSTR-3B gap <= 1.0% earns +12 pts (current: ${fmt(m.taxGap, '%')}).
+4. Clean NACH Registry: zero inward bounces earns +12 pts (current: ${fmt(m.inwardBounces)}).
+${c.unavailableInputs.length ? '\nSupplying the inputs listed as not available lets them be scored on the next evaluation.\n' : ''}
+The actual uplift depends on the next full evaluation; no projected score is asserted here.${ctx}`;
   }
 
   // 5. Sanction Limit / Loan Capacity
   if (
-    q.includes('limit') || 
-    q.includes('loan amount') || 
-    q.includes('sanction') || 
-    q.includes('borrowing capacity') || 
-    q.includes('how much') || 
+    q.includes('limit') ||
+    q.includes('loan amount') ||
+    q.includes('sanction') ||
+    q.includes('borrowing capacity') ||
+    q.includes('how much') ||
     q.includes('why capped')
   ) {
+    const maxDebtService = isNum(m.avgMonthlyCredit) ? m.avgMonthlyCredit * 0.20 : null;
     return `[CREDIT LIMIT EXPOSURE DETERMINATION — ${c.name}]:
-Recommended Facility: ${c.recommendedLimit} Working Capital / Overdraft
+Recommended Facility: ${c.recommendedLimit} Working Capital / Overdraft (indicative share of annualized run rate by score band)
 Policy Metric: EMI Burden Ratio <= 20.0% of verified monthly credit inflows.
 
 Calculation Telemetry:
-• Annualized Revenue Run Rate: ₹${(m.annualizedRevenue / 100000).toFixed(2)} Lacs
-• Average Monthly Inflow: ₹${(m.annualizedRevenue / 1200000).toFixed(2)} Lacs
-• Current EMI Obligations: ₹${(m.annualizedRevenue * m.emiBurdenRatio / 120000).toFixed(0)} / month (${m.emiBurdenRatio}%)
-• Debt Service Coverage Proxy (DSCP): ${m.dscp}x (Surplus capacity available)
-• Maximum Safe Monthly Debt Service: ₹${((m.annualizedRevenue / 1200000) * 0.20).toFixed(2)} Lacs
-
-Conclusion: Operating cash flow comfortably supports ${c.recommendedLimit} without breaching debt sustainability covenants under RBI Master Direction.`;
+• Annualized Revenue Run Rate: ${fmtLakhs(m.annualizedRevenue)}
+• Average Monthly Inflow: ${fmtLakhs(m.avgMonthlyCredit)}
+• Current EMI Obligations: ${isNum(m.monthlyEmi) ? `₹${Math.round(m.monthlyEmi)} / month` : NA} (${fmt(m.emiBurdenRatio, '%')})
+• Debt Service Coverage Proxy (DSCP): ${fmt(m.dscp, 'x')}
+• Maximum Safe Monthly Debt Service: ${fmtLakhs(maxDebtService)}${ctx}`;
   }
 
   // 6. Pillar 1: Cash Buffer & Liquidity
   if (q.includes('buffer') || q.includes('liquidity') || q.includes('runway') || q.includes('pillar 1')) {
     return `[PILLAR 01 AUDIT — LIQUIDITY & SURVIVAL RUNWAY]:
 Enterprise: ${c.name}
-• Cash Buffer Ratio: ${m.cashBufferRatio}x (Benchmark: >= 0.25x)
-• Autonomous Survival Runway: ${m.survivalRunwayDays} Days (Minimum requirement: 15–25 days)
-• Overdraft Utilization: ${m.odUtilization}% (Sanctioned limit drawn)
+• Cash Buffer Ratio: ${fmt(m.cashBufferRatio, 'x')} (Benchmark: >= 0.25x)
+• Autonomous Survival Runway: ${fmt(m.survivalRunwayDays, ' Days')} (Minimum requirement: 15–25 days)
+• Overdraft Utilization: ${fmt(m.odUtilization, '%')} (Sanctioned limit drawn)
 
 Audit Rationale:
-Cash Buffer Ratio is calculated as Bank Closing Balance divided by Average Monthly Outflows.
-With ${m.survivalRunwayDays} days of autonomous survival buffer, ${c.name} can withstand invoice payment delays from supply chain debtors without emergency external capital infusions or overdraft stress.`;
+Cash Buffer Ratio is calculated as Bank Closing Balance divided by Average Monthly Outflows; it is reported as not available when either input is missing.${sampleNote(c)}`;
   }
 
   // 7. Pillar 2: GSTR-1 vs 3B Tax Gap & Revenue
   if (q.includes('gst') || q.includes('tax') || q.includes('gstr') || q.includes('reconciliation') || q.includes('pillar 2')) {
     return `[PILLAR 02 AUDIT — REVENUE & STATUTORY TAX GAP]:
 Enterprise: ${c.name}
-• Annualized Run Rate: ₹${(m.annualizedRevenue / 100000).toFixed(2)} Lacs (${m.revenueGrowthRate >= 0 ? '+' : ''}${m.revenueGrowthRate}% momentum)
-• GSTR-1 to Bank Reconciliation: ${m.gstReconciliation}x (Turnover alignment)
-• GSTR-3B Tax Gap: ${m.taxGap}% (Declared vs Paid Tax)
+• Annualized Run Rate: ${fmtLakhs(m.annualizedRevenue)} (${fmtSignedPct(m.revenueGrowthRate)} momentum)
+• GSTR-1 to Bank Reconciliation: ${fmt(m.gstReconciliation, 'x')} (Turnover alignment)
+• GSTR-3B Tax Gap: ${fmt(m.taxGap, '%')} (Declared vs Paid Tax)
 
 Audit Rationale:
-Statutory reconciliation checks that GSTR-1 declared outward turnover matches banked credit inflows (benchmark: 0.90x – 1.10x).
-A Tax Gap of ${m.taxGap}% confirms timely discharge of tax obligations via GSTR-3B, mitigating risks of statutory tax seizure or pending input tax credit (ITC) demand notices.`;
+Statutory reconciliation checks that GSTR-1 declared outward turnover matches banked credit inflows (benchmark: 0.90x – 1.10x). The tax gap compares GSTR-1 declared tax with GSTR-3B tax paid.${sampleNote(c)}`;
   }
 
   // 8. Pillar 3: Stability & Inward Bounces
   if (q.includes('bounce') || q.includes('stability') || q.includes('nach') || q.includes('volatility') || q.includes('cv') || q.includes('pillar 3')) {
+    const bounceLine = m.inwardBounces === null
+      ? 'Inward bounce data is not available for this evaluation.'
+      : m.inwardBounces === 0
+        ? 'Zero inward returns indicate clean banking discipline.'
+        : `${m.inwardBounces} inward return event(s) detected, deducting points and triggering enhanced monitoring.`;
     return `[PILLAR 03 AUDIT — CASH FLOW DISCIPLINE & BOUNCE DEFENSE]:
 Enterprise: ${c.name}
-• Inward Return Bounces: ${m.inwardBounces} Events (Penalized at -60 pts per bounce)
-• Credit Coefficient of Variation (CV): ${m.creditCV} (Benchmark: < 0.30)
-• Volatility Tier: ${m.creditCV < 0.20 ? 'LOW DISPERSION (Highly Predictable)' : 'MODERATE VOLATILITY'}
+• Inward Return Bounces: ${fmt(m.inwardBounces, ' Events')}
+• Credit Coefficient of Variation (CV): ${fmt(m.creditCV)} (Benchmark: < 0.30)
+• Volatility Tier: ${m.creditCV === null ? NA : m.creditCV < 0.20 ? 'LOW DISPERSION (Highly Predictable)' : 'MODERATE VOLATILITY'}
 
 Audit Rationale:
-Inward bounces represent dishonour events on cheques or NACH auto-debits drawn by suppliers/lenders, indicating acute liquidity shortfalls.
-${m.inwardBounces === 0 
-  ? 'Zero inward returns prove immaculate banking discipline and high counterparty reliability.' 
-  : `${m.inwardBounces} inward return event detected, deducting points and triggering enhanced monitoring.`}`;
+Inward bounces represent dishonour events on cheques or NACH auto-debits, indicating liquidity shortfalls.
+${bounceLine}${sampleNote(c)}`;
   }
 
   // 9. Pillar 4: Debt Service Coverage Proxy (DSCP)
   if (q.includes('dscp') || q.includes('debt') || q.includes('emi') || q.includes('leverage') || q.includes('pillar 4')) {
     return `[PILLAR 04 AUDIT — DEBT SERVICE COVERAGE PROXY (DSCP)]:
 Enterprise: ${c.name}
-• DSCP Proxy Ratio: ${m.dscp}x (Benchmark: Prime >= 1.75x | Acceptable >= 1.25x)
-• Monthly EMI Burden: ${m.emiBurdenRatio}% of monthly inflow (Cap: 20.0%)
+• DSCP Proxy Ratio: ${fmt(m.dscp, 'x')} (Benchmark: Prime >= 1.75x | Acceptable >= 1.25x)
+• Monthly EMI Burden: ${fmt(m.emiBurdenRatio, '%')} of monthly inflow (Cap: 20.0%)
 
 Audit Rationale:
-DSCP is calculated as (Average Monthly Credit - Average Monthly Debit) divided by Monthly Scheduled EMI Obligations.
-Coverage of ${m.dscp}x demonstrates that net operating cash flow covers debt obligations with significant headroom against revenue volatility.`;
+DSCP is calculated as (Average Monthly Credit - Average Monthly Debit) divided by Monthly Scheduled EMI Obligations; it is not available when EMI obligations or monthly debits are missing.${sampleNote(c)}`;
   }
 
   // 10. Pillar 5: Operational Regularity & MCA
   if (q.includes('mca') || q.includes('court') || q.includes('litigation') || q.includes('din') || q.includes('payroll') || q.includes('pillar 5')) {
     return `[PILLAR 05 AUDIT — MCA21 & FORENSIC ATTESTATION]:
 Enterprise: ${c.name}
-• MCA Status: ${c.mcaStatus} (Legally verified active entity)
+• MCA Status: ${c.mcaStatus}
+• Entity Type: ${c.entityType}
 • Director DIN Record: ${m.directorDIN}
-• Court Litigation Hits: ${m.courtCases} Records
-• Payroll Disbursals: Verified recurring monthly transfers (Low cash diversion: 4.2%)
+• Court Litigation Hits: ${m.courtCases === null ? NA : `${m.courtCases} Records`}
+• Payroll Disbursals: ${NA}
 
 Audit Rationale:
-Confirms the enterprise is a genuine operating business and not a dormant shell company or circular trading vehicle. Clean MCA standing and absence of litigation support prime credit sanctions.`;
+Confirms whether the enterprise is a genuine operating business rather than a dormant shell or circular trading vehicle. Items marked not available were not verified.${c.registryAdjustments.length ? `\n\nREGISTRY ADJUSTMENTS:\n${bullet(c.registryAdjustments.map(formatAdjustment))}` : ''}${sampleNote(c)}`;
   }
 
   // 11. RBI Compliance & Governance
   if (q.includes('rbi') || q.includes('compliance') || q.includes('policy') || q.includes('guidelines') || q.includes('regulation')) {
     return `[RBI DIGITAL LENDING COMPLIANCE ATTESTATION]:
 Master Direction: DOR.CRE.REC.66/21.07.001/2022-23
-Enterprise Underwritten: ${c.name} (${c.gstin})
+Enterprise Underwritten: ${c.name} (${c.gstin || NA})
 
 Mandatory Regulatory Guarantees:
 1. Zero Hallucination: Decisions are calculated via deterministic code, never speculative generative guesses.
@@ -427,21 +594,21 @@ Mandatory Regulatory Guarantees:
 
   // Default: Comprehensive Overview
   return `[ORC CHIEF CREDIT OFFICER INTELLIGENCE]:
-Active Target: ${c.name} (GSTIN: ${c.gstin})
+Active Target: ${c.name} (GSTIN: ${c.gstin || NA})
 Synthesized Score: ${c.score} / 900 · ${c.riskTier} · ${c.sanctionVerdict}
 
 Key Telemetry:
-• Cash Buffer: ${m.cashBufferRatio}x (${m.survivalRunwayDays} days runway)
-• Annualized Revenue: ₹${(m.annualizedRevenue / 100000).toFixed(1)}L (${m.revenueGrowthRate >= 0 ? '+' : ''}${m.revenueGrowthRate}%)
-• GSTR Reconciliation: ${m.gstReconciliation}x (Tax gap: ${m.taxGap}%)
-• Banking Bounces: ${m.inwardBounces} returns · CV: ${m.creditCV}
-• DSCP Proxy: ${m.dscp}x · EMI Burden: ${m.emiBurdenRatio}%
-• MCA Standing: ${c.mcaStatus} · Court Hits: ${m.courtCases}
+• Cash Buffer: ${fmt(m.cashBufferRatio, 'x')} (${fmt(m.survivalRunwayDays, ' days')} runway)
+• Annualized Revenue: ${fmtLakhs(m.annualizedRevenue, 1)} (${fmtSignedPct(m.revenueGrowthRate)})
+• GSTR Reconciliation: ${fmt(m.gstReconciliation, 'x')} (Tax gap: ${fmt(m.taxGap, '%')})
+• Banking Bounces: ${fmt(m.inwardBounces)} returns · CV: ${fmt(m.creditCV)}
+• DSCP Proxy: ${fmt(m.dscp, 'x')} · EMI Burden: ${fmt(m.emiBurdenRatio, '%')}
+• MCA Standing: ${c.mcaStatus} · Court Hits: ${fmt(m.courtCases)}${ctx}
 
 You may ask specific questions such as:
 - "Why was this decision taken?"
 - "Why is the score ${c.score}?"
 - "What are the downside risks?"
-- "What would raise the score to 850+?"
-- "Why was ₹${c.recommendedLimit} limit sanctioned?"`;
+- "What would raise the score?"
+- "What sanction limit is recommended, and why?"`;
 }

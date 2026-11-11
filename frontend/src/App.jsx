@@ -813,7 +813,7 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           query: userQuery,
-          evaluationPayload: data || { businessName: "Simulator MSME" }
+          evaluationPayload: data || null
         })
       });
       const resData = await res.json();
