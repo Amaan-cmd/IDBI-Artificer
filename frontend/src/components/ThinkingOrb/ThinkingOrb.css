@@ -1,0 +1,365 @@
+/* ThinkingOrb.css - Tokenized Luminous AI Reasoning Orb */
+.thinking-orb-container {
+  display: flex;
+  align-items: center;
+  gap: 36px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px 36px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-soft);
+  margin-bottom: 24px;
+}
+
+/* =========================================================================
+   ORB VISUAL CENTER
+   ========================================================================= */
+.orb-visual-stage {
+  width: 140px;
+  height: 140px;
+  min-width: 140px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 800px;
+}
+
+.orb-outer-glow {
+  position: absolute;
+  inset: -15px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 139, 167, 0.35) 0%, rgba(167, 139, 250, 0.2) 50%, transparent 75%);
+  filter: blur(14px);
+  animation: orbBreathe 3s ease-in-out infinite alternate;
+}
+
+[data-theme="dark"] .orb-outer-glow,
+.dark-theme .orb-outer-glow {
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.32) 0%, rgba(52, 211, 153, 0.14) 55%, transparent 75%);
+}
+
+/* 3D Rotating Rings */
+.orb-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1.5px solid transparent;
+  pointer-events: none;
+}
+
+.orb-ring-1 {
+  width: 130px;
+  height: 130px;
+  border-top-color: #FF8BA7;
+  border-bottom-color: #A78BFA;
+  transform: rotateX(65deg) rotateY(20deg);
+  animation: orbSpin1 5s linear infinite;
+}
+
+[data-theme="dark"] .orb-ring-1,
+.dark-theme .orb-ring-1 {
+  border-top-color: #10B981;
+  border-bottom-color: #34D399;
+}
+
+.orb-ring-2 {
+  width: 118px;
+  height: 118px;
+  border-left-color: #38BDF8;
+  border-right-color: #34D399;
+  transform: rotateX(45deg) rotateY(65deg);
+  animation: orbSpin2 4s linear infinite reverse;
+}
+
+.orb-ring-3 {
+  width: 104px;
+  height: 104px;
+  border-top-color: #F43F5E;
+  border-right-color: #F59E0B;
+  transform: rotateX(75deg) rotateZ(35deg);
+  animation: orbSpin3 6s linear infinite;
+}
+
+[data-theme="dark"] .orb-ring-3,
+.dark-theme .orb-ring-3 {
+  border-top-color: #6EE7B7;
+  border-right-color: #3F3F46;
+}
+
+/* Core Sphere */
+.orb-sphere {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  position: relative;
+  background: radial-gradient(circle at 35% 35%, #FFFFFF 0%, #FF8BA7 30%, #9C52C7 70%, #0A050E 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 0 25px rgba(255, 139, 167, 0.6),
+    inset -4px -4px 12px rgba(10, 5, 14, 0.7),
+    inset 4px 4px 10px rgba(255, 255, 255, 0.8);
+  animation: orbPulse 2.4s ease-in-out infinite alternate;
+  z-index: 2;
+}
+
+[data-theme="dark"] .orb-sphere,
+.dark-theme .orb-sphere {
+  background: radial-gradient(circle at 35% 35%, #FAFAFA 0%, #34D399 28%, #059669 65%, #090B0E 100%);
+  box-shadow:
+    0 0 28px rgba(16, 185, 129, 0.5),
+    inset -4px -4px 12px rgba(9, 11, 14, 0.8),
+    inset 4px 4px 10px rgba(255, 255, 255, 0.55);
+}
+
+.orb-inner-plasma {
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.9) 0%, rgba(244, 63, 94, 0.6) 40%, rgba(139, 92, 246, 0.4) 80%, transparent 100%);
+  filter: blur(2px);
+  animation: orbPlasmaShift 4s ease-in-out infinite alternate;
+}
+
+[data-theme="dark"] .orb-inner-plasma,
+.dark-theme .orb-inner-plasma {
+  background: radial-gradient(circle at 40% 40%, rgba(250, 250, 250, 0.85) 0%, rgba(16, 185, 129, 0.65) 45%, rgba(6, 78, 59, 0.5) 80%, transparent 100%);
+}
+
+.orb-icon-wrap {
+  position: relative;
+  z-index: 3;
+  color: #FFFFFF;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+}
+
+.orb-center-icon.pulsing {
+  animation: iconPulse 1.8s ease-in-out infinite alternate;
+}
+
+.orb-center-icon.complete {
+  color: #10B981;
+}
+
+/* Particle Waves */
+.orb-pulse-wave {
+  position: absolute;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  border: 1px solid var(--accent-border);
+  animation: orbWave 2.8s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+.orb-pulse-wave.wave-2 {
+  animation-delay: 1.4s;
+}
+
+/* =========================================================================
+   DETAILS & AGENT REASONING STAGE
+   ========================================================================= */
+.orb-details-stage {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.orb-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.orb-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+}
+
+.orb-dot-live {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent-shadow);
+  animation: dotBlink 1.2s ease-in-out infinite alternate;
+}
+
+.orb-status-text {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--accent-strong);
+}
+
+.orb-enterprise-tag {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.orb-agent-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.agent-badge {
+  display: inline-block;
+  align-self: flex-start;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid;
+  background: var(--surface-inset);
+}
+
+.agent-role-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.agent-thought-stream {
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin: 0;
+  font-style: italic;
+  min-height: 42px;
+}
+
+/* Timeline Progress Bar */
+.orb-timeline-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.timeline-segment {
+  height: 5px;
+  border-radius: 9999px;
+  background: var(--border);
+  overflow: hidden;
+  position: relative;
+}
+
+.timeline-segment.active .timeline-segment-fill {
+  width: 100%;
+  background: #10B981;
+}
+
+.timeline-segment.current .timeline-segment-fill {
+  width: 100%;
+  background: var(--accent);
+  animation: segmentSweep 1.8s ease-in-out infinite alternate;
+}
+
+.orb-findings-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 8px;
+  background: #10B981;
+  color: #042F2E;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.32);
+  transition: all 0.2s ease;
+}
+
+.orb-findings-btn:hover {
+  background: #059669;
+  color: #FFFFFF;
+  transform: translateY(-1px);
+}
+
+/* =========================================================================
+   ANIMATIONS
+   ========================================================================= */
+@keyframes orbBreathe {
+  0% { transform: scale(0.9); opacity: 0.6; }
+  100% { transform: scale(1.15); opacity: 0.95; }
+}
+
+@keyframes orbPulse {
+  0% { transform: scale(0.97); }
+  100% { transform: scale(1.03); }
+}
+
+@keyframes orbSpin1 {
+  0% { transform: rotateX(65deg) rotateY(20deg) rotateZ(0deg); }
+  100% { transform: rotateX(65deg) rotateY(20deg) rotateZ(360deg); }
+}
+
+@keyframes orbSpin2 {
+  0% { transform: rotateX(45deg) rotateY(65deg) rotateZ(0deg); }
+  100% { transform: rotateX(45deg) rotateY(65deg) rotateZ(360deg); }
+}
+
+@keyframes orbSpin3 {
+  0% { transform: rotateX(75deg) rotateZ(35deg) rotateY(0deg); }
+  100% { transform: rotateX(75deg) rotateZ(35deg) rotateY(360deg); }
+}
+
+@keyframes orbPlasmaShift {
+  0% { transform: rotate(0deg) scale(0.95); }
+  100% { transform: rotate(180deg) scale(1.05); }
+}
+
+@keyframes orbWave {
+  0% { transform: scale(0.9); opacity: 0.8; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+
+@keyframes iconPulse {
+  0% { transform: scale(0.92); opacity: 0.85; }
+  100% { transform: scale(1.08); opacity: 1; }
+}
+
+@keyframes dotBlink {
+  0% { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+
+@keyframes segmentSweep {
+  0% { opacity: 0.6; }
+  100% { opacity: 1; }
+}
+
+@media (max-width: 768px) {
+  .thinking-orb-container {
+    flex-direction: column;
+    padding: 24px;
+    gap: 20px;
+    text-align: center;
+  }
+  .agent-badge {
+    align-self: center;
+  }
+  .orb-header-row {
+    flex-direction: column;
+  }
+}
