@@ -120,7 +120,17 @@ if (fs.existsSync(distPath)) {
 }
 
 // --- Server Startup (Azure App Service / Container Apps / Local) ---
+// Not required to boot, but features degrade without them. Names only; never values.
+const RECOMMENDED_ENV = ['SANDBOX_API_KEY', 'SANDBOX_API_SECRET', 'FIREBASE_PROJECT_ID'];
+function missingRecommendedEnv(env = process.env) {
+  return RECOMMENDED_ENV.filter((name) => !String(env[name] || '').trim());
+}
+
 if (require.main === module) {
+  const missing = missingRecommendedEnv();
+  if (missing.length) {
+    console.warn(`[Startup] Missing recommended environment variables: ${missing.join(', ')}. Sandbox registry lookups are disabled without SANDBOX_API_KEY/SANDBOX_API_SECRET; Firebase token verification falls back to the default project id without FIREBASE_PROJECT_ID.`);
+  }
   const { getTableStore } = require('./platform/tableStore');
   getTableStore().ensureTables().catch((err) => {
     console.error('[Table Store] Failed to ensure tables:', err.message);
@@ -132,3 +142,4 @@ if (require.main === module) {
 }
 
 module.exports = app;
+module.exports.missingRecommendedEnv = missingRecommendedEnv;

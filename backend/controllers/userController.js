@@ -81,7 +81,11 @@ const sendOtp = async (req, res) => {
     console.log(`[Auth Sentinel] Dispatching verification code for ${cleanEmail}: ${code}`);
   }
 
-  const isDevOrDemo = process.env.NODE_ENV !== 'production' && process.env.ENABLE_DEMO_OTP === 'true';
+  // Development-only convenience: echo the code back to the client. Never for
+  // admin addresses, so a misconfigured deployment cannot hand out admin sessions.
+  const isDevOrDemo = process.env.NODE_ENV !== 'production'
+    && process.env.ENABLE_DEMO_OTP === 'true'
+    && !isAdminEmail(cleanEmail);
 
   const responsePayload = {
     status: 'success',

@@ -7,6 +7,7 @@
  */
 
 const { getRegistryReport } = require('../services/registry/registryService');
+const { GSTIN_RE } = require('./gstin');
 
 // Available tools for Grok 4.6
 const GROK_TOOLS = [
@@ -39,6 +40,22 @@ const GROK_TOOLS = [
     }
   }
 ];
+
+/**
+ * Execute a model-requested tool. Arguments come from the model, so validate
+ * them before any billed registry lookup.
+ */
+async function runGrokTool(name, args, deps = { getRegistryReport }) {
+  if (name === 'scrape_gstin_registry') {
+    const gstin = typeof args?.gstin === 'string' ? args.gstin.trim().toUpperCase() : '';
+    if (!GSTIN_RE.test(gstin)) return { status: 'unavailable', reason: 'Invalid GSTIN' };
+    return deps.getRegistryReport(gstin);
+  }
+  if (name === 'query_mca_master_data') {
+    return { status: 'unavailable', reason: 'Use the GSTIN registry report; MCA is resolved from it.' };
+  }
+  return null;
+}
 
 /**
  * Call Grok 4.6 via Vertex AI Studio or xAI API
@@ -90,11 +107,7 @@ async function callGrok(systemPrompt, userPrompt, options = {}) {
           let toolResult = null;
           try {
             const args = JSON.parse(toolCall.function.arguments || '{}');
-            if (toolCall.function.name === 'scrape_gstin_registry') {
-              toolResult = await getRegistryReport(args.gstin);
-            } else if (toolCall.function.name === 'query_mca_master_data') {
-              toolResult = { status: 'unavailable', reason: 'Use the GSTIN registry report; MCA is resolved from it.' };
-            }
+            toolResult = await runGrokTool(toolCall.function.name, args);
           } catch (tErr) {
             console.warn('[Fetcha: Grok Tool Call Notice]:', tErr.message);
           }
@@ -148,4 +161,4 @@ async function callGrok(systemPrompt, userPrompt, options = {}) {
   return null;
 }
 
-module.exports = { callGrok, GROK_TOOLS };
+module.exports = { callGrok, runGrokTool, GROK_TOOLS };

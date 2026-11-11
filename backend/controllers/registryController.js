@@ -2,7 +2,7 @@ const { getRegistryReport } = require('../services/registry/registryService');
 const { isDemoMode } = require('../platform/demoMode');
 const { demoRegistryReport } = require('../demo/demoEntities');
 
-const GSTIN_RE = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
+const { GSTIN_RE } = require('../utils/gstin');
 
 async function getRegistry(req, res) {
   const gstin = String(req.params.gstin || '').trim().toUpperCase();
