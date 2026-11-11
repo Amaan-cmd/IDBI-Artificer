@@ -49,10 +49,20 @@ test('non-MCA entity type is not a caveat', () => {
   assert.deepEqual(d.caveats, []);
 });
 
-test('missing report or score returns decision unchanged', () => {
-  const dec = decision(700);
-  assert.equal(applyRegistryAdjustments(dec, null), dec);
+test('missing report keeps the score but adds a not-verified caveat', () => {
+  const dec = { ...decision(700), caveats: ['earlier'] };
+  const d = applyRegistryAdjustments(dec, null);
+  assert.equal(d.score, 700);
+  assert.equal(d.riskLevel, 'X');
+  assert.deepEqual(d.citations, ['existing']);
+  assert.deepEqual(d.caveats, ['earlier', 'Not verified: registry (GSTN / MCA21)']);
+  assert.deepEqual(dec.caveats, ['earlier'], 'input not mutated');
+});
+
+test('missing score returns decision unchanged', () => {
   assert.deepEqual(applyRegistryAdjustments({ score: null }, report()), { score: null });
+  assert.deepEqual(applyRegistryAdjustments({ score: null }, null), { score: null });
+  assert.equal(applyRegistryAdjustments(null, null), null);
 });
 
 test('citation omits txn when the section has no transaction id', () => {

@@ -146,6 +146,25 @@ test('statement run applies registry adjustments exactly once and includes the r
   assert.equal(history[0].score, 715);
 });
 
+test('fallback path keeps the registry enabled so adjustments still apply', async () => {
+  history.length = 0;
+  const calls = [];
+  ingestion.ingestAlternateData = async (args) => {
+    calls.push(args);
+    if (calls.length === 1) throw new Error('LLM outage');
+    return { businessName: 'Real Co', gstin: REPORT.gstin, monthlyCredits: [1, 2, 3], registryReport: args.enableScraper ? REPORT : null };
+  };
+  const res = fakeRes();
+  await quiet(() => evaluateMSMECredit(fakeReq({ manualData: 'statement text', enableScraper: 'true' }), res));
+
+  assert.equal(calls.length, 2);
+  assert.equal(calls[1].enableScraper, true);
+  const final = res.events.find(e => e.step === 4);
+  assert.ok(final, 'step 4 emitted');
+  assert.deepEqual(final.payload.registryReport, REPORT);
+  assert.equal(final.payload.decision.registryAdjustments.length, 1);
+});
+
 test('JEV rejection still ends the stream with step 99', async () => {
   ingestion.ingestAlternateData = async () => ({ businessName: 'X', gstin: null });
   const orig = jev.evaluateAppropriateness;

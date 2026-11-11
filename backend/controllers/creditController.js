@@ -181,7 +181,9 @@ async function evaluateMSMECredit(req, res) {
       res.write(`data: ${JSON.stringify({ step: 0, agent: 'FETCHA' })}\n\n`);
       let fallbackStructured;
       try {
-        fallbackStructured = await ingestAlternateData({ file, manualData, gstin, enableScraper: false });
+        // Keep the registry lookup on: results are cached, and without the report
+        // the fallback decision would silently skip the registry adjustments.
+        fallbackStructured = await ingestAlternateData({ file, manualData, gstin, enableScraper });
       } catch (ingErr) {
         console.warn('[Credit Engine] Fallback extraction failed:', ingErr.message);
         if (file && fs.existsSync(file.path)) fs.unlinkSync(file.path);

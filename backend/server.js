@@ -66,7 +66,6 @@ if (fs.existsSync(distPath)) {
 
 // Load Mock Data
 const aaDataPath = path.join(__dirname, 'mockData', 'aa_bank_statement.json');
-const gstDataPath = path.join(__dirname, 'mockData', 'gst_returns.json');
 
 // --- Mock Integration Endpoints ---
 

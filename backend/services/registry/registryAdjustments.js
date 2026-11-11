@@ -13,7 +13,10 @@ const cite = (section) => [section.source, section.fetchedAt && `fetched ${secti
   .join(' · ');
 
 function applyRegistryAdjustments(decision, report) {
-  if (!decision || typeof decision.score !== 'number' || !report) return decision;
+  if (!decision || typeof decision.score !== 'number') return decision;
+  if (!report) {
+    return { ...decision, caveats: [...(decision.caveats || []), 'Not verified: registry (GSTN / MCA21)'] };
+  }
 
   const adjustments = [];
   const caveats = [...(decision.caveats || [])];
