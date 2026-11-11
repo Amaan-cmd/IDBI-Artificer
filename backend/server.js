@@ -8,7 +8,7 @@ const multer = require('multer');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { evaluateMSMECredit } = require('./controllers/creditController');
-const { loginUser, getAllUsers, getLoginTelemetry, sendOtp, verifyOtp } = require('./controllers/userController');
+const { getAllUsers, getLoginTelemetry, sendOtp, verifyOtp } = require('./controllers/userController');
 const { getHistory } = require('./controllers/historyController');
 const { trainAgamiPipeline } = require('./controllers/agamiController');
 const { handleXAIChat } = require('./controllers/chatController');
@@ -124,7 +124,6 @@ app.post('/api/v1/chat/xai', handleXAIChat);
 // --- User & Profile Endpoints ---
 app.post('/api/v1/auth/send-code', sendOtp);
 app.post('/api/v1/auth/verify-code', verifyOtp);
-app.post('/api/v1/users/login', loginUser);
 app.get('/api/v1/users', getAllUsers);
 app.get('/api/v1/telemetry/logins', getLoginTelemetry);
 
