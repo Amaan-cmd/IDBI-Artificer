@@ -159,3 +159,40 @@ test('timeout abort is classified as unavailable', async () => {
   const r = await createSandboxClient(opts(f)).post('/x', {});
   assert.equal(r.kind, 'unavailable'); assert.equal(r.code, 'NETWORK');
 });
+
+// Resolves after delayMs unless the request's abort signal fires first.
+function slowFetch(delayMs, response) {
+  const calls = [];
+  const fn = (url, init) => {
+    calls.push({ url, init });
+    if (url.endsWith('/authenticate')) return Promise.resolve(AUTH_OK);
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => resolve(response), delayMs);
+      init.signal.addEventListener('abort', () => { clearTimeout(timer); reject(init.signal.reason); });
+    });
+  };
+  fn.calls = calls;
+  return fn;
+}
+
+test('default timeout aborts a slow call (with one retry) → unavailable NETWORK', async () => {
+  const f = slowFetch(300, jsonResponse(200, { code: 200, data: {} }));
+  const c = createSandboxClient(opts(f, { timeoutMs: 20 }));
+  const r = await c.get('/slow');
+  assert.equal(r.ok, false);
+  assert.equal(r.kind, 'unavailable');
+  assert.equal(r.code, 'NETWORK');
+  assert.equal(f.calls.filter(x => x.url.endsWith('/slow')).length, 2);
+  assert.ok(f.calls.every(x => x.init.signal instanceof AbortSignal));
+});
+
+test('per-call timeoutMs overrides the default for get and post', async () => {
+  const f = slowFetch(100, jsonResponse(200, { code: 200, data: { x: 1 }, transaction_id: 't' }));
+  const c = createSandboxClient(opts(f, { timeoutMs: 20 }));
+  const g = await c.get('/slow-get', { timeoutMs: 3000 });
+  const p = await c.post('/slow-post', { q: 1 }, { timeoutMs: 3000 });
+  assert.equal(g.ok, true);
+  assert.equal(p.ok, true);
+  assert.equal(p.body.data.x, 1);
+  assert.equal(f.calls.find(x => x.url.endsWith('/slow-post')).init.body, JSON.stringify({ q: 1 }));
+});

@@ -81,3 +81,15 @@ test('findCompanyByName with empty records → unavailable', async () => {
   const r = await mca.findCompanyByName('Nobody Ltd', { client: client({ ok: true, body: { data: { records: [] } }, transactionId: 't' }) });
   assert.equal(r.status, 'unavailable');
 });
+
+test('MCA search and master-data calls use the extended per-call timeout', async () => {
+  assert.equal(mca.MCA_TIMEOUT_MS, 25000);
+  const seen = [];
+  const c = {
+    get: async (p, o) => { seen.push(['get', o]); return { ok: true, body: SEARCH, transactionId: 'tx' }; },
+    post: async (p, b, o) => { seen.push(['post', o]); return { ok: true, body: MASTER, transactionId: 'tx' }; }
+  };
+  await mca.findCompanyByName('Quicko Infosoft Pvt. Ltd.', { client: c, now: fixedNow });
+  await mca.getCompany('U72900GJ2015PTC082637', { client: c, now: fixedNow });
+  assert.deepEqual(seen, [['get', { timeoutMs: 25000 }], ['post', { timeoutMs: 25000 }]]);
+});

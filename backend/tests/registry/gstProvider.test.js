@@ -46,6 +46,22 @@ test('trackReturns RET13510 → ok with empty list', async () => {
   assert.deepEqual(r.data, []);
 });
 
+test('GST portal rejecting the GSTIN as invalid input gets a clear reason', async () => {
+  const bad = { ok: false, kind: 'invalid_input', code: '422', transactionId: 'tx' };
+  const a = await gst.searchGstin('29AABCI1681G1ZN', { client: clientReturning(bad) });
+  const b = await gst.trackReturns('29AABCI1681G1ZN', 'FY 2025-26', { client: clientReturning({ ...bad, code: '400' }) });
+  for (const r of [a, b]) {
+    assert.equal(r.status, 'unavailable');
+    assert.equal(r.reason, 'GSTIN rejected by the GST portal as invalid');
+    assert.equal(r.transactionId, 'tx');
+  }
+});
+
+test('other GST failures keep the code in the reason', async () => {
+  const r = await gst.searchGstin('24AAACQ1234A1Z5', { client: clientReturning({ ok: false, kind: 'unavailable', code: 'NETWORK' }) });
+  assert.equal(r.reason, 'GST portal lookup failed (NETWORK)');
+});
+
 test('financialYearOf', () => {
   assert.equal(gst.financialYearOf(new Date('2026-11-11T00:00:00Z')), 'FY 2026-27');
   assert.equal(gst.financialYearOf(new Date('2026-02-01T00:00:00Z')), 'FY 2025-26');

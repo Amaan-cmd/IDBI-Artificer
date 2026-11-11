@@ -6,6 +6,9 @@ const { getSandboxClient } = require('./sandboxClient');
 
 const SOURCE = 'MCA21 via Sandbox';
 const CIN_RE = /^[LU]\d{5}[A-Z]{2}\d{4}[A-Z]{3}\d{6}$/;
+// Uncached MCA21 queries have been observed to take well over 10s upstream;
+// repeats are served from Sandbox's cache quickly.
+const MCA_TIMEOUT_MS = 25000;
 const NOT_COVERED = Object.freeze({ status: 'unavailable', reason: 'Not covered by current data provider', source: null });
 
 function normaliseCompanyName(name) {
@@ -43,7 +46,7 @@ async function getCompany(cin, { client = getSandboxClient(), now = () => new Da
   if (!CIN_RE.test(clean)) {
     return { status: 'unavailable', reason: `MCA21 master data supports company CINs only (got ${clean || 'none'})`, source: SOURCE };
   }
-  const r = await client.post('/kyc/mca/company/master-data', { cin: clean });
+  const r = await client.post('/kyc/mca/company/master-data', { cin: clean }, { timeoutMs: MCA_TIMEOUT_MS });
   if (!r.ok) {
     return {
       status: 'unavailable',
@@ -61,7 +64,7 @@ async function findCompanyByName(legalName, { client = getSandboxClient(), now =
   const name = String(legalName || '').trim();
   if (name.length < 3) return { status: 'unavailable', reason: 'Legal name too short to search MCA21', source: SOURCE };
 
-  const r = await client.get(`/kyc/mca/company/master-data/search?company_name=${encodeURIComponent(name)}`);
+  const r = await client.get(`/kyc/mca/company/master-data/search?company_name=${encodeURIComponent(name)}`, { timeoutMs: MCA_TIMEOUT_MS });
   if (!r.ok) {
     return {
       status: 'unavailable',
@@ -87,4 +90,4 @@ async function findCompanyByName(legalName, { client = getSandboxClient(), now =
   };
 }
 
-module.exports = { getCompany, findCompanyByName, normaliseCompanyName, NOT_COVERED, SOURCE };
+module.exports = { getCompany, findCompanyByName, normaliseCompanyName, NOT_COVERED, SOURCE, MCA_TIMEOUT_MS };

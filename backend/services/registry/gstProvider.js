@@ -20,7 +20,11 @@ function formatAddress(addr = {}) {
 function unavailable(result, notFoundReason, failureLabel) {
   return {
     status: 'unavailable',
-    reason: result.kind === 'not_found' ? notFoundReason : `${failureLabel} (${result.code})`,
+    reason: result.kind === 'not_found'
+      ? notFoundReason
+      : result.kind === 'invalid_input'
+        ? 'GSTIN rejected by the GST portal as invalid'
+        : `${failureLabel} (${result.code})`,
     source: SOURCE,
     transactionId: result.transactionId || null
   };

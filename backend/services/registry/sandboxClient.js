@@ -18,7 +18,7 @@ function createSandboxClient({
   let tokenExpiresAt = 0;
   let inflightAuth = null;
 
-  const request = (url, init) => fetchImpl(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
+  const request = (url, init, ms = timeoutMs) => fetchImpl(url, { ...init, signal: AbortSignal.timeout(ms) });
 
   async function authenticate() {
     if (!apiKey || !apiSecret) {
@@ -61,7 +61,9 @@ function createSandboxClient({
     }
   }
 
-  async function send(method, pathAndQuery, body, attempt = 0, reauthenticated = false) {
+  // callOpts.timeoutMs overrides the client default for this call (auth keeps the default).
+  async function send(method, pathAndQuery, body, callOpts = {}, attempt = 0, reauthenticated = false) {
+    const callTimeoutMs = Number(callOpts.timeoutMs) > 0 ? Number(callOpts.timeoutMs) : timeoutMs;
     const auth = await getToken();
     if (auth.error) return auth.error;
 
@@ -77,18 +79,18 @@ function createSandboxClient({
           'x-accept-cache': 'true'
         },
         body: body === undefined ? undefined : JSON.stringify(body)
-      });
+      }, callTimeoutMs);
     } catch (err) {
-      if (attempt < 1) return send(method, pathAndQuery, body, attempt + 1, reauthenticated);
+      if (attempt < 1) return send(method, pathAndQuery, body, callOpts, attempt + 1, reauthenticated);
       return { ok: false, kind: 'unavailable', code: 'NETWORK', message: err.message, transactionId: null };
     }
 
     if ((res.status === 401 || res.status === 403) && !reauthenticated) {
       invalidate(auth.token);
-      return send(method, pathAndQuery, body, attempt, true);
+      return send(method, pathAndQuery, body, callOpts, attempt, true);
     }
     if (res.status >= 500 && res.status !== 521 && attempt < 1) {
-      return send(method, pathAndQuery, body, attempt + 1, reauthenticated);
+      return send(method, pathAndQuery, body, callOpts, attempt + 1, reauthenticated);
     }
 
     const json = await res.json().catch(() => null);
@@ -108,8 +110,8 @@ function createSandboxClient({
   }
 
   return {
-    post: (pathAndQuery, body) => send('POST', pathAndQuery, body),
-    get: (pathAndQuery) => send('GET', pathAndQuery, undefined)
+    post: (pathAndQuery, body, callOpts) => send('POST', pathAndQuery, body, callOpts),
+    get: (pathAndQuery, callOpts) => send('GET', pathAndQuery, undefined, callOpts)
   };
 }
 
