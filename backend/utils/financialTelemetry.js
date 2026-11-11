@@ -15,6 +15,30 @@ const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 const round2 = (v) => Math.round(v * 100) / 100;
 const pct2 = (num, den) => Math.round((num / den) * 10000) / 100;
 const fmt = (v, suffix = '') => (isNum(v) ? `${v}${suffix}` : NA);
+const sumOf = (arr) => arr.reduce((a, b) => a + b, 0);
+
+// Revenue momentum needs two equal halves of at least two months each.
+const MIN_MOMENTUM_MONTHS = 4;
+const MOMENTUM_TOO_SHORT = `Not available (needs ≥ ${MIN_MOMENTUM_MONTHS} months of statements)`;
+
+/**
+ * Revenue momentum, defined once for the whole product: with at least four
+ * months of credits, (sum of the second half - sum of the first half) / sum of
+ * the first half, using equal-length halves (the middle month is dropped when
+ * the count is odd). Fewer months, or a first half with no credits, gives null
+ * plus the reason.
+ */
+function revenueMomentum(monthlyCredits) {
+  if (!monthlyCredits) return { rate: null, basis: null, reason: 'Not available (monthly credits not found in statement)' };
+  const n = monthlyCredits.length;
+  if (n < MIN_MOMENTUM_MONTHS) return { rate: null, basis: null, reason: MOMENTUM_TOO_SHORT };
+  const half = Math.floor(n / 2);
+  const first = sumOf(monthlyCredits.slice(0, half));
+  const second = sumOf(monthlyCredits.slice(n - half));
+  const basis = `last ${half} months vs first ${half} months${n % 2 ? ' (middle month excluded)' : ''}`;
+  if (!(first > 0)) return { rate: null, basis, reason: 'Not available (no credits in the first half of the statement period)' };
+  return { rate: pct2(second - first, first), basis, reason: null };
+}
 
 function calculateStdDev(values) {
   if (!values || values.length === 0) return 0;
@@ -36,7 +60,8 @@ function calculateMedian(values) {
  * @param {Object} input
  * @param {Array<number>} input.monthlyCredits - Monthly credit sums (chronological)
  * @param {Array<number>} input.monthlyDebits - Monthly debit sums (chronological)
- * @param {Array<number>} input.dailyClosingBalances - Closing balance checkpoints
+ * @param {Array<number>} input.dailyClosingBalances - Closing balance checkpoints (chronological)
+ * @param {number} input.bankClosingBalance - Statement closing balance (else the last checkpoint is used)
  * @param {number} input.sanctionedOdLimit - Overdraft/CC limit sanctioned (0 if none)
  * @param {number} input.peakOdUsage - Highest utilization of OD in period
  * @param {number} input.gstr1OutwardTaxable - Total outward taxable supplies from GSTR-1
@@ -87,19 +112,20 @@ function computeFinancialTelemetry(input = {}) {
   // Needs a real balance series and real debits. An unknown OD facility
   // contributes no drawing power.
   // =========================================================================
-  const avgDailyClosingBalance = dailyClosingBalances
-    ? dailyClosingBalances.reduce((a, b) => a + b, 0) / dailyClosingBalances.length
-    : null;
   const lowestBalance = dailyClosingBalances ? Math.min(...dailyClosingBalances) : null;
+  const closingBalance = num('bankClosingBalance')
+    ?? (dailyClosingBalances ? dailyClosingBalances[dailyClosingBalances.length - 1] : null);
 
   const availableDrawingPower = (isNum(sanctionedOdLimit) && isNum(peakOdUsage) && sanctionedOdLimit > peakOdUsage)
     ? (sanctionedOdLimit - peakOdUsage)
     : 0;
 
-  // 1.1 Cash Buffer Ratio: effective liquid buffer / average monthly outflow.
-  // Ledger balance floored at 0 (CC/OD), plus sweep deposits, plus 50% of undrawn DP.
-  const cashBufferRatio = isNum(avgDailyClosingBalance) && avgMonthlyDebit > 0
-    ? round2((Math.max(0, avgDailyClosingBalance) + sweepDeposits + availableDrawingPower * 0.5) / avgMonthlyDebit)
+  // 1.1 Cash Buffer Ratio: bank closing balance / average monthly debit outflows.
+  // The closing balance is floored at 0 (an overdrawn CC/OD account has no
+  // cash buffer); sweep deposits and 50% of undrawn OD/CC drawing power are
+  // added only when the statement shows them (both 0 otherwise).
+  const cashBufferRatio = isNum(closingBalance) && avgMonthlyDebit > 0
+    ? round2((Math.max(0, closingBalance) + sweepDeposits + availableDrawingPower * 0.5) / avgMonthlyDebit)
     : null;
 
   // 1.2 Minimum Cash Buffer Days: lowest liquid position / average daily outflow
@@ -128,16 +154,9 @@ function computeFinancialTelemetry(input = {}) {
   // =========================================================================
   const annualizedRevenueRunRate = isNum(avgMonthlyCredit) ? Math.round(avgMonthlyCredit * 12) : null;
 
-  let revenueGrowthRate = null;
-  if (monthlyCredits && monthlyCredits.length >= 6) {
-    const recent3M = monthlyCredits.slice(-3).reduce((a, b) => a + b, 0);
-    const prev3M = monthlyCredits.slice(-6, -3).reduce((a, b) => a + b, 0);
-    revenueGrowthRate = prev3M > 0 ? pct2(recent3M - prev3M, prev3M) : null;
-  } else if (monthlyCredits && monthlyCredits.length >= 2) {
-    const recent = monthlyCredits[monthlyCredits.length - 1];
-    const prev = monthlyCredits[0];
-    revenueGrowthRate = prev > 0 ? pct2(recent - prev, prev) : null;
-  }
+  // 2.2 Revenue momentum (half-on-half; see revenueMomentum)
+  const momentum = revenueMomentum(monthlyCredits);
+  const revenueGrowthRate = momentum.rate;
 
   // 2.3 GST vs Bank Credit Reconciliation: GSTR-1 outward taxable / bank credits
   const gstVsBankReconciliation = isNum(gstr1OutwardTaxable) && totalCredits > 0
@@ -312,7 +331,9 @@ function computeFinancialTelemetry(input = {}) {
   // CITATIONS (missing values are rendered as "not available")
   // =========================================================================
   const runRateText = isNum(annualizedRevenueRunRate) ? `₹${annualizedRevenueRunRate.toLocaleString('en-IN')}` : NA;
-  const growthText = isNum(revenueGrowthRate) ? `${revenueGrowthRate >= 0 ? '+' : ''}${revenueGrowthRate}%` : `growth ${NA}`;
+  const growthText = isNum(revenueGrowthRate)
+    ? `${revenueGrowthRate >= 0 ? '+' : ''}${revenueGrowthRate}% half-on-half momentum`
+    : `momentum ${momentum.reason.charAt(0).toLowerCase()}${momentum.reason.slice(1)}`;
   const dscpText = noDebtServiceObserved ? 'not applicable (no EMI / debt service observed in the statement)' : fmt(debtServiceCoverageProxy, 'x');
   const citations = [
     `[Liquidity] Cash Buffer Ratio: ${fmt(cashBufferRatio, 'x')}; minimum survival buffer days: ${fmt(minimumCashBufferDays)} (OD utilization: ${fmt(overdraftLimitUtilization, '%')}).`,
@@ -334,6 +355,9 @@ function computeFinancialTelemetry(input = {}) {
     pillar2_revenue: {
       annualizedRevenueRunRate,
       revenueGrowthRate,
+      revenueGrowthBasis: momentum.basis,
+      revenueGrowthUnavailableReason: momentum.reason,
+      averageMonthlyCredit: isNum(avgMonthlyCredit) ? round2(avgMonthlyCredit) : null,
       gstVsBankReconciliation,
       gstr1VsGstr3bGap,
       trajectory: revenueTrajectory,
@@ -374,4 +398,4 @@ function computeFinancialTelemetry(input = {}) {
   };
 }
 
-module.exports = { computeFinancialTelemetry };
+module.exports = { computeFinancialTelemetry, revenueMomentum, MOMENTUM_TOO_SHORT };

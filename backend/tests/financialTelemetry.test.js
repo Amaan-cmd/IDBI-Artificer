@@ -165,3 +165,63 @@ test('date-only transaction dates are not read as off-hour (only weekends flag)'
   ] });
   assert.match(sunday.pillar5_operational.suspiciousTimingFlags, /^FLAGGED \(1/);
 });
+
+// Figures from dataset/Sample_Bank_Statement.csv (3 months, closing balance 760700.50).
+const SAMPLE = {
+  monthlyCredits: [470000, 390000, 146200],
+  monthlyDebits: [370000, 150500, 175000],
+  bankOpeningBalance: 450000.5,
+  bankClosingBalance: 760700.5,
+  dailyClosingBalances: [600000.5, 400000.5, 720000.5, 670000.5, 550000.5, 730000.5, 729500.5, 939500.5, 789500.5, 934500.5, 889500.5, 759500.5, 760700.5],
+  sanctionedOdLimit: 0, peakOdUsage: 0, inwardBounces: 1, totalDebitAttempts: 7, monthlyEmiObligations: 0,
+  dataGaps: ['sanctionedOdLimit', 'peakOdUsage', 'gstr1OutwardTaxable', 'gstr3bTaxPaid', 'gstr1DeclaredTax']
+};
+
+test('cash buffer ratio is the bank closing balance over average monthly debits (sample statement: 3.28x)', () => {
+  const m = computeFinancialTelemetry(SAMPLE);
+  // 760700.50 / (695500 / 3) = 3.2812...
+  assert.equal(m.pillar1_liquidity.cashBufferRatio, 3.28);
+  assert.equal(m.cashBufferRatio, 3.28);
+  assert.ok(m.citations[0].includes('3.28x'));
+  assert.ok(m.reasoning.includes('3.28x'));
+});
+
+test('cash buffer ratio uses the last balance checkpoint when no closing balance is labelled', () => {
+  const { bankClosingBalance, ...noLabel } = SAMPLE;
+  assert.equal(computeFinancialTelemetry(noLabel).cashBufferRatio, 3.28);
+});
+
+test('cash buffer ratio floors an overdrawn closing balance at 0', () => {
+  const m = computeFinancialTelemetry({ ...SAMPLE, bankClosingBalance: -50000 });
+  assert.equal(m.cashBufferRatio, 0);
+});
+
+test('revenue momentum: fewer than 4 months is not available, with the reason', () => {
+  const m = computeFinancialTelemetry(SAMPLE);
+  assert.equal(m.pillar2_revenue.revenueGrowthRate, null);
+  assert.equal(m.pillar2_revenue.revenueGrowthUnavailableReason, 'Not available (needs ≥ 4 months of statements)');
+  assert.equal(m.pillar2_revenue.trajectory, 'NOT_ASSESSED');
+  assert.ok(!m.citations.join(' ').includes('-68.9'));
+  assert.ok(m.citations[1].includes('needs ≥ 4 months'));
+  assertNoNullText(m);
+});
+
+test('revenue momentum: even months compare equal halves', () => {
+  // first half 100+100 = 200, second half 110+130 = 240 -> +20%
+  const m = computeFinancialTelemetry({ monthlyCredits: [100, 100, 110, 130] });
+  assert.equal(m.pillar2_revenue.revenueGrowthRate, 20);
+  assert.equal(m.pillar2_revenue.revenueGrowthUnavailableReason, null);
+  assert.equal(m.pillar2_revenue.revenueGrowthBasis, 'last 2 months vs first 2 months');
+  assert.equal(m.pillar2_revenue.trajectory, 'EXPANDING');
+});
+
+test('revenue momentum: odd months drop the middle month', () => {
+  // [100, 100, 999, 90, 90]: 180 vs 200 -> -10%
+  const m = computeFinancialTelemetry({ monthlyCredits: [100, 100, 999, 90, 90] });
+  assert.equal(m.pillar2_revenue.revenueGrowthRate, -10);
+  assert.match(m.pillar2_revenue.revenueGrowthBasis, /middle month excluded/);
+});
+
+test('average monthly credit is reported from the statement credits', () => {
+  assert.equal(computeFinancialTelemetry(SAMPLE).pillar2_revenue.averageMonthlyCredit, 335400);
+});
