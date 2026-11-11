@@ -1,0 +1,6 @@
+{ "code": 200, "data": { "data": {
+  "ctb": "Private Limited Company", "dty": "Regular", "einvoiceStatus": "No", "gstin": "24AAACQ1234A1Z5",
+  "lgnm": "QUICKO INFOSOFT PRIVATE LIMITED", "tradeNam": "Quicko", "lstupdt": "18/10/2024", "rgdt": "01/07/2017",
+  "nba": ["Supplier of Services"], "sts": "Active", "cxdt": "",
+  "pradr": { "addr": { "bno": "B/701", "bnm": "Amrapali Lakeview Tower", "st": "Vastrapur", "loc": "Ahmedabad", "dst": "Ahmedabad", "stcd": "Gujarat", "pncd": "380015", "flno": "" }, "ntr": "" }
+}, "status_cd": "1" }, "timestamp": 1763446641000, "transaction_id": "5248feb5-dd09-4f0d-9a42-14b34b849087" }
