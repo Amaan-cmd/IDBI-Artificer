@@ -325,9 +325,7 @@ export default function NewEvaluationView({
                   <span className="id-sep">·</span>
                   <span><strong>Document:</strong> {file ? file.name : 'GSTN Registry Feed'}</span>
                 </div>
-                {gstinProbeData?.registryReport && (
-                  <RegistryProbeCard report={gstinProbeData.registryReport} onSelectCin={selectCin} />
-                )}
+                {report && <RegistryProbeCard report={report} onSelectCin={selectCin} />}
               </div>
 
               <div className="hitl-action-buttons">
@@ -335,13 +333,16 @@ export default function NewEvaluationView({
                   className="authorize-generate-btn"
                   onClick={() => onTriggerEvaluation()}
                   disabled={loading}
+                  title={!file ? 'No bank statement attached: runs a registry screening (no credit score). Attach a statement for a full credit score.' : undefined}
                   style={loading ? { opacity: 0.85, cursor: 'wait' } : {}}
                 >
                   <Sparkles size={16} className={loading ? "animate-spin" : ""} />
                   <span>
                     {loading 
                       ? '⚡ EVALUATING 5-PILLAR FINANCIAL AUDIT...' 
-                      : (file ? '⚡ INGEST & GENERATE CREDIT SCORE' : '⚡ RUN REGISTRY SCREENING')}
+                      : file
+                        ? (evaluationData && !isScreening ? '⚡ RE-RUN CREDIT SCORE' : '⚡ INGEST & GENERATE CREDIT SCORE')
+                        : (isScreening ? '⚡ RE-RUN REGISTRY SCREENING' : '⚡ RUN REGISTRY SCREENING (NO STATEMENT)')}
                   </span>
                 </button>
                 <button
@@ -389,7 +390,7 @@ export default function NewEvaluationView({
           >
             <Layers size={16} />
             <span>Audit Findings Deck (ScrollStack)</span>
-            <span className="nav-badge-count">6 Pillar Cards</span>
+            <span className="nav-badge-count">{isScreening ? 'Registry Screening' : previewDecision ? '6 Pillar Cards' : 'No Evaluation'}</span>
           </button>
 
           <button 

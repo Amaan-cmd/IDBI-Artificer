@@ -4,7 +4,10 @@ import {
   Clock, Play, Pause, AlertCircle, FileArchive, Check, ArrowRight
 } from 'lucide-react';
 import './BatchUploadView.css';
+import { isDemoMode } from '../../utils/demoMode';
+import SampleDataBadge from '../SampleDataBadge/SampleDataBadge';
 
+// Demo-mode only (labelled SAMPLE DATA): there is no batch underwriting backend yet.
 const SAMPLE_BATCH = [
   { id: 1, name: 'Precision Dies & Moulds Ltd', gstin: '27AABCP1122M1Z4', state: 'Maharashtra', status: 'COMPLETED', score: 812, risk: 'LOW' },
   { id: 2, name: 'Gujarat Polymers & Resins LLP', gstin: '24AAECG8891P1ZX', state: 'Gujarat', status: 'COMPLETED', score: 748, risk: 'LOW' },
@@ -20,11 +23,12 @@ export default function BatchUploadView() {
   const [batchProgress, setBatchProgress] = useState(50); // 3 of 6 completed
 
   const handleDownloadTemplate = () => {
-    const csvContent = "data:text/csv;charset=utf-8," + 
-      "business_name,gstin,pan,annual_turnover,statement_url\n" +
+    // Outside demo mode the template carries only the header row (no sample companies).
+    const csvContent = "data:text/csv;charset=utf-8," +
+      "business_name,gstin,pan,annual_turnover,statement_url\n" + (!isDemoMode ? '' :
       "Apex Precision Engineering,27AADCB2230M1Z2,AADCB2230M,9680000,https://vault.enverai.tech/statements/apex_stmt.pdf\n" +
       "Surat Textile Weaving LLP,24AABCS4421P1Z9,AABCS4421P,14200000,https://vault.enverai.tech/statements/surat_stmt.pdf\n" +
-      "Kalyan Agro Supply & Logistics,27AAGCK8812L1ZQ,AAGCK8812L,6800000,https://vault.enverai.tech/statements/kalyan_stmt.pdf\n";
+      "Kalyan Agro Supply & Logistics,27AAGCK8812L1ZQ,AAGCK8812L,6800000,https://vault.enverai.tech/statements/kalyan_stmt.pdf\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -50,7 +54,7 @@ export default function BatchUploadView() {
         </div>
         <button className="template-download-btn" onClick={handleDownloadTemplate}>
           <Download size={14} />
-          <span>Download Sample CSV Template</span>
+          <span>{isDemoMode ? 'Download Sample CSV Template' : 'Download CSV Template'}</span>
         </button>
       </div>
 
@@ -80,13 +84,30 @@ export default function BatchUploadView() {
         </div>
       </div>
 
-      {/* Active Batch Pipeline Runner */}
+      {/* Active Batch Pipeline Runner: sample content in demo mode only */}
+      {!isDemoMode ? (
+        <div className="batch-runner-card">
+          <div className="runner-header">
+            <div className="runner-title-wrap">
+              <AlertCircle size={18} />
+              <div>
+                <h3 className="runner-title">Batch underwriting is not available yet</h3>
+                <span className="runner-meta">
+                  {batchFile
+                    ? `${batchFile.name} was selected but has not been processed. Evaluate each enterprise individually from New Evaluation.`
+                    : 'Evaluate each enterprise individually from New Evaluation. No batches have been run.'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
       <div className="batch-runner-card">
         <div className="runner-header">
           <div className="runner-title-wrap">
             <Layers size={18} className="text-gold" />
             <div>
-              <h3 className="runner-title">Active Batch: Q3 MSME Supply-Chain Portfolio</h3>
+              <h3 className="runner-title">Active Batch: Q3 MSME Supply-Chain Portfolio <SampleDataBadge /></h3>
               <span className="runner-meta">6 Enterprises Queued · Priority Institutional Batch</span>
             </div>
           </div>
@@ -151,6 +172,7 @@ export default function BatchUploadView() {
           </table>
         </div>
       </div>
+      )}
     </div>
   );
 }

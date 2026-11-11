@@ -5,6 +5,7 @@ import {
   Copy, Check, Trash2, LayoutGrid, List, PlusCircle, Building2, Sparkles
 } from 'lucide-react';
 import './WatchlistView.css';
+import SampleDataBadge from '../SampleDataBadge/SampleDataBadge';
 
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 const isScreeningRow = (row) => row?.fullPayload?.reportType === 'REGISTRY_SCREENING' || row?.status === 'Registry Screening';
@@ -160,7 +161,7 @@ export default function WatchlistView({
                     {/* Business Name */}
                     <td>
                       <div className="table-entity-cell">
-                        <span className="entity-cell-name">{name}</span>
+                        <span className="entity-cell-name">{name}{row.sampleData && <> <SampleDataBadge /></>}</span>
                         <span className="entity-cell-sector">
                           {screening ? 'Registry Screening' : (row.compliance || '—')}
                         </span>
@@ -295,7 +296,7 @@ export default function WatchlistView({
               <div key={row.id || gstin} className="watchlist-card">
                 <div className="watchlist-card-top">
                   <div>
-                    <h3 className="card-company-name">{name}</h3>
+                    <h3 className="card-company-name">{name}{row.sampleData && <> <SampleDataBadge /></>}</h3>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
                       <span className="card-gstin-code">{gstin}</span>
                       <button 

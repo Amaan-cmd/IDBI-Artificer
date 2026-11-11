@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   ArrowLeft, Download, ShieldCheck, FileText, Activity, Clock
 } from 'lucide-react';
@@ -27,6 +27,8 @@ export default function SplitWorkspaceView({
   const [activeTab, setActiveTab] = useState('ratios'); // 'ratios' | 'compliance' | 'documents'
   const [auditorNotes, setAuditorNotes] = useState('');
   const [noteSavedFeedback, setNoteSavedFeedback] = useState(false);
+  // Serialise the (potentially large) payload only when the Raw JSON tab is open, not on every notes keystroke.
+  const rawJson = useMemo(() => (data && activeTab === 'documents' ? JSON.stringify(data, null, 2) : ''), [data, activeTab]);
 
   if (!data) return null;
 
@@ -536,7 +538,7 @@ export default function SplitWorkspaceView({
                   </div>
                 </div>
 
-                <pre className="raw-json-pre">{JSON.stringify(data, null, 2)}</pre>
+                <pre className="raw-json-pre">{rawJson}</pre>
               </div>
             </div>
           )}
