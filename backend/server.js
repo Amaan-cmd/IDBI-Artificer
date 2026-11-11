@@ -70,52 +70,28 @@ const gstDataPath = path.join(__dirname, 'mockData', 'gst_returns.json');
 
 // --- Mock Integration Endpoints ---
 
-// Simulate Sahamati/Account Aggregator FIU Fetch
-app.get('/api/v1/alternate-data/account-aggregator/:businessId', (req, res) => {
-  try {
-    const data = JSON.parse(fs.readFileSync(aaDataPath, 'utf8'));
-    res.json({
-      status: 'success',
-      source: 'Account Aggregator Framework',
-      data: data
-    });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch AA data' });
-  }
-});
+const { getRegistry } = require('./controllers/registryController');
+const { isDemoMode } = require('./platform/demoMode');
 
-const { scrapeBusinessIntelligence, generateGSTTimeline } = require('./services/scraperService');
+// Simulate Sahamati/Account Aggregator FIU Fetch (demo mode only)
+if (isDemoMode()) {
+  app.get('/api/v1/alternate-data/account-aggregator/:businessId', (req, res) => {
+    try {
+      const data = JSON.parse(fs.readFileSync(aaDataPath, 'utf8'));
+      res.json({
+        status: 'success',
+        source: 'Account Aggregator Framework',
+        data: data
+      });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch AA data' });
+    }
+  });
+}
 
-// Live GSTN Sandbox / Timeline Fetch
-app.get('/api/v1/alternate-data/gst/:gstin', (req, res) => {
-  try {
-    const data = generateGSTTimeline(req.params.gstin);
-    res.json({
-      status: 'success',
-      source: 'Fetcha GSTN Portal Gateway (Grok 4.6 Tools)',
-      data: data
-    });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch GST data' });
-  }
-});
-
-// Live GSTIN Radar Probe (Instant Registry & Statutory Check)
-app.get('/api/v1/alternate-data/gstin-probe/:gstin', async (req, res) => {
-  try {
-    const gstin = req.params.gstin.trim().toUpperCase();
-    const registry = await scrapeBusinessIntelligence(gstin);
-    const timeline = generateGSTTimeline(gstin);
-    res.json({
-      status: 'success',
-      gstin,
-      registry,
-      timeline
-    });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to probe GSTIN registry' });
-  }
-});
+// Registry report (real GSTN / MCA21 data via Sandbox)
+app.get('/api/v1/registry/gstin/:gstin', requireSession, getRegistry);
+app.get('/api/v1/alternate-data/gstin-probe/:gstin', requireSession, getRegistry);
 
 // Evaluate MSME Credit Score (Live Agentic Pipeline with Multi-Modal Input)
 app.post('/api/v1/evaluate', requireSession, upload.single('statement'), evaluateMSMECredit);
