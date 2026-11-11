@@ -170,6 +170,36 @@ const KNOWN_GSTINS = {
 
 const SAMPLE_SOURCE = 'Sample data (demo mode)';
 
+const COMPANY_CIN_RE = /^[LU]\d{5}[A-Z]{2}\d{4}([A-Z]{3})\d{6}$/;
+const LLPIN_RE = /^[A-Z]{3}-\d{4}$/;
+const CIN_CLASS = {
+  PTC: 'Private Limited Company',
+  PLC: 'Public Limited Company',
+  OPC: 'One Person Company',
+  ULL: 'Unlimited Company',
+  ULT: 'Unlimited Company',
+  GOI: 'Public Sector Undertaking',
+  SGC: 'Public Sector Undertaking'
+};
+
+// The CIN's 3-letter class code (not its L/U listing prefix) carries the company type.
+function constitutionFromCin(cin) {
+  const c = String(cin || '').trim().toUpperCase();
+  const m = c.match(COMPANY_CIN_RE);
+  if (m) return CIN_CLASS[m[1]] || 'Company';
+  if (LLPIN_RE.test(c)) return 'Limited Liability Partnership';
+  return 'Proprietorship';
+}
+
+function demoMca(k, section, unavailable) {
+  if (COMPANY_CIN_RE.test(String(k.cin || '').trim().toUpperCase())) {
+    return section({ cin: k.cin, companyName: k.legalEntityName, status: k.mcaStatus || 'Active', incorporationDate: k.incorporationDate || null });
+  }
+  // LLPs are MCA-registered but the sample set has no LLP master data.
+  if (LLPIN_RE.test(String(k.cin || '').trim().toUpperCase())) return unavailable;
+  return { status: 'unavailable', reason: 'Not an MCA-registered entity type', source: null };
+}
+
 function isDemoEntity(gstin) {
   return Boolean(KNOWN_GSTINS[String(gstin || '').trim().toUpperCase()]);
 }
@@ -185,10 +215,10 @@ function demoRegistryReport(gstin) {
     gstin: g,
     pan: g.slice(2, 12),
     sampleData: true,
-    gst: section({ gstin: g, legalName: k.legalEntityName, tradeName: k.tradeName || '', status: 'Active', registrationDate: k.incorporationDate || null, cancellationDate: null, constitution: k.cin && k.cin.startsWith('U') ? 'Private Limited Company' : 'Proprietorship', taxpayerType: k.taxpayerType || 'Regular', natureOfBusiness: [], principalAddress: k.principalPlace || '', einvoiceStatus: '', lastUpdated: null }),
+    gst: section({ gstin: g, legalName: k.legalEntityName, tradeName: k.tradeName || '', status: 'Active', registrationDate: k.incorporationDate || null, cancellationDate: null, constitution: constitutionFromCin(k.cin), taxpayerType: k.taxpayerType || 'Regular', natureOfBusiness: [], principalAddress: k.principalPlace || '', einvoiceStatus: '', lastUpdated: null }),
     filings: section([]),
     filingMetrics: { frequency: 'monthly', primary: null, gstr1: null, filingDiscipline: 'REGULAR' },
-    mca: k.cin && /^[LU]\d{5}/.test(k.cin) ? section({ cin: k.cin, companyName: k.legalEntityName, status: k.mcaStatus || 'Active', incorporationDate: k.incorporationDate || null }) : { status: 'unavailable', reason: 'Not an MCA-registered entity type', source: null },
+    mca: demoMca(k, section, unavailable),
     directors: unavailable,
     charges: unavailable,
     litigation: unavailable,
@@ -221,4 +251,4 @@ function demoFinancials(gstin) {
   };
 }
 
-module.exports = { KNOWN_GSTINS, isDemoEntity, demoRegistryReport, demoFinancials, SAMPLE_SOURCE };
+module.exports = { KNOWN_GSTINS, isDemoEntity, constitutionFromCin, demoRegistryReport, demoFinancials, SAMPLE_SOURCE };
