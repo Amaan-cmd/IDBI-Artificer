@@ -16,11 +16,30 @@ class ConflictError extends Error {
   }
 }
 
+/**
+ * A conditional update must always carry a concrete ETag. An empty/missing
+ * value (or '*') would make Azure perform an unconditional write, which would
+ * defeat optimistic concurrency for the billing ledger.
+ */
+function assertConcreteEtag(table, entity, etag) {
+  if (typeof etag !== 'string' || etag === '' || etag === '*') {
+    throw new ConflictError(`${table}/${entity.partitionKey}/${entity.rowKey}: updateEntity requires a concrete etag`);
+  }
+}
+
 function createFileTableStore(dir) {
   fs.mkdirSync(dir, { recursive: true });
   const fileFor = (table) => path.join(dir, `${table}.json`);
   const load = (table) => {
-    try { return JSON.parse(fs.readFileSync(fileFor(table), 'utf8')); } catch { return {}; }
+    let raw;
+    try {
+      raw = fs.readFileSync(fileFor(table), 'utf8');
+    } catch (err) {
+      if (err.code === 'ENOENT') return {};
+      throw err;
+    }
+    // Let a corrupt file throw rather than returning {} and overwriting it.
+    return JSON.parse(raw);
   };
   const save = (table, data) => {
     const tmp = `${fileFor(table)}.${process.pid}.tmp`;
@@ -52,6 +71,7 @@ function createFileTableStore(dir) {
       return { etag };
     },
     async updateEntity(table, entity, etag) {
+      assertConcreteEtag(table, entity, etag);
       const data = load(table);
       const k = keyOf(entity.partitionKey, entity.rowKey);
       if (!data[k] || data[k].etag !== etag) throw new ConflictError(`${table}/${entity.partitionKey}/${entity.rowKey} changed`);
@@ -77,11 +97,12 @@ function createFileTableStore(dir) {
   };
 }
 
-function createAzureTableStore(connectionString) {
+function createAzureTableStore(connectionString, { clientFactory } = {}) {
   const { TableClient, odata } = require('@azure/data-tables');
+  const makeClient = clientFactory || ((table) => TableClient.fromConnectionString(connectionString, table));
   const clients = new Map();
   const client = (table) => {
-    if (!clients.has(table)) clients.set(table, TableClient.fromConnectionString(connectionString, table));
+    if (!clients.has(table)) clients.set(table, makeClient(table));
     return clients.get(table);
   };
   const strip = (e) => {
@@ -106,8 +127,9 @@ function createAzureTableStore(connectionString) {
       }
     },
     async createEntity(table, entity) {
+      const { etag: _ignored, ...body } = entity;
       try {
-        const r = await client(table).createEntity(entity);
+        const r = await client(table).createEntity(body);
         return { etag: r.etag };
       } catch (err) {
         if (err.statusCode === 409) throw new ConflictError(`${table}/${entity.partitionKey}/${entity.rowKey} exists`);
@@ -115,12 +137,15 @@ function createAzureTableStore(connectionString) {
       }
     },
     async updateEntity(table, entity, etag) {
+      assertConcreteEtag(table, entity, etag);
       const { etag: _ignored, ...body } = entity;
       try {
         const r = await client(table).updateEntity(body, 'Replace', { etag });
         return { etag: r.etag };
       } catch (err) {
-        if (err.statusCode === 412) throw new ConflictError(`${table}/${entity.partitionKey}/${entity.rowKey} changed`);
+        // 412: ETag mismatch. 404: row missing. Both mean "changed" to callers,
+        // matching the file store.
+        if (err.statusCode === 412 || err.statusCode === 404) throw new ConflictError(`${table}/${entity.partitionKey}/${entity.rowKey} changed`);
         throw err;
       }
     },
