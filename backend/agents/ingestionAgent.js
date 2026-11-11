@@ -1,5 +1,6 @@
 const fs = require('fs');
 const { callGemini } = require('../utils/googleGemini');
+const { flashModel } = require('../utils/geminiModels');
 const { callGrok } = require('../utils/grokClient');
 const { applyGuardrails } = require('../utils/nemoGuardrails');
 const { getRegistryReport } = require('../services/registry/registryService');
@@ -416,7 +417,7 @@ Output strictly in valid JSON format matching this schema. Every value is null w
   }
 
   // 3. Secondary Engine: Google Gemini Enterprise via Vertex AI
-  const model = process.env.GEMINI_FLASH_MODEL || 'gemini-2.5-flash';
+  const model = flashModel();
   const secretKeyName = 'GEMINI_API_KEY'; 
 
   try {

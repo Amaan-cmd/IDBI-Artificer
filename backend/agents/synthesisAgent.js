@@ -1,4 +1,5 @@
 const { callGemini } = require('../utils/googleGemini');
+const { proModel } = require('../utils/geminiModels');
 const { applyGuardrails } = require('../utils/nemoGuardrails');
 
 /**
@@ -65,7 +66,7 @@ Output strictly in JSON schema:
   }
 }`;
 
-  const model = process.env.AGENT3_MODEL || process.env.GEMINI_PRO_MODEL || 'gemini-3.1-pro';
+  const model = process.env.AGENT3_MODEL || proModel();
   const secretKeyName = 'GEMINI_API_KEY';
 
   if (!isTestMode) {

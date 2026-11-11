@@ -1,4 +1,5 @@
 const { callGemini } = require('../utils/googleGemini');
+const { flashModel } = require('../utils/geminiModels');
 const { applyGuardrails } = require('../utils/nemoGuardrails');
 
 /**
@@ -208,7 +209,7 @@ Output strictly in JSON schema:
   "integrityFlags": ["Flag 1...", "Flag 2..."]
 }`;
 
-  const model = process.env.JEV_MODEL || process.env.GEMINI_FLASH_MODEL || 'gemini-2.5-flash';
+  const model = process.env.JEV_MODEL || flashModel();
   const jevKey = process.env.JEV_API_KEY || process.env.TYPESAFE_API_KEY || process.env.GEMINI_API_KEY;
 
   // Route 1: Native TypeSafe AI System One Jev Engine

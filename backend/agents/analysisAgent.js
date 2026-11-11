@@ -1,4 +1,5 @@
 const { callGemini } = require('../utils/googleGemini');
+const { flashModel } = require('../utils/geminiModels');
 const { applyGuardrails } = require('../utils/nemoGuardrails');
 const { computeFinancialTelemetry } = require('../utils/financialTelemetry');
 
@@ -53,7 +54,7 @@ Output strictly in valid JSON matching this schema:
   ]
 }`;
 
-  const model = process.env.AGENT2_MODEL || process.env.GEMINI_FLASH_MODEL || 'gemini-3.5-flash';
+  const model = process.env.AGENT2_MODEL || flashModel();
   const secretKeyName = 'GEMINI_API_KEY';
 
   try {

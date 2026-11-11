@@ -1,4 +1,5 @@
 const { callGemini } = require('../utils/googleGemini');
+const { flashModel } = require('../utils/geminiModels');
 const { callAzureFoundryClaude } = require('../utils/azureFoundryClaude');
 
 /**
@@ -70,7 +71,7 @@ Provide your direct forensic response:`;
     // 2. Fallback Engine: Google Gemini (with 5s timeout safety)
     if (!rawAnswer) {
       try {
-        const model = process.env.AGENT3_MODEL || process.env.GEMINI_PRO_MODEL || 'gemini-2.5-flash';
+        const model = process.env.AGENT3_MODEL || process.env.GEMINI_PRO_MODEL || flashModel();
         rawAnswer = await callGemini(model, systemPrompt, userPrompt);
         engine = `Google Gemini (${model})`;
       } catch (geminiErr) {
