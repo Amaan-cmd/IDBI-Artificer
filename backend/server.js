@@ -12,6 +12,8 @@ const { getAllUsers, getLoginTelemetry, sendOtp, verifyOtp } = require('./contro
 const { getHistory } = require('./controllers/historyController');
 const { trainAgamiPipeline } = require('./controllers/agamiController');
 const { handleXAIChat } = require('./controllers/chatController');
+const { requireSession, requireAdmin } = require('./middleware/requireSession');
+const { createSession } = require('./controllers/sessionController');
 
 const upload = multer({ dest: path.join(os.tmpdir(), 'uploads') });
 
@@ -116,19 +118,20 @@ app.get('/api/v1/alternate-data/gstin-probe/:gstin', async (req, res) => {
 });
 
 // Evaluate MSME Credit Score (Live Agentic Pipeline with Multi-Modal Input)
-app.post('/api/v1/evaluate', upload.single('statement'), evaluateMSMECredit);
+app.post('/api/v1/evaluate', requireSession, upload.single('statement'), evaluateMSMECredit);
 
 // Agent 3 Conversational Forensic Interrogation
-app.post('/api/v1/chat/xai', handleXAIChat);
+app.post('/api/v1/chat/xai', requireSession, handleXAIChat);
 
 // --- User & Profile Endpoints ---
 app.post('/api/v1/auth/send-code', sendOtp);
 app.post('/api/v1/auth/verify-code', verifyOtp);
-app.get('/api/v1/users', getAllUsers);
-app.get('/api/v1/telemetry/logins', getLoginTelemetry);
+app.post('/api/v1/auth/session', createSession);
+app.get('/api/v1/users', requireSession, requireAdmin, getAllUsers);
+app.get('/api/v1/telemetry/logins', requireSession, requireAdmin, getLoginTelemetry);
 
 // --- History Endpoints ---
-app.get('/api/v1/history', getHistory);
+app.get('/api/v1/history', requireSession, getHistory);
 
 // --- Agami Pipeline Simulation ---
 app.post('/api/v1/agami/train', trainAgamiPipeline);
