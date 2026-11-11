@@ -48,7 +48,7 @@ Prices are judgement-based placeholders; owner should validate against actual Ge
 
 - `ensureAccount(email)` → creates the account with `balanceCents: 500` plus a `grant` ledger row if it does not exist (`createEntity`; conflict → read existing). Called at session issue time.
 - `charge(email, action, reference)` → `{ ok: true, chargeId, balanceCents }` or `{ ok: false, code: 'INSUFFICIENT_CREDIT', balanceCents, priceCents }`.
-  - Admin bypass: if email ∈ `ADMIN_EMAILS` (comma-separated env), record a `charge` row with `amountCents: 0` and `reference` noting admin, never block.
+  - Admin bypass: if the session email is an `@enveraitech.com` address (`isAdminEmail`), record a `charge` row with `amountCents: 0` and `reference` noting admin, never block.
   - Read account (ETag) → if `balanceCents < price` → insufficient → else `updateEntity` with new balance and ETag. On `ConflictError`, re-read and retry, max 5 attempts, then throw.
   - Then append the ledger row. The balance is the source of truth; a failed ledger append is logged as an error but does not reverse the charge.
 - `refund(email, chargeId, reason)` → adds the price back (same ETag loop) and appends a `refund` row referencing `chargeId`. Idempotent per `chargeId` within the request (callers refund at most once).
@@ -105,13 +105,13 @@ Prices are judgement-based placeholders; owner should validate against actual Ge
 - `ensureAccount` grants $5 exactly once, including two concurrent calls.
 - `charge` deducts and writes a ledger row; insufficient balance returns `INSUFFICIENT_CREDIT` without deducting; 20 concurrent $0.50 charges on a $5.00 balance → exactly 10 succeed, final balance 0.
 - `refund` restores the balance and writes a `refund` row.
-- Admin emails are never blocked and are charged $0.
+- `@enveraitech.com` accounts are never blocked and are charged $0.
 - Webhook: valid signature credits once; replayed event is a no-op; bad signature → 400; non-USD or missing `client_reference_id` → 200 without credit. Signatures generated with `stripe.webhooks.generateTestHeaderString`.
 - `withCharge`: 402 before the handler runs; refund called on handler failure.
 
 ## Configuration
 
-`ADMIN_EMAILS`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_LINK_10`, `STRIPE_LINK_25`, `STRIPE_LINK_100` — added to `backend/.env.example` and `.env.azure.example` with placeholder values.
+`STRIPE_WEBHOOK_SECRET`, `STRIPE_LINK_10`, `STRIPE_LINK_25`, `STRIPE_LINK_100` — added to `backend/.env.example` and `.env.azure.example` with placeholder values.
 
 ## Owner setup (after implementation)
 

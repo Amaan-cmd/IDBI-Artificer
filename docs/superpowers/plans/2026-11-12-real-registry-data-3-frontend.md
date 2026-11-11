@@ -436,7 +436,7 @@ export default function RegistryScreeningReport({ payload, onSelectCin }) {
 Run: `npm --prefix frontend run build` → succeeds.
 
 Manual (backend running with `SANDBOX_*` set, `DEMO_MODE` unset; frontend `VITE_DEMO_MODE` unset):
-1. Log in with password. No presets shown; GSTIN field empty.
+1. Sign in with Google. No presets shown; GSTIN field empty.
 2. Enter `24AAACQ1234A1Z5`-style real GSTIN (use a GSTIN you know, e.g. your own company's). Probe card shows legal name, status, filing discipline, MCA section, provenance lines "GSTN via Sandbox · fetched …".
 3. Click "Run registry screening" → screening report with filing table; findings tab shows it; no score anywhere.
 4. Upload a bank statement for the same GSTIN → score shown; Raw JSON contains `registryReport` and `decision.registryAdjustments`.
@@ -463,7 +463,6 @@ git commit -m "feat(frontend): real registry probe card, registry screening repo
 ```
 # Sessions
 SESSION_JWT_SECRET=replace-with-a-long-random-string
-ADMIN_EMAILS=andalaus@enveraitech.com
 FIREBASE_PROJECT_ID=idbi-innovate
 # Persistent storage (required in production)
 AZURE_STORAGE_CONNECTION_STRING=

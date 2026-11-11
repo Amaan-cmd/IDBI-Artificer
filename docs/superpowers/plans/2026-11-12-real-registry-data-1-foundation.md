@@ -442,16 +442,20 @@ test('requireSession accepts valid token and sets req.session', () => {
   assert.equal(r.req.session.email, 'x@y.com');
 });
 
-test('requireAdmin allows ADMIN_EMAILS only', () => {
-  process.env.ADMIN_EMAILS = 'boss@enveraitech.com, other@x.com';
+test('requireAdmin allows @enveraitech.com sessions only', () => {
   const ok = { headers: {}, session: { email: 'boss@enveraitech.com' } };
+  const lookalike = { headers: {}, session: { email: 'boss@enveraitech.com.evil.io' } };
+  const sub = { headers: {}, session: { email: 'x@mail.enveraitech.com' } };
   const no = { headers: {}, session: { email: 'someone@x.com' } };
   let status = null; let passed = false;
   const res = { status(s) { status = s; return this; }, json() { return this; } };
   requireAdmin(ok, res, () => { passed = true; });
   assert.equal(passed, true);
-  requireAdmin(no, res, () => {});
-  assert.equal(status, 403);
+  for (const req of [lookalike, sub, no]) {
+    status = null;
+    requireAdmin(req, res, () => { throw new Error(`should not pass: ${req.session.email}`); });
+    assert.equal(status, 403);
+  }
 });
 ```
 
@@ -466,7 +470,7 @@ Run: `npm --prefix backend test` → FAIL, module not found.
 ```js
 /**
  * Server-issued session tokens (HS256 JWT). Issued only after the server has
- * verified the identity itself (password, email OTP, Firebase ID token).
+ * verified the identity itself (email OTP, Firebase ID token).
  */
 const jwt = require('jsonwebtoken');
 
@@ -506,9 +510,14 @@ module.exports = { issueSessionToken, verifySessionToken, normaliseEmail };
 ```js
 const { normaliseEmail } = require('./session');
 
+// Admin = a server-verified session for an @enveraitech.com address.
+// Exact domain match only (no subdomains, no lookalike suffixes).
+const ADMIN_DOMAIN = 'enveraitech.com';
+
 function isAdminEmail(email) {
-  const admins = (process.env.ADMIN_EMAILS || '').split(',').map(normaliseEmail).filter(Boolean);
-  return admins.includes(normaliseEmail(email));
+  const clean = normaliseEmail(email);
+  const at = clean.lastIndexOf('@');
+  return at > 0 && clean.slice(at + 1) === ADMIN_DOMAIN;
 }
 
 module.exports = { isAdminEmail };
@@ -740,38 +749,113 @@ git commit -m "feat(auth): verify Firebase ID tokens and issue sessions via /aut
 
 ---
 
-### Task 6: Issue sessions from password and OTP login
+### Task 6: Remove password login and hardcoded credentials; OTP issues sessions
 
 **Files:**
-- Modify: `backend/controllers/userController.js`
+- Modify: `backend/controllers/userController.js`, `backend/server.js`
+- Test: `backend/tests/auth.credentials.test.js`
 
-The Google/Apple branch of `loginUser` trusts a client-supplied email, so it must NOT issue a session — clients use `/auth/session` instead.
+Owner decision (2026-11-12): no hardcoded or shared master passwords. No user has a personal passkey (`users.json` has none), so password login is removed entirely. The Google/Apple branch of `loginUser` trusts a client-supplied email, so it goes too — Google/Apple use `/auth/session` (Task 5). Remaining server-verified paths: `/auth/session` and email OTP.
 
-- [ ] **Step 1: Import the issuer** (top of file)
-
-```js
-const { issueSessionToken } = require('../platform/session');
-```
-
-- [ ] **Step 2: Password branch** — replace the final `return res.json({ status: 'success', user: authenticatedUser });` in `loginUser` with:
+- [ ] **Step 1: Write the failing test**
 
 ```js
-  return res.json({ status: 'success', user: authenticatedUser, sessionToken: issueSessionToken(authenticatedUser) });
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('fs');
+const path = require('path');
+process.env.SESSION_JWT_SECRET = 'test-secret';
+const app = require('../server');
+
+async function withServer(fn) {
+  const server = app.listen(0);
+  await new Promise(r => server.once('listening', r));
+  try { await fn(`http://127.0.0.1:${server.address().port}`); } finally { server.close(); }
+}
+const post = (base, p, body) => fetch(base + p, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+
+test('password login endpoint no longer exists', () => withServer(async (base) => {
+  const res = await post(base, '/api/v1/users/login', { username: 'andalaus', password: 'Citadel@296', authType: 'client_credential' });
+  assert.equal(res.status, 404);
+}));
+
+test('former demo OTP codes are rejected', () => withServer(async (base) => {
+  for (const code of ['742918', '296296']) {
+    const res = await post(base, '/api/v1/auth/verify-code', { email: 'someone@x.com', code });
+    assert.equal(res.status, 401);
+  }
+}));
+
+test('valid OTP returns a session token', () => withServer(async (base) => {
+  const prev = process.env.ENABLE_DEMO_OTP;
+  process.env.ENABLE_DEMO_OTP = 'true';
+  try {
+    const sent = await (await post(base, '/api/v1/auth/send-code', { email: 'otp-user@x.com' })).json();
+    const res = await post(base, '/api/v1/auth/verify-code', { email: 'otp-user@x.com', code: sent.demoCode });
+    const body = await res.json();
+    assert.equal(res.status, 200);
+    assert.ok(body.sessionToken);
+  } finally {
+    if (prev === undefined) delete process.env.ENABLE_DEMO_OTP; else process.env.ENABLE_DEMO_OTP = prev;
+  }
+}));
+
+test('no hardcoded master passwords remain in source', () => {
+  const roots = [path.join(__dirname, '..', 'controllers'), path.join(__dirname, '..', '..', 'frontend', 'src')];
+  const offenders = [];
+  const walk = (dir) => {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, e.name);
+      if (e.isDirectory()) walk(full);
+      else if (/\.(js|jsx)$/.test(e.name) && /Citadel@296|Saddiesink@296|742918|296296|ENV-ADM-/.test(fs.readFileSync(full, 'utf8'))) offenders.push(full);
+    }
+  };
+  roots.forEach(walk);
+  assert.deepEqual(offenders, []);
+});
 ```
 
-- [ ] **Step 3: OTP** — in `verifyOtp` replace the final `return res.json({ status: 'success', user });` with:
+(This test also covers the frontend files cleaned in Task 8b; it passes only after both tasks.)
+
+- [ ] **Step 2: Run to verify failure** — `npm --prefix backend test` → the 404 and demo-code tests FAIL.
+
+- [ ] **Step 3: Remove `loginUser`**
+
+In `backend/controllers/userController.js` delete the whole `loginUser` function (including the Google/Apple branch, the `@enveraitech.com` domain check, the `masterPasskeys` array and the passkey comparison), the now-unused `loginRateLimitMap`, and `loginUser` from `module.exports`. Keep `getUsers`, `saveUsers`, `recordTelemetryLogin`, `findOrCreateUser`, OTP functions, `getAllUsers` (still strips any `passkey` field), `getLoginTelemetry`, `incrementUserUsage`.
+
+In `backend/server.js` remove `loginUser` from the userController import and delete `app.post('/api/v1/users/login', loginUser);`.
+
+- [ ] **Step 4: OTP without master codes, with sessions**
+
+At the top of `userController.js` add `const { issueSessionToken } = require('../platform/session');`.
+
+In `verifyOtp` replace
+
+```js
+  const isValid = (cached && cached.code === cleanCode) || (isDevOrDemo && (cleanCode === '742918' || cleanCode === '296296'));
+```
+
+with
+
+```js
+  const isValid = Boolean(cached && cached.expiresAt > Date.now() && cached.code === cleanCode);
+```
+
+and delete the now-unused `isDevOrDemo` line in `verifyOtp` (keep the one in `sendOtp`, which only returns the generated code in non-production dev). Replace the final `return res.json({ status: 'success', user });` with:
 
 ```js
   return res.json({ status: 'success', user, sessionToken: issueSessionToken(user) });
 ```
 
-- [ ] **Step 4: Verify loads, commit**
+Also replace the code generator `Math.floor(100000 + Math.random() * 900000).toString()` in `sendOtp` with `require('crypto').randomInt(100000, 1000000).toString()`.
 
-Run: `node -e "require('./backend/controllers/userController')" && npm --prefix backend test` → no error, tests PASS.
+- [ ] **Step 5: Run tests** — all except the "no hardcoded master passwords" test PASS (that one waits for Task 8b).
+
+- [ ] **Step 6: Commit**
 
 ```bash
-git add backend/controllers/userController.js
-git commit -m "feat(auth): password and OTP logins return a session token"
+git add backend/controllers/userController.js backend/server.js backend/tests/auth.credentials.test.js
+git commit -m "fix(auth): remove password login, master passkeys and demo OTP codes; OTP issues sessions"
 ```
 
 ---
@@ -788,7 +872,6 @@ git commit -m "feat(auth): password and OTP logins return a session token"
 const test = require('node:test');
 const assert = require('node:assert/strict');
 process.env.SESSION_JWT_SECRET = 'test-secret';
-process.env.ADMIN_EMAILS = 'boss@enveraitech.com';
 const app = require('../server');
 const { issueSessionToken } = require('../platform/session');
 
@@ -931,56 +1014,83 @@ export async function apiFetch(path, options = {}) {
 }
 ```
 
-- [ ] **Step 2: VerificationGate — Firebase sessions**
+- [ ] **Step 2: VerificationGate — Firebase sessions only**
 
 Import: `import { API_BASE, setSessionToken } from '../../utils/apiClient';` and delete the local `const API_BASE = ...` line.
 
-In `handleAuthenticateUser({ email, name, authType, uid })` change the signature to `({ email, name, authType, uid, idToken })` and replace the inner `try { const res = await fetch(`${API_BASE}/api/v1/users/login` ... } catch (backendErr) {...}` block with:
+Replace the whole `handleAuthenticateUser` function with:
 
 ```js
-      try {
-        const res = idToken
-          ? await fetch(`${API_BASE}/api/v1/auth/session`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ idToken })
-            })
-          : await fetch(`${API_BASE}/api/v1/users/login`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ email: cleanEmail, name: cleanName, authType: authType || 'google', uid: uid || null })
-            });
-        const data = await res.json();
-        if (res.ok && data.status === 'success' && data.user) {
-          authorizedUser = data.user;
-          setSessionToken(data.sessionToken || null);
-        } else if (data.error) {
-          setError(data.error);
-          setAuthLoading(false);
-          return;
-        }
-      } catch (backendErr) {
-        console.warn('[Auth] Backend unavailable, establishing local authorized session:', backendErr);
+  // Exchanges a Firebase ID token for a server session. The server verifies the
+  // token and the email; nothing here trusts a client-supplied identity.
+  const handleAuthenticateUser = async ({ idToken }) => {
+    setAuthLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/auth/session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.status === 'success' && data.user && data.sessionToken) {
+        setSessionToken(data.sessionToken);
+        localStorage.setItem('enverai_user_session', JSON.stringify(data.user));
+        localStorage.setItem('enver_user_email', data.user.email);
+        setActiveModal(null);
+        onVerified(data.user);
+      } else {
         setSessionToken(null);
+        setError(data.error || 'Sign-in could not be verified. Please retry.');
+      }
+    } catch {
+      setSessionToken(null);
+      setError('The sign-in service could not be reached. Please retry.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+```
+
+In `handleGoogleSignIn`, `handleAppleSignIn` and the `getRedirectResult` effect, call `await handleAuthenticateUser({ idToken: await result.user.getIdToken() });`. In both sign-in handlers, replace the "popup blocked → open manual email modal" fallback (`setActiveModal('google' | 'apple')` and its preceding `setUserEmail('')`/`setUserName('')`) with:
+
+```js
+    setAuthLoading(false);
+    setError('Sign-in popup was blocked or closed. Allow popups for this site and try again.');
+```
+
+Delete the manual email modal for `'google'`/`'apple'` (the JSX rendered when `activeModal === 'google' || activeModal === 'apple'`) and its submit handler, which posted an unverified email to `/users/login`. If `handleCreateAccountClick` / the `'create'` modal also posts to `/users/login`, change the Create Account button to call `handleGoogleSignIn` and delete that modal.
+
+Delete the Azure `/.auth/me` effect ("1. Detect Azure App Service EasyAuth") — it created a session from an unverifiable client-side principal.
+
+- [ ] **Step 3: VerificationGate — remove passwords, keep OTP**
+
+Delete the client-credential (username + passkey) login: its handler (the one posting `authType: 'client_credential'`, including both `fallbackAdmin` blocks and the `validPasskeys` arrays), its state (`clientUsername`, `clientPassword`, `failedAttempts`, `lockoutTimer` and the lockout effect, if used only there), and its JSX (the "Client Login" form / passkey accordion, `auth-passkey-*` classes). If `authMode` only toggled between `'client'` and `'otp'`, render the OTP flow directly and remove the toggle.
+
+In `handleSendCode`, delete the client-side `generatedCode` fallback; only call `setServerDemoCode(data.demoCode)` when the server returned one, and on network failure `setError('Could not send a verification code. Please retry.')` and return.
+
+In `handleVerifyCode`, replace the body of the outer `try` with:
+
+```js
+      const res = await fetch(`${API_BASE}/api/v1/auth/verify-code`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: cleanEmail, code: cleanCode })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.user && data.sessionToken) {
+        setSessionToken(data.sessionToken);
+        localStorage.setItem('enverai_user_session', JSON.stringify(data.user));
+        localStorage.setItem('enver_user_email', cleanEmail);
+        onVerified(data.user);
+      } else {
+        setError(data.error || 'Invalid or expired verification code.');
       }
 ```
 
-In `handleGoogleSignIn`, `handleAppleSignIn`, and the `getRedirectResult` effect, add `idToken: await result.user.getIdToken()` to the object passed to `handleAuthenticateUser`.
+(this removes the `isClientValid` check that accepted any 6-digit code and the hardcoded `742918` / `296296`).
 
-- [ ] **Step 3: VerificationGate — password and OTP**
-
-In the client-credential handler, after `if (res.ok && data.status === 'success' && data.user) {` add `setSessionToken(data.sessionToken || null);`. In both `fallbackAdmin` branches add `setSessionToken(null);` before `localStorage.setItem(...)`.
-
-In `handleVerifyCode`, change `if (res.ok && data.user) { userObj = data.user; }` to:
-
-```js
-        if (res.ok && data.user) {
-          userObj = data.user;
-          setSessionToken(data.sessionToken || null);
-        }
-```
-
-and in the client-side fallback branch (`if (!userObj && isClientValid) {`) add `setSessionToken(null);` as its first line. In the Azure `/.auth/me` effect add `setSessionToken(null);` before `localStorage.setItem`.
+Remove any now-unused imports/state flagged by the build.
 
 - [ ] **Step 4: App.jsx — session restore, logout, 401**
 
@@ -1011,15 +1121,52 @@ In `triggerEvaluation` delete the four `formData.append('userId' | 'userEmail' |
 - [ ] **Step 6: Build and manual check**
 
 Run: `npm --prefix frontend run build` → succeeds.
-Manual: `npm run dev:backend` + `npm run dev`; log in with password → `localStorage.enverai_session_token` set; `/api/v1/history` request carries `Authorization`; delete the token in devtools and trigger history → app returns to the login gate.
+Manual: `npm run dev:backend` + `npm run dev`; sign in with Google → `localStorage.enverai_session_token` set; `/api/v1/history` request carries `Authorization`; delete the token in devtools and trigger history → app returns to the login gate.
 
 - [ ] **Step 7: Commit**
 
 ```bash
 git add frontend/src/utils/apiClient.js frontend/src/components/auth/VerificationGate.jsx frontend/src/App.jsx frontend/src/components/OrcTerminal/OrcTerminal.jsx frontend/src/components/MasterDashboard/MasterDashboard.jsx
-git commit -m "feat(frontend): store server session token and send it on protected API calls"
+git commit -m "feat(frontend): server-verified sign-in only; send session token on protected calls"
 ```
 
 ---
 
-**Deploy note (owner):** before deploying this branch, set `SESSION_JWT_SECRET` (long random string), `AZURE_STORAGE_CONNECTION_STRING`, `ADMIN_EMAILS`, and `FIREBASE_PROJECT_ID` in the Container App. Without the first two the server refuses to start in production.
+### Task 8b: Remove remaining client-side bypasses; admin-only UI
+
+**Files:**
+- Modify: `frontend/src/App.jsx` (signup-redirect block ~163-189, `currentView === 'master'` ~842, `onOpenMasterDashboard` ~937), and the component that renders the Master Dashboard button (Grep `onOpenMasterDashboard`)
+- Create: `frontend/src/utils/admin.js`
+
+- [ ] **Step 1: Remove the `?admitted=true` URL login** — in `App.jsx` delete block "1. Check if user just arrived from enveraitech.com/signup" (the `params.get('admitted')` / `params.get('signup')` branch that builds `admittedUser`). It logged anyone in from URL parameters.
+
+- [ ] **Step 2: Admin helper** — `frontend/src/utils/admin.js`:
+
+```js
+// UI gate only; the server enforces admin access on every admin endpoint.
+export function isAdminUser(user) {
+  const email = String(user?.email || '').trim().toLowerCase();
+  const at = email.lastIndexOf('@');
+  return at > 0 && email.slice(at + 1) === 'enveraitech.com';
+}
+```
+
+- [ ] **Step 3: Gate the Master Dashboard** — in `App.jsx` import `isAdminUser`; change `if (currentView === 'master') {` to `if (currentView === 'master' && isAdminUser(currentUser)) {`; pass `onOpenMasterDashboard={isAdminUser(currentUser) ? () => setCurrentView('master') : undefined}`. In the receiving component, render the Master Dashboard button/link only when `onOpenMasterDashboard` is defined.
+
+- [ ] **Step 4: Verify**
+
+Run: `npm --prefix backend test` → all PASS, including "no hardcoded master passwords remain in source".
+Run: `npm --prefix frontend run build` → succeeds.
+Grep `frontend/src` and `backend` (excluding node_modules and tests) for `Citadel@296|Saddiesink|742918|296296|ENV-ADM|fallbackAdmin|admitted` → no matches.
+Manual: a non-`@enveraitech.com` Google account sees no Master Dashboard entry and gets 403 from `/api/v1/users`; an `@enveraitech.com` account sees and loads it.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add frontend/src/App.jsx frontend/src/utils/admin.js <component that renders the Master Dashboard button>
+git commit -m "fix(auth): remove URL-param login; Master Dashboard for @enveraitech.com only"
+```
+
+---
+
+**Deploy note (owner):** before deploying this branch, set `SESSION_JWT_SECRET` (long random string), `AZURE_STORAGE_CONNECTION_STRING`, and `FIREBASE_PROJECT_ID` in the Container App. Without the first two the server refuses to start in production.
