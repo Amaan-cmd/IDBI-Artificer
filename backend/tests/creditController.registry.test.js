@@ -304,7 +304,7 @@ test('GSTIN-only request with a wrong check digit is rejected before ingestion',
 
 test('statement account holder that differs from the GST name skips registry adjustments (live path)', async () => {
   history.length = 0;
-  ingestion.ingestAlternateData = async () => ({ businessName: 'Other Entity Pvt Ltd', gstin: REPORT.gstin, registryReport: REPORT });
+  ingestion.ingestAlternateData = async () => ({ businessName: 'Other Entity Pvt Ltd', businessNameSource: 'statement', gstin: REPORT.gstin, registryReport: REPORT });
   const res = fakeRes();
   await quiet(() => evaluateMSMECredit(fakeReq({ manualData: 'statement text' }), res));
 
@@ -320,7 +320,7 @@ test('statement account holder mismatch is also checked on the fallback path', a
   let n = 0;
   ingestion.ingestAlternateData = async () => {
     if (++n === 1) throw new Error('LLM outage');
-    return { businessName: 'Other Entity Pvt Ltd', gstin: REPORT.gstin, monthlyCredits: [1, 2, 3], registryReport: REPORT };
+    return { businessName: 'Other Entity Pvt Ltd', businessNameSource: 'statement', gstin: REPORT.gstin, monthlyCredits: [1, 2, 3], registryReport: REPORT };
   };
   const res = fakeRes();
   await quiet(() => evaluateMSMECredit(fakeReq({ manualData: 'statement text', enableScraper: 'true' }), res));
@@ -328,5 +328,29 @@ test('statement account holder mismatch is also checked on the fallback path', a
   const final = res.events.find(e => e.step === 4);
   assert.ok(final, 'step 4 emitted');
   assert.deepEqual(final.payload.decision.registryAdjustments, []);
+  assert.ok(final.payload.decision.redFlags.some(f => /does not match GST registered name/.test(f)));
+});
+
+for (const source of ['filename', 'llm', null, undefined]) {
+  test(`account holder name from source ${source}: no entity-mismatch red flag, match reported as not verified`, async () => {
+    history.length = 0;
+    ingestion.ingestAlternateData = async () => ({ businessName: 'Sample Bank Statement March', businessNameSource: source, gstin: REPORT.gstin, registryReport: REPORT });
+    const res = fakeRes();
+    await quiet(() => evaluateMSMECredit(fakeReq({ manualData: 'statement text' }), res));
+
+    const final = res.events.find(e => e.step === 4);
+    assert.ok(final, 'step 4 emitted');
+    assert.ok(!(final.payload.decision.redFlags || []).some(f => /does not match/.test(f)));
+    assert.ok(final.payload.decision.caveats.includes('Entity match not verified'));
+    assert.ok(final.payload.decision.registryAdjustments.length > 0, 'registry adjustments still applied');
+  });
+}
+
+test('manually supplied account holder name is used for the entity match', async () => {
+  history.length = 0;
+  ingestion.ingestAlternateData = async () => ({ businessName: 'Other Entity Pvt Ltd', businessNameSource: 'manual', gstin: REPORT.gstin, registryReport: REPORT });
+  const res = fakeRes();
+  await quiet(() => evaluateMSMECredit(fakeReq({ manualData: 'statement text' }), res));
+  const final = res.events.find(e => e.step === 4);
   assert.ok(final.payload.decision.redFlags.some(f => /does not match GST registered name/.test(f)));
 });

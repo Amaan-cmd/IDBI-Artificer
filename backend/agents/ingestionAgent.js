@@ -20,6 +20,12 @@ const isNumArray = (v) => Array.isArray(v) && v.length > 0 && v.every(isNum);
 const sum = (arr) => arr.reduce((a, b) => a + b, 0);
 const toNumber = (s) => Number(String(s).replace(/,/g, ''));
 
+// Where businessName came from: 'statement' (printed in the statement text),
+// 'manual' (supplied in a structured payload), 'filename' (derived from the
+// upload's file name), 'llm' (model output not found in the text), or null.
+// Only 'statement' and 'manual' names are reliable enough for an entity match.
+const NAME_SOURCES = new Set(['statement', 'manual', 'filename', 'llm']);
+
 /**
  * Builds the pipeline's financial record from whatever was actually found.
  * Fields the pipeline needs but the input does not support get a neutral
@@ -32,6 +38,7 @@ function finalizeFinancials(found) {
   const credits = found.monthlyCredits;
   const out = {
     businessName: found.businessName || NAME_NOT_FOUND,
+    businessNameSource: found.businessName && NAME_SOURCES.has(found.businessNameSource) ? found.businessNameSource : null,
     gstin: found.gstin || null,
     monthsAnalyzed: credits.length,
     monthlyCredits: credits
@@ -210,6 +217,7 @@ function extractHeuristicFinancials(rawText, originalFileName = '') {
   const figures = transactionTableFigures(text) || monthlyTableFigures(text);
 
   let businessName = null;
+  let businessNameSource = null;
   const namePatterns = [
     /(?:M\/s\.?|Company Name|Account Name|Account Holder(?: Name)?|Customer Name|Entity Name|Name of the Borrower)[:\s]+([A-Za-z0-9\s&.,'-]+?)(?=\n|\r|,|GSTIN|CIN|PAN|$)/i,
     /([A-Z][A-Za-z0-9 &.,'-]{2,50}?(?:Private Limited|Pvt\.?\s*Ltd\.?|Limited|LLP))/
@@ -218,12 +226,16 @@ function extractHeuristicFinancials(rawText, originalFileName = '') {
     const match = text.match(pattern);
     if (match && match[1] && match[1].trim().length > 3) {
       businessName = match[1].trim().replace(/\s+/g, ' ');
+      businessNameSource = 'statement';
       break;
     }
   }
   if (!businessName && originalFileName) {
     const cleanName = originalFileName.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ').trim();
-    if (cleanName.length > 3 && !/statement/i.test(cleanName)) businessName = cleanName;
+    if (cleanName.length > 3 && !/statement/i.test(cleanName)) {
+      businessName = cleanName;
+      businessNameSource = 'filename';
+    }
   }
 
   const gstinMatch = text.match(GSTIN_PATTERN);
@@ -241,6 +253,7 @@ function extractHeuristicFinancials(rawText, originalFileName = '') {
 
   return finalizeFinancials({
     businessName,
+    businessNameSource,
     gstin: gstinMatch ? gstinMatch[0].toUpperCase() : null,
     cin: cinMatch ? cinMatch[0].toUpperCase() : undefined,
     ...figures,
@@ -255,6 +268,7 @@ function financialsFromManualPayload(manual, gstin) {
   return finalizeFinancials({
     ...manual,
     businessName: manual.businessName,
+    businessNameSource: 'manual',
     gstin: (manual.gstin || gstin || '').toUpperCase() || null,
     totalTaxPaid: pick('totalTaxPaid', 'gstr3bTaxPaid'),
     gstr3bTaxPaid: pick('gstr3bTaxPaid', 'totalTaxPaid')
@@ -296,10 +310,14 @@ const validGstin = (g) => {
   return isAcceptedGstin(clean) ? clean : null;
 };
 
+// Case-, spacing- and punctuation-insensitive form used to check that a name
+// the model returned is actually printed in the statement text.
+const looseText = (v) => String(v || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+
 // LLM extraction goes through the same normalisation as the heuristic, so a
 // field the model left out or set to null becomes a dataGap, not a fact.
 // Without a numeric monthly credit series the extraction is not usable.
-function financialsFromLlm(parsed, fallbackGstin) {
+function financialsFromLlm(parsed, fallbackGstin, sourceText = '') {
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
   const found = {};
   for (const [k, v] of Object.entries(parsed)) {
@@ -308,6 +326,13 @@ function financialsFromLlm(parsed, fallbackGstin) {
   }
   if (!isNumArray(found.monthlyCredits)) return null;
   if (typeof found.businessName !== 'string' || !found.businessName.trim()) delete found.businessName;
+  delete found.businessNameSource;
+  if (found.businessName) {
+    // The prompt also shows the file name, so a model-supplied name counts as
+    // read from the statement only if the statement text contains it.
+    const name = looseText(found.businessName);
+    found.businessNameSource = name.length > 3 && ` ${looseText(sourceText)} `.includes(` ${name} `) ? 'statement' : 'llm';
+  }
   found.gstin = validGstin(found.gstin) || fallbackGstin || null;
   return finalizeFinancials(found);
 }
@@ -387,7 +412,7 @@ async function ingestAlternateData(inputData) {
     if (isDemoMode() && demoFinancials(targetGstin)) {
       const sample = demoFinancials(targetGstin);
       const report = demoRegistryReport(targetGstin);
-      return { ...sample, totalCreditVolume: sample.totalRevenue, monthsAnalyzed: sample.monthlyCredits.length, transactions: [], registryReport: report, scrapedRegistryData: report };
+      return { ...sample, businessNameSource: sample.businessName ? 'manual' : null, totalCreditVolume: sample.totalRevenue, monthsAnalyzed: sample.monthlyCredits.length, transactions: [], registryReport: report, scrapedRegistryData: report };
     }
     console.log(`[Fetcha] Registry screening for ${targetGstin} (no statement uploaded)`);
     return { reportType: 'REGISTRY_SCREENING', gstin: targetGstin, registryReport: await getRegistryReport(targetGstin) };
@@ -445,7 +470,7 @@ Output strictly in valid JSON format matching this schema. Every value is null w
   // 2. Primary Cognitive Engine: Grok 4.6 with Autonomous Tools
   try {
     const grokResponse = await callGrok(systemPrompt, userPrompt);
-    const financials = financialsFromLlm(parseLlmJson(grokResponse), resolvedGstin);
+    const financials = financialsFromLlm(parseLlmJson(grokResponse), resolvedGstin, rawContentToParse);
     if (financials) {
       console.log('[Agent 1: Fetcha] Successfully synthesized financial payload via Grok 4.6 Engine.');
       return { ...financials, registryReport, scrapedRegistryData: registryReport };
@@ -467,7 +492,7 @@ Output strictly in valid JSON format matching this schema. Every value is null w
       "Agent 1: Ingestion & Scraper"
     );
     
-    const financials = financialsFromLlm(parseLlmJson(rawText), resolvedGstin);
+    const financials = financialsFromLlm(parseLlmJson(rawText), resolvedGstin, rawContentToParse);
     if (financials) {
       console.log('[Agent 1] Ingestion & Live Scraping successfully completed via Gemini.');
       return { ...financials, registryReport, scrapedRegistryData: registryReport };

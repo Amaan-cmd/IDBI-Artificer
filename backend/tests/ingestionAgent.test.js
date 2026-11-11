@@ -264,3 +264,50 @@ test('heuristic rejects a transaction table that fails validation instead of fal
   await assert.rejects(quiet(async () => extractHeuristicFinancials(wrongTotal, 'x.csv')),
     /Could not extract financials from the uploaded statement/);
 });
+
+test('businessNameSource: name printed in the statement is "statement"', async () => {
+  const r = await quiet(() => extractHeuristicFinancials(SAMPLE_BANK_CSV, 'Acme_Traders.csv'));
+  assert.equal(r.businessName, 'EnverAI Tech Retail Supplies Pvt Ltd');
+  assert.equal(r.businessNameSource, 'statement');
+});
+
+test('businessNameSource: a name taken from the file name is "filename"', async () => {
+  const noName = SAMPLE_BANK_CSV.replace(/^Account Holder:.*\r?\n/m, '');
+  assert.ok(!/Pvt Ltd/.test(noName));
+  const r = await quiet(() => extractHeuristicFinancials(noName, 'Acme_Traders_Mar.csv'));
+  assert.equal(r.businessName, 'Acme Traders Mar');
+  assert.equal(r.businessNameSource, 'filename');
+  const none = await quiet(() => extractHeuristicFinancials(noName, 'Sample_Bank_Statement.csv'));
+  assert.equal(none.businessNameSource, null);
+  assert.ok(none.dataGaps.includes('businessName'));
+});
+
+test('businessNameSource: structured payload name is "manual"', async () => {
+  const r = await quiet(() => ingestAlternateData({ manualData: JSON.stringify({ businessName: 'Acme', monthlyCredits: [1, 2, 3] }) }));
+  assert.equal(r.businessNameSource, 'manual');
+});
+
+test('businessNameSource: LLM name is "statement" only when the statement text contains it', async () => {
+  const reply = (businessName) => JSON.stringify({ businessName, monthlyCredits: [510000, 540000, 525000] });
+  try {
+    grok.reply = reply('REAL WIDGETS PRIVATE LIMITED');
+    const inText = await quiet(() => ingestAlternateData({ manualData: STATEMENT, enableScraper: false }));
+    assert.equal(inText.businessNameSource, 'statement');
+    grok.reply = reply('Widgets From Filename Ltd');
+    const notInText = await quiet(() => ingestAlternateData({ manualData: STATEMENT, enableScraper: false }));
+    assert.equal(notInText.businessName, 'Widgets From Filename Ltd');
+    assert.equal(notInText.businessNameSource, 'llm');
+  } finally {
+    grok.reply = null;
+  }
+});
+
+test('every field ingestion can list in dataGaps has a human label for caveats', async () => {
+  const { FIELD_LABELS, gapCaveat } = require('../utils/fieldLabels');
+  const r = await quiet(() => ingestAlternateData({ manualData: JSON.stringify({ monthlyCredits: [1, 2, 3] }) }));
+  assert.ok(r.dataGaps.length >= 19);
+  for (const f of r.dataGaps) {
+    assert.ok(FIELD_LABELS[f], `label for ${f}`);
+    assert.ok(!gapCaveat(f).includes(f), `caveat for ${f} is not the raw key`);
+  }
+});

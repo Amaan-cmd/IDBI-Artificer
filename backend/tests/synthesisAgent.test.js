@@ -63,8 +63,9 @@ test('dataGaps from ingestion become caveats and suppress dependent metrics', as
   const input = { ...FULL, dataGaps: gaps };
   const matrix = computeFinancialTelemetry(input);
   const d = await synthesizeScore(input, matrix, null, DET);
-  assert.ok(d.caveats.includes('Not found in statement: monthlyEmiObligations'));
-  assert.ok(d.caveats.includes('Not found in statement: gstr1OutwardTaxable'));
+  assert.ok(d.caveats.includes('Not found in statement: Monthly EMI obligations'));
+  assert.ok(d.caveats.includes('Not found in statement: GSTR-1 outward taxable supplies'));
+  assert.ok(!d.caveats.some(c => /monthlyEmiObligations|gstr1OutwardTaxable/.test(c)), 'caveats carry labels, not raw keys');
   // A gapped EMI (placeholder 0) must never surface as a DSCP figure.
   assert.ok(!d.citations.join(' ').includes('99.9'));
   assert.match(d.citations.find(c => c.startsWith('[Pillar 4')), /not available/);

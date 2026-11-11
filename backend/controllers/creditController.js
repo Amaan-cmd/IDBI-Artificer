@@ -24,6 +24,15 @@ function metricSummary(metrics) {
   };
 }
 
+// The account-holder name used for the registry entity match. Only a name
+// printed in the statement or supplied in a structured payload is compared; a
+// name derived from the file name or not found in the statement text is
+// treated as unknown ("Entity match not verified").
+const RELIABLE_NAME_SOURCES = new Set(['statement', 'manual']);
+function verifiedStatementName(structured) {
+  return structured && RELIABLE_NAME_SOURCES.has(structured.businessNameSource) ? structured.businessName : null;
+}
+
 async function evaluateMSMECredit(req, res) {
   // Declared here so the outer catch can always stop the SSE heartbeat.
   let cleanup = () => {};
@@ -137,7 +146,7 @@ async function evaluateMSMECredit(req, res) {
       const finalDecision = applyRegistryAdjustments(
         await synthesizeScore(structuredData, calculationMatrix, null),
         structuredData.registryReport,
-        { statementName: structuredData.businessName }
+        { statementName: verifiedStatementName(structuredData) }
       );
 
       // Clean up uploaded file if it exists
@@ -238,7 +247,7 @@ async function evaluateMSMECredit(req, res) {
       const finalDecision = applyRegistryAdjustments(
         await synthesizeScore(fallbackStructured, deterministic, null, { deterministicOnly: true }),
         fallbackStructured.registryReport,
-        { statementName: fallbackStructured.businessName }
+        { statementName: verifiedStatementName(fallbackStructured) }
       );
 
       if (file && fs.existsSync(file.path)) {
@@ -293,4 +302,4 @@ async function evaluateMSMECredit(req, res) {
   }
 }
 
-module.exports = { evaluateMSMECredit };
+module.exports = { evaluateMSMECredit, verifiedStatementName };

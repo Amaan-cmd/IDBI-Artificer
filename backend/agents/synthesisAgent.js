@@ -1,6 +1,7 @@
 const { callGemini } = require('../utils/googleGemini');
 const { proModel } = require('../utils/geminiModels');
 const { applyGuardrails } = require('../utils/nemoGuardrails');
+const { gapCaveat } = require('../utils/fieldLabels');
 
 /**
  * Agent 3: XAI & Chief Credit Officer (Gemini 2.5 Pro)
@@ -84,7 +85,7 @@ Output strictly in JSON schema:
         if (typeof finalDecision.score === 'number') {
           finalDecision.score = Math.max(320, Math.min(885, finalDecision.score));
         }
-        const gapCaveats = (Array.isArray(agent1Data?.dataGaps) ? agent1Data.dataGaps : []).map(f => `Not found in statement: ${f}`);
+        const gapCaveats = (Array.isArray(agent1Data?.dataGaps) ? agent1Data.dataGaps : []).map(gapCaveat);
         const llmCaveats = Array.isArray(finalDecision.caveats) ? finalDecision.caveats : [];
         finalDecision.caveats = [...new Set([...llmCaveats, ...gapCaveats])];
         console.log('[Agent 3] Final 5-Pillar Underwriting Synthesis & XAI Audit Trail generated.');
@@ -113,7 +114,7 @@ function deterministicDecision(agent1Data, agent2Matrix, externalOverrides) {
   const p5 = agent2Matrix.pillar5_operational || {};
 
   const gaps = Array.isArray(agent1Data.dataGaps) ? agent1Data.dataGaps : [];
-  const caveats = gaps.map(f => `Not found in statement: ${f}`);
+  const caveats = gaps.map(gapCaveat);
   const anyGap = (...fields) => fields.some(f => gaps.includes(f));
   const metric = (v, ...inputs) => (isNum(v) && !anyGap(...inputs) ? v : null);
   const notScored = (label) => caveats.push(`Not scored: ${label} (not available)`);
