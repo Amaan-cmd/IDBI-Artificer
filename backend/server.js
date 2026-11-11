@@ -22,7 +22,24 @@ app.use(helmet({
   contentSecurityPolicy: false,
   crossOriginEmbedderPolicy: false
 }));
-app.use(cors());
+
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:4000',
+  'https://artificer.enveraitech.in',
+  'https://enveraitech.com',
+  ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim()) : [])
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+      return callback(null, true);
+    }
+    return callback(new Error('Blocked by Citadel CORS Security Policy'));
+  },
+  credentials: true
+}));
 app.use(express.json());
 
 // API Throttling / DDoS mitigation
@@ -125,12 +142,16 @@ if (fs.existsSync(distPath)) {
   });
 }
 
-// --- Server Startup ---
+// --- Server Startup (Azure App Service / Container Apps / Local) ---
 if (require.main === module) {
+  const { getTableStore } = require('./platform/tableStore');
+  getTableStore().ensureTables().catch((err) => {
+    console.error('[Table Store] Failed to ensure tables:', err.message);
+    process.exit(1);
+  });
   app.listen(PORT, () => {
-    console.log(`[Backend] EnverAI Artificer Backend running on http://localhost:${PORT}`);
+    console.log(`[Citadel Azure Kernel] Artificer Underwriting Engine online on port ${PORT}`);
   });
 }
 
-const functions = require('firebase-functions');
-exports.api = functions.https.onRequest(app);
+module.exports = app;

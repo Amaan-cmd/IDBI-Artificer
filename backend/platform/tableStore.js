@@ -77,4 +77,91 @@ function createFileTableStore(dir) {
   };
 }
 
-module.exports = { createFileTableStore, ConflictError, TABLES };
+function createAzureTableStore(connectionString) {
+  const { TableClient, odata } = require('@azure/data-tables');
+  const clients = new Map();
+  const client = (table) => {
+    if (!clients.has(table)) clients.set(table, TableClient.fromConnectionString(connectionString, table));
+    return clients.get(table);
+  };
+  const strip = (e) => {
+    const { etag, timestamp, 'odata.metadata': _meta, ...rest } = e;
+    return { ...rest, etag };
+  };
+
+  return {
+    async ensureTables(names = TABLES) {
+      for (const name of names) {
+        await client(name).createTable().catch((err) => {
+          if (err.statusCode !== 409) throw err;
+        });
+      }
+    },
+    async getEntity(table, pk, rk) {
+      try {
+        return strip(await client(table).getEntity(pk, rk));
+      } catch (err) {
+        if (err.statusCode === 404) return null;
+        throw err;
+      }
+    },
+    async createEntity(table, entity) {
+      try {
+        const r = await client(table).createEntity(entity);
+        return { etag: r.etag };
+      } catch (err) {
+        if (err.statusCode === 409) throw new ConflictError(`${table}/${entity.partitionKey}/${entity.rowKey} exists`);
+        throw err;
+      }
+    },
+    async updateEntity(table, entity, etag) {
+      const { etag: _ignored, ...body } = entity;
+      try {
+        const r = await client(table).updateEntity(body, 'Replace', { etag });
+        return { etag: r.etag };
+      } catch (err) {
+        if (err.statusCode === 412) throw new ConflictError(`${table}/${entity.partitionKey}/${entity.rowKey} changed`);
+        throw err;
+      }
+    },
+    async upsertEntity(table, entity) {
+      const { etag: _ignored, ...body } = entity;
+      const r = await client(table).upsertEntity(body, 'Replace');
+      return { etag: r.etag };
+    },
+    async listEntities(table, pk, { limit = 50 } = {}) {
+      const out = [];
+      const iter = client(table).listEntities({ queryOptions: { filter: odata`PartitionKey eq ${pk}` } });
+      for await (const e of iter) {
+        out.push(strip(e));
+        if (out.length >= limit) break;
+      }
+      return out;
+    }
+  };
+}
+
+let instance = null;
+
+function getTableStore() {
+  if (instance) return instance;
+  const conn = (process.env.AZURE_STORAGE_CONNECTION_STRING || '').trim();
+  if (conn) {
+    instance = createAzureTableStore(conn);
+  } else {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('AZURE_STORAGE_CONNECTION_STRING is required in production');
+    }
+    console.warn('[Table Store] AZURE_STORAGE_CONNECTION_STRING not set; using local file store (development only).');
+    instance = createFileTableStore(path.join(__dirname, '..', 'data', 'local-store'));
+  }
+  return instance;
+}
+
+function setTableStoreForTests(store) {
+  instance = store;
+}
+
+module.exports = {
+  createFileTableStore, createAzureTableStore, getTableStore, setTableStoreForTests, ConflictError, TABLES
+};

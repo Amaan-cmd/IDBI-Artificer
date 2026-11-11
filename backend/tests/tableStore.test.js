@@ -48,3 +48,26 @@ test('upsert overwrites and listEntities filters by partition in rowKey order', 
   const rows = await s.listEntities('ledger', 'p1', { limit: 10 });
   assert.deepEqual(rows.map(r => [r.rowKey, r.v]), [['a', 2], ['b', 9]]);
 });
+
+const { getTableStore, setTableStoreForTests } = require('../platform/tableStore');
+
+test('getTableStore refuses to start in production without a connection string', () => {
+  const saved = { conn: process.env.AZURE_STORAGE_CONNECTION_STRING, env: process.env.NODE_ENV };
+  delete process.env.AZURE_STORAGE_CONNECTION_STRING;
+  process.env.NODE_ENV = 'production';
+  setTableStoreForTests(null);
+  try {
+    assert.throws(() => getTableStore(), /AZURE_STORAGE_CONNECTION_STRING/);
+  } finally {
+    if (saved.conn !== undefined) process.env.AZURE_STORAGE_CONNECTION_STRING = saved.conn;
+    if (saved.env === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = saved.env;
+    setTableStoreForTests(null);
+  }
+});
+
+test('setTableStoreForTests overrides the singleton', () => {
+  const fake = { marker: true };
+  setTableStoreForTests(fake);
+  assert.equal(getTableStore(), fake);
+  setTableStoreForTests(null);
+});
