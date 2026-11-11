@@ -229,3 +229,38 @@ test('Route C: an invalid GSTIN is rejected without a registry call', async () =
   await assert.rejects(quiet(() => ingestAlternateData({ gstin: '29AABCI1681G1ZN' })), /Invalid GSTIN/);
   assert.deepEqual(registryCalls, []);
 });
+
+const SAMPLE_BANK_CSV = require('fs').readFileSync(
+  path.join(__dirname, '..', '..', 'dataset', 'Sample_Bank_Statement.csv'), 'utf8');
+
+test('heuristic reads a bank transaction table (sample statement) with no gaps in bank fields', async () => {
+  const r = await quiet(() => extractHeuristicFinancials(SAMPLE_BANK_CSV, 'Sample_Bank_Statement.csv'));
+  assert.equal(r.businessName, 'EnverAI Tech Retail Supplies Pvt Ltd');
+  assert.equal(r.monthsAnalyzed, 3);
+  assert.deepEqual(r.monthlyCredits, [470000, 390000, 146200]);
+  assert.deepEqual(r.monthlyDebits, [370000, 150500, 175000]);
+  assert.equal(r.totalCreditVolume, 1006200);
+  assert.equal(r.totalDebitVolume, 695500);
+  assert.equal(r.bankOpeningBalance, 450000.5);
+  assert.equal(r.bankClosingBalance, 760700.5);
+  assert.equal(r.inwardBounces, 1);
+  assert.equal(r.monthlyEmiObligations, 0);
+  assert.equal(r.transactions.length, 13);
+  for (const f of ['monthlyCredits', 'monthlyDebits', 'totalDebitVolume', 'bankOpeningBalance', 'bankClosingBalance',
+    'dailyClosingBalances', 'inwardBounces', 'totalDebitAttempts', 'monthlyEmiObligations', 'transactions']) {
+    assert.ok(!r.dataGaps.includes(f), `${f} should not be a gap`);
+  }
+  // A bank statement cannot supply GST returns or an unlabelled OD limit.
+  for (const f of ['gstr1OutwardTaxable', 'gstr3bTaxPaid', 'totalTaxPaid', 'sanctionedOdLimit']) {
+    assert.ok(r.dataGaps.includes(f), `${f} should be a gap`);
+  }
+});
+
+test('heuristic rejects a transaction table that fails validation instead of falling back', async () => {
+  const tampered = SAMPLE_BANK_CSV.replace(',0,320000.00,720000.50', ',0,920000.00,720000.50');
+  await assert.rejects(quiet(async () => extractHeuristicFinancials(tampered, 'x.csv')),
+    /Could not extract financials from the uploaded statement/);
+  const wrongTotal = SAMPLE_BANK_CSV.replace('Total Credits: 1006200.00', 'Total Credits: 2006200.00');
+  await assert.rejects(quiet(async () => extractHeuristicFinancials(wrongTotal, 'x.csv')),
+    /Could not extract financials from the uploaded statement/);
+});

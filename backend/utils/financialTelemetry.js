@@ -253,9 +253,12 @@ function computeFinancialTelemetry(input = {}) {
     if (tx.date && amt >= 50000) {
       const txDate = new Date(tx.date);
       if (!Number.isNaN(txDate.getTime())) {
-        const hour = txDate.getHours();
-        const day = txDate.getDay();
-        if (hour >= 23 || hour <= 5 || day === 0 || day === 6) oddHourHighValueCount++;
+        // A date-only value ("2026-03-01") has no time of day: it parses as UTC
+        // midnight, so only the weekday is meaningful (read in UTC).
+        const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(String(tx.date).trim());
+        const hour = dateOnly ? null : txDate.getHours();
+        const day = dateOnly ? txDate.getUTCDay() : txDate.getDay();
+        if ((hour !== null && (hour >= 23 || hour <= 5)) || day === 0 || day === 6) oddHourHighValueCount++;
       }
     }
   }

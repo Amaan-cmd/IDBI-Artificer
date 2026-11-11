@@ -7,6 +7,7 @@ const { getRegistryReport } = require('../services/registry/registryService');
 const { isDemoMode } = require('../platform/demoMode');
 const { demoFinancials, demoRegistryReport } = require('../demo/demoEntities');
 const { isAcceptedGstin } = require('../utils/gstin');
+const { parseBankStatement } = require('./statementParser');
 
 const GSTIN_PATTERN = /[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}/i;
 const GSTIN_EXACT = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/i;
@@ -154,19 +155,63 @@ function extractMonthlyTable(text) {
   return null;
 }
 
+// Transaction-level figures from a bank-statement transaction table, or null
+// when the text has no such table. A table that is present but fails
+// validation (balance continuity, stated totals) rejects the statement.
+function transactionTableFigures(text) {
+  let parsed;
+  try {
+    parsed = parseBankStatement(text);
+  } catch (err) {
+    if (err && err.code === 'NOT_DETECTED') return null;
+    console.warn(`[Agent 1 Heuristic] Transaction table rejected: ${err.message}`);
+    throw new Error(EXTRACTION_ERROR);
+  }
+  const statedCredits = labelledAmount(text, 'Total Credits?|Total Deposits?');
+  const statedDebits = labelledAmount(text, 'Total Debits?|Total Withdrawals?');
+  if ((isNum(statedCredits) && Math.abs(statedCredits - parsed.totalCreditVolume) > 1) ||
+      (isNum(statedDebits) && Math.abs(statedDebits - parsed.totalDebitVolume) > 1)) {
+    console.warn('[Agent 1 Heuristic] Transaction table rejected: totals do not match the stated summary');
+    throw new Error(EXTRACTION_ERROR);
+  }
+  const keep = [
+    'monthlyCredits', 'monthlyDebits', 'totalCreditVolume', 'totalDebitVolume',
+    'bankOpeningBalance', 'bankClosingBalance', 'dailyClosingBalances',
+    'inwardBounces', 'totalDebitAttempts', 'monthlyEmiObligations', 'transactions',
+    'sanctionedOdLimit', 'peakOdUsage'
+  ];
+  return Object.fromEntries(keep.filter(k => parsed[k] !== undefined).map(k => [k, parsed[k]]));
+}
+
+// Monthly summary table plus labelled balances / totals.
+function monthlyTableFigures(text) {
+  const table = extractMonthlyTable(text);
+  if (!table) throw new Error(EXTRACTION_ERROR);
+  return {
+    monthlyCredits: table.monthlyCredits,
+    monthlyDebits: table.monthlyDebits,
+    dailyClosingBalances: table.monthEndBalances,
+    bankOpeningBalance: labelledAmount(text, 'Opening Balance', 'first', { signed: true }),
+    bankClosingBalance: labelledAmount(text, 'Closing Balance', 'last', { signed: true }),
+    totalCreditVolume: labelledAmount(text, 'Total Credits?|Total Deposits?'),
+    totalDebitVolume: labelledAmount(text, 'Total Debits?|Total Withdrawals?')
+  };
+}
+
 // Deterministic extraction from statement text, used when the LLM engines are
-// unavailable. Only explicitly labelled figures are taken; if the monthly
-// credit series cannot be found the statement is rejected rather than guessed.
+// unavailable. A transaction table is read first (statementParser), then a
+// monthly summary table; only observed or explicitly labelled figures are
+// taken. If neither yields a validated monthly credit series the statement is
+// rejected rather than guessed.
 function extractHeuristicFinancials(rawText, originalFileName = '') {
   console.log('[Agent 1 Heuristic] Parsing document text directly from source...');
   const text = String(rawText || '');
 
-  const table = extractMonthlyTable(text);
-  if (!table) throw new Error(EXTRACTION_ERROR);
+  const figures = transactionTableFigures(text) || monthlyTableFigures(text);
 
   let businessName = null;
   const namePatterns = [
-    /(?:M\/s\.?|Company Name|Account Name|Customer Name|Entity Name|Name of the Borrower)[:\s]+([A-Za-z0-9\s&.,'-]+?)(?=\n|\r|,|GSTIN|CIN|PAN|$)/i,
+    /(?:M\/s\.?|Company Name|Account Name|Account Holder(?: Name)?|Customer Name|Entity Name|Name of the Borrower)[:\s]+([A-Za-z0-9\s&.,'-]+?)(?=\n|\r|,|GSTIN|CIN|PAN|$)/i,
     /([A-Z][A-Za-z0-9 &.,'-]{2,50}?(?:Private Limited|Pvt\.?\s*Ltd\.?|Limited|LLP))/
   ];
   for (const pattern of namePatterns) {
@@ -198,13 +243,7 @@ function extractHeuristicFinancials(rawText, originalFileName = '') {
     businessName,
     gstin: gstinMatch ? gstinMatch[0].toUpperCase() : null,
     cin: cinMatch ? cinMatch[0].toUpperCase() : undefined,
-    monthlyCredits: table.monthlyCredits,
-    monthlyDebits: table.monthlyDebits,
-    dailyClosingBalances: table.monthEndBalances,
-    bankOpeningBalance: labelledAmount(text, 'Opening Balance', 'first', { signed: true }),
-    bankClosingBalance: labelledAmount(text, 'Closing Balance', 'last', { signed: true }),
-    totalCreditVolume: labelledAmount(text, 'Total Credits?|Total Deposits?'),
-    totalDebitVolume: labelledAmount(text, 'Total Debits?|Total Withdrawals?'),
+    ...figures,
     scrapedRegistryData: directors.length ? { directors } : null
   });
 }

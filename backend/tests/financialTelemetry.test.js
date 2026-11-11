@@ -154,3 +154,14 @@ test('complete input computes every metric as before', () => {
   assert.equal(m.hasBounces, false);
   assert.match(m.pillar5_operational.salaryStaffPaymentConsistency, /IRREGULAR/);
 });
+
+test('date-only transaction dates are not read as off-hour (only weekends flag)', () => {
+  const weekday = computeFinancialTelemetry({ ...FULL, transactions: [
+    { date: '2026-03-03', narration: 'NEFT/IN/ACME', type: 'CREDIT', amount: 150000 }
+  ] });
+  assert.match(weekday.pillar5_operational.suspiciousTimingFlags, /^CLEAN/);
+  const sunday = computeFinancialTelemetry({ ...FULL, transactions: [
+    { date: '2026-03-01', narration: 'NEFT/IN/ACME', type: 'CREDIT', amount: 150000 }
+  ] });
+  assert.match(sunday.pillar5_operational.suspiciousTimingFlags, /^FLAGGED \(1/);
+});
