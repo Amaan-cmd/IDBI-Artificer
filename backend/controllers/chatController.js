@@ -1,20 +1,37 @@
 const { callGemini } = require('../utils/googleGemini');
+const { callAzureFoundryClaude } = require('../utils/azureFoundryClaude');
 
 /**
  * Agent 3 Interactive Underwriter Chat Endpoint
- * Enables loan officers to interrogate and challenge credit decisions.
- * Strictly avoids greetings and token waste; delivers direct forensic evidence-backed answers.
+ * Powers the Orc Chief Credit Officer CLI Terminal.
+ * Powered by Anthropic Claude via Azure AI Foundry with Gemini/Deterministic fallback.
  */
+const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
+
+function decisionFrom(payload) {
+  if (!payload || typeof payload !== 'object') return null;
+  if (payload.decision && isNum(payload.decision.score)) return payload.decision;
+  if (isNum(payload.score)) return { score: payload.score, riskLevel: payload.riskTier || payload.riskLevel };
+  return null;
+}
+
 async function handleXAIChat(req, res) {
   try {
-    const { query, evaluationPayload } = req.body;
+    const { query, evaluationPayload, history } = req.body;
 
     if (!query) {
       return res.status(400).json({ error: 'Query directive is required.' });
     }
 
-    if (!evaluationPayload) {
-      return res.status(400).json({ error: 'Evaluation payload is required for forensic grounding.' });
+    // Only a scored evaluation can be explained. Accept the credit payload's
+    // decision, or the terminal's flattened { score, riskTier } shape.
+    const decision = decisionFrom(evaluationPayload);
+    if (!decision) {
+      return res.json({
+        status: 'success',
+        engine: 'Grounded Forensic Underwriting Matrix',
+        response: 'There is no completed evaluation to explain yet. Run a credit evaluation on an uploaded statement first.'
+      });
     }
 
     const systemPrompt = `You are Agent 3 (Chief Credit Officer & Explainable AI Engine) in forensic interrogation mode.
@@ -40,28 +57,56 @@ Underwriter Directive / Query:
 
 Provide your direct forensic response:`;
 
-    const model = process.env.AGENT3_MODEL || process.env.GEMINI_PRO_MODEL || 'gemini-3.1-pro';
-    const rawAnswer = await callGemini(model, systemPrompt, userPrompt);
+    let rawAnswer = null;
+    let engine = 'Azure AI Foundry (Claude)';
+
+    // 1. Primary Engine: Anthropic Claude via Azure AI Foundry
+    try {
+      rawAnswer = await callAzureFoundryClaude(systemPrompt, userPrompt, history || []);
+    } catch (foundryErr) {
+      console.warn('[Chat] Azure Foundry Claude check:', foundryErr.message);
+    }
+
+    // 2. Fallback Engine: Google Gemini (with 5s timeout safety)
+    if (!rawAnswer) {
+      try {
+        const model = process.env.AGENT3_MODEL || process.env.GEMINI_PRO_MODEL || 'gemini-2.5-flash';
+        rawAnswer = await callGemini(model, systemPrompt, userPrompt);
+        engine = `Google Gemini (${model})`;
+      } catch (geminiErr) {
+        console.warn('[Chat] Gemini fallback check:', geminiErr.message);
+      }
+    }
+
+    if (rawAnswer) {
+      return res.json({
+        status: 'success',
+        engine,
+        response: rawAnswer.trim()
+      });
+    }
+
+    // 3. Grounded fallback: restate only what the payload contains.
+    const m = evaluationPayload.metrics || {};
+    const p1 = m.pillar1_liquidity || {};
+    const p2 = m.pillar2_revenue || {};
+    const p3 = m.pillar3_stability || {};
+    const p4 = m.pillar4_leverage || {};
+    const p5 = m.pillar5_operational || {};
+    const NA = 'not available';
+    const val = (v, suffix = '') => (isNum(v) ? `${v}${suffix}` : NA);
+    const runRate = isNum(p2.annualizedRevenueRunRate) ? `₹${(p2.annualizedRevenueRunRate / 100000).toFixed(1)}L` : NA;
+    const caveats = Array.isArray(decision.caveats) && decision.caveats.length ? ` Caveats: ${decision.caveats.join('; ')}.` : '';
 
     return res.json({
       status: 'success',
-      response: rawAnswer.trim()
+      engine: 'Grounded Forensic Underwriting Matrix',
+      response: `[Orc Forensic Decision Audit]: Loan decision scored ${decision.score}/900 (${decision.riskLevel || NA} risk). Pillar 1 Liquidity: status ${p1.status || NA}, Cash Buffer Ratio ${val(p1.cashBufferRatio, 'x')}, minimum cash buffer ${val(p1.minimumCashBufferDays, ' days')}. Pillar 2 Revenue: annualized run rate ${runRate}, GST reconciliation ${val(p2.gstVsBankReconciliation, 'x')}. Pillar 3 Volatility: credit CV ${val(p3.creditCoefficientOfVariation)}, inward bounce rate ${val(p3.inwardBounceRate, '%')}. Pillar 4 DSCP: ${val(p4.debtServiceCoverageProxy, 'x')}. Pillar 5 Flags: counterparty circularity ${p5.circularTransactionRisk || NA}.${caveats}`
     });
 
   } catch (error) {
     console.error('[Agent 3 Chat Error]:', error.message);
-    
-    // Deterministic fallback response if offline or model error
-    const p1 = req.body.evaluationPayload?.metrics?.pillar1_liquidity || {};
-    const p2 = req.body.evaluationPayload?.metrics?.pillar2_revenue || {};
-    const p3 = req.body.evaluationPayload?.metrics?.pillar3_stability || {};
-    const p4 = req.body.evaluationPayload?.metrics?.pillar4_leverage || {};
-    const p5 = req.body.evaluationPayload?.metrics?.pillar5_operational || {};
-
-    return res.json({
-      status: 'success',
-      response: `[Orc Forensic Underwriting Audit]: Evaluation is anchored on 5 distinct pillars. Pillar 1 Liquidity buffer is ${p1.status || 'EXCELLENT'} with a Cash Buffer Ratio of ${p1.cashBufferRatio || '0.71'}x and ${p1.minimumCashBufferDays || 18} days of minimum cash reserve. Annualized revenue stands at ₹${((p2.annualizedRevenueRunRate || 9680000) / 100000).toFixed(1)} Lacs with ${p2.gstVsBankReconciliation || '0.99'}x GST reconciliation. Cash flow stability exhibits a credit CV of ${p3.creditCoefficientOfVariation || '0.06'} with ${p3.inwardBounceRate || 0}% inward bounce rate. Debt Service Coverage Proxy (DSCP) is ${p4.debtServiceCoverageProxy || '1.67'}x with ${p5.circularTransactionRisk || 'clean counterparty flows'}.`
-    });
+    return res.status(500).json({ error: 'Failed to process interrogation query' });
   }
 }
 

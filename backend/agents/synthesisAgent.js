@@ -5,8 +5,12 @@ const { applyGuardrails } = require('../utils/nemoGuardrails');
  * Agent 3: XAI & Chief Credit Officer (Gemini 2.5 Pro)
  * Synthesizes final underwriting decision, heavily weighting Liquidity & Cash Buffer for NTC entities.
  */
-async function synthesizeScore(agent1Data, agent2Matrix, externalOverrides = null) {
-  console.log('[Agent 3: Chief Credit Officer & XAI] Synthesizing 5-Pillar credit decision via Gemini 2.5 Pro...');
+async function synthesizeScore(agent1Data, agent2Matrix, externalOverrides = null, options = {}) {
+  const isTestMode = options.deterministicOnly || process.env.NODE_ENV === 'test';
+
+  if (!isTestMode) {
+    console.log('[Agent 3: Chief Credit Officer & XAI] Synthesizing 5-Pillar credit decision via Gemini 2.5 Pro...');
+  }
 
   const systemPrompt = `You are Agent 3 (Chief Credit Officer & Explainable AI Agent) powered by Gemini 2.5 Pro.
 Your responsibility:
@@ -18,9 +22,17 @@ Your responsibility:
    - PILLAR 4: DEBT SERVICE & LEVERAGE checks debt service proxy (DSCP > 1.5x) and borrowing velocity.
    - PILLAR 5: OPERATIONAL FLAGS flags circular counterparty rotations, odd-hour activity, and high cash withdrawals (> 15%).
 3. Synthesize a definitive Holistic Credit Score (300 to 900) and Risk Tier (LOW | MEDIUM | HIGH).
+SCORING CALIBRATION RUBRIC (Do NOT assign 900 to ordinary solvent borrowers):
+   - 830 to 875: Institutional Elite (High margin, zero debt, >30 days cash cushion, rapid growth, zero bounces). Rare.
+   - 750 to 825: Prime / Low Risk (Healthy liquidity >15 days, DSCP >1.5x, steady expansion, zero bounces).
+   - 620 to 749: Moderate / Near-Prime (Standard MSME operating profile, modest buffer 10-18 days, tight working capital, or mild seasonality).
+   - 480 to 619: Elevated Risk / Stressed (Inward bounce friction, negative growth, low buffer <8 days, high OD usage >80%, or litigation).
+   - 300 to 479: Severe Distress / Non-Compliant (Multiple bounces, MCA strike-off/inactive, or debt insolvency).
+   MAX CEILING: 885. Absolutely NO borrower receives a 900 score.
 4. Construct an immutable Forensic Audit Trail with exact line-item citations.
 CRITICAL RULE:
 - Zero hallucinations.
+- Fields listed in Agent 1 "dataGaps" were not found in the source data; treat them as unavailable (not zero) and do not score them.
 - All risk deductions or approvals must be forensically justified across the 5 pillars.
 - Return ONLY a raw JSON object with no conversational fluff.`;
 
@@ -35,7 +47,7 @@ ${externalOverrides ? `External Overrides / Manual Scraper Signals:\n${JSON.stri
 Generate the final underwriting synthesis.
 Output strictly in JSON schema:
 {
-  "score": (number between 300 and 900),
+  "score": (number between 320 and 885, following the Calibration Rubric),
   "riskLevel": ("LOW" | "MEDIUM" | "HIGH"),
   "narrative": "A concise executive underwriting decision summary (2-3 sentences referencing primary pillars).",
   "reasoning": "Detailed forensic explanation of why this specific score and risk tier were assigned across the 5 pillars.",
@@ -46,98 +58,194 @@ Output strictly in JSON schema:
     "Line-item citation referencing Debt Service Coverage (DSCP)...",
     "Line-item citation referencing Operational / Circularity signals..."
   ],
+  "caveats": ["Any input you could not verify, e.g. fields listed in Agent 1 dataGaps"],
   "agentSafetyAudit": {
-    "dataIntegrityStatus": "VERIFIED_SOUND",
-    "fraudSignalsDetected": 0,
-    "confidenceRating": "99.4%"
+    "dataIntegrityStatus": "(string; only a status you can cite from the data, otherwise NOT_ASSESSED)",
+    "confidenceRating": null
   }
 }`;
 
   const model = process.env.AGENT3_MODEL || process.env.GEMINI_PRO_MODEL || 'gemini-3.1-pro';
   const secretKeyName = 'GEMINI_API_KEY';
 
-  try {
-    const rawText = await applyGuardrails(
-      systemPrompt,
-      userPrompt,
-      async () => await callGemini(model, systemPrompt, userPrompt, secretKeyName),
-      "Agent 3: Synthesis & XAI"
-    );
-    
-    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const finalDecision = JSON.parse(jsonMatch[0]);
-      console.log('[Agent 3] Final 5-Pillar Underwriting Synthesis & XAI Audit Trail generated.');
-      return finalDecision;
+  if (!isTestMode) {
+    try {
+      const rawText = await applyGuardrails(
+        systemPrompt,
+        userPrompt,
+        async () => await callGemini(model, systemPrompt, userPrompt, secretKeyName),
+        "Agent 3: Synthesis & XAI"
+      );
+      
+      const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const finalDecision = JSON.parse(jsonMatch[0]);
+        if (typeof finalDecision.score === 'number') {
+          finalDecision.score = Math.max(320, Math.min(885, finalDecision.score));
+        }
+        const gapCaveats = (Array.isArray(agent1Data?.dataGaps) ? agent1Data.dataGaps : []).map(f => `Not found in statement: ${f}`);
+        const llmCaveats = Array.isArray(finalDecision.caveats) ? finalDecision.caveats : [];
+        finalDecision.caveats = [...new Set([...llmCaveats, ...gapCaveats])];
+        console.log('[Agent 3] Final 5-Pillar Underwriting Synthesis & XAI Audit Trail generated.');
+        return finalDecision;
+      }
+    } catch (error) {
+      console.warn(`[Agent 3] Live LLM inference notice (${error.message}). Synthesizing deterministic underwriting rule.`);
     }
-  } catch (error) {
-    console.warn(`[Agent 3] Live LLM inference notice (${error.message}). Synthesizing deterministic underwriting rule.`);
   }
 
-  // Deterministic fallback decision engine: Continuous 5-Pillar Underwriting Matrix
+  return deterministicDecision(agent1Data || {}, agent2Matrix || {}, externalOverrides);
+}
+
+const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
+
+/**
+ * Deterministic 5-pillar matrix (base 670). A metric that is missing, or that
+ * telemetry derived from an input listed in agent1Data.dataGaps, neither
+ * awards nor deducts points; it is reported as a caveat instead.
+ */
+function deterministicDecision(agent1Data, agent2Matrix, externalOverrides) {
   const p1 = agent2Matrix.pillar1_liquidity || {};
   const p2 = agent2Matrix.pillar2_revenue || {};
   const p3 = agent2Matrix.pillar3_stability || {};
   const p4 = agent2Matrix.pillar4_leverage || {};
   const p5 = agent2Matrix.pillar5_operational || {};
 
-  let baseScore = 715;
+  const gaps = Array.isArray(agent1Data.dataGaps) ? agent1Data.dataGaps : [];
+  const caveats = gaps.map(f => `Not found in statement: ${f}`);
+  const anyGap = (...fields) => fields.some(f => gaps.includes(f));
+  const metric = (v, ...inputs) => (isNum(v) && !anyGap(...inputs) ? v : null);
+  const notScored = (label) => caveats.push(`Not scored: ${label} (not available)`);
 
-  // 1. Pillar 1: Liquidity & Runway (Range: -60 to +65)
-  const cashBuffer = typeof p1.cashBufferRatio === 'number' ? p1.cashBufferRatio : 0.40;
-  const runwayDays = typeof p1.minimumCashBufferDays === 'number' ? p1.minimumCashBufferDays : 15;
-  const bufferDelta = Math.round(Math.min(40, Math.max(-45, (cashBuffer - 0.45) * 45)));
-  const runwayDelta = Math.round(Math.min(25, Math.max(-35, (runwayDays - 15) * 1.5)));
-  baseScore += (bufferDelta + runwayDelta);
+  // Growth and volatility need at least two months of credits.
+  const credits = agent1Data.monthlyCredits;
+  const series = !Array.isArray(credits) || credits.length >= 2;
 
-  // 2. Pillar 2: Revenue Growth & Scale (Range: -30 to +45)
-  const growthRate = typeof p2.revenueGrowthRate === 'number' ? p2.revenueGrowthRate : 0;
-  const growthDelta = Math.round(Math.min(25, Math.max(-25, growthRate * 1.4)));
-  const revScale = p2.annualizedRevenueRunRate || 5000000;
-  // Scaled institutional footprint bonus (₹50L -> +4, ₹1.5Cr -> +8, ₹300Cr -> +18)
-  const scaleBonus = Math.round(Math.min(20, Math.max(0, (Math.log10(Math.max(100000, revScale)) - 5.5) * 3.8)));
-  baseScore += (growthDelta + scaleBonus);
+  const cashBuffer = metric(p1.cashBufferRatio, 'dailyClosingBalances', 'monthlyDebits');
+  const bufferDays = metric(p1.minimumCashBufferDays, 'dailyClosingBalances', 'monthlyDebits');
+  const odUtil = metric(isNum(p1.overdraftLimitUtilization) ? p1.overdraftLimitUtilization : p4.overdraftLimitUtilization, 'sanctionedOdLimit', 'peakOdUsage');
+  const growthRate = series ? metric(p2.revenueGrowthRate) : null;
+  const runRate = metric(p2.annualizedRevenueRunRate);
+  const gstRecon = metric(p2.gstVsBankReconciliation, 'gstr1OutwardTaxable');
+  const taxGap = metric(p2.gstr1VsGstr3bGap, 'gstr1DeclaredTax', 'gstr3bTaxPaid');
+  const cv = series ? metric(p3.creditCoefficientOfVariation) : null;
+  const dscp = metric(p4.debtServiceCoverageProxy, 'monthlyEmiObligations', 'monthlyDebits');
+  const emiBurden = metric(p4.interestEmiBurdenRatio, 'monthlyEmiObligations');
 
-  // 3. Pillar 3: Cash Flow Stability & Friction (Range: -75 to +35)
-  const bounceRate = typeof p3.inwardBounceRate === 'number' ? p3.inwardBounceRate : 0;
-  const cv = typeof p3.creditCoefficientOfVariation === 'number' ? p3.creditCoefficientOfVariation : 0.15;
-  const bouncePenalty = Math.round(bounceRate * 60);
-  const cvDelta = Math.round(Math.min(25, Math.max(-30, (0.18 - cv) * 110)));
-  baseScore += (cvDelta - bouncePenalty);
+  let baseScore = 670;
 
-  // 4. Pillar 4: Leverage & Debt Service Coverage Proxy (Range: -45 to +35)
-  const dscp = typeof p4.debtServiceCoverageProxy === 'number' ? p4.debtServiceCoverageProxy : 1.5;
-  const dscpDelta = Math.round(Math.min(25, Math.max(-35, (dscp - 1.3) * 20)));
-  const odUtil = typeof p4.overdraftLimitUtilization === 'number' ? p4.overdraftLimitUtilization : 0;
-  const odPenalty = Math.round(Math.max(0, odUtil - 50) * 0.7);
-  baseScore += (dscpDelta - odPenalty);
+  // 1. Pillar 1: Liquidity & Runway
+  if (cashBuffer === null) notScored('cash buffer ratio');
+  else if (cashBuffer >= 0.75) baseScore += 25;
+  else if (cashBuffer >= 0.40) baseScore += 10;
+  else if (cashBuffer >= 0.20) baseScore -= 10;
+  else baseScore -= 35;
 
-  // 5. Pillar 5: Circularity & Operational Discipline (Range: -90 to 0)
-  if (p5.circularTransactionRisk?.includes('HIGH')) baseScore -= 90;
-  else if (p5.circularTransactionRisk?.includes('MEDIUM')) baseScore -= 40;
-  if ((p5.cashWithdrawalRatio || 0) > 0.08) {
+  if (odUtil === null) notScored('overdraft utilisation');
+  else if (odUtil < 35) baseScore += 20;
+  else if (odUtil <= 60) baseScore += 5;
+  else if (odUtil <= 80) baseScore -= 15;
+  else baseScore -= 35;
+
+  // 2. Pillar 2: Revenue Growth & Scale
+  if (growthRate === null) notScored('revenue growth');
+  else if (growthRate >= 10.0) baseScore += 20;
+  else if (growthRate >= 3.0) baseScore += 12;
+  else if (growthRate >= 0.0) baseScore += 4;
+  else if (growthRate >= -5.0) baseScore -= 12;
+  else baseScore -= 30;
+
+  if (gstRecon === null) notScored('GST vs bank reconciliation');
+  else if (Math.abs(gstRecon - 1.0) <= 0.05) baseScore += 18;
+  else if (Math.abs(gstRecon - 1.0) <= 0.15) baseScore += 5;
+  else baseScore -= 25;
+
+  if (taxGap === null) notScored('GSTR-1 vs GSTR-3B tax gap');
+  else if (taxGap <= 1.0) baseScore += 12;
+  else if (taxGap > 3.0) baseScore -= 25;
+
+  // 3. Pillar 3: Cash Flow Stability & Friction
+  const bounceRate = isNum(p3.inwardBounceRate) && !anyGap('totalDebitAttempts') ? p3.inwardBounceRate : null;
+  const rawBounces = isNum(agent1Data.inwardBounces) && !anyGap('inwardBounces') ? agent1Data.inwardBounces : null;
+  if (rawBounces === null && bounceRate === null) {
+    notScored('inward bounces');
+  } else {
+    const rate = bounceRate ?? 0;
+    const count = rawBounces ?? (rate > 0 ? 1 : 0);
+    if (count === 0 && rate === 0) baseScore += 12;
+    else if (count === 1 || rate <= 1.0) baseScore -= 35;
+    else if (count === 2 || rate <= 2.5) baseScore -= 70;
+    else baseScore -= 120;
+  }
+
+  if (cv === null) notScored('credit coefficient of variation');
+  else if (cv <= 0.08) baseScore += 20;
+  else if (cv <= 0.20) baseScore += 8;
+  else if (cv <= 0.35) baseScore -= 12;
+  else baseScore -= 30;
+
+  // 4. Pillar 4: Leverage & Debt Service Coverage Proxy
+  if (dscp === null) notScored('debt service coverage proxy');
+  else if (dscp >= 1.80) baseScore += 20;
+  else if (dscp >= 1.40) baseScore += 12;
+  else if (dscp >= 1.00) baseScore -= 10;
+  else baseScore -= 45;
+
+  if (emiBurden === null) notScored('EMI burden ratio');
+  else if (emiBurden < 6.0) baseScore += 8;
+  else if (emiBurden <= 12.0) baseScore += 2;
+  else baseScore -= 12;
+
+  // 5. Pillar 5: Circularity & Operational Discipline. Circularity is only
+  // meaningful when a transaction list was analysed.
+  const hasTransactions = Array.isArray(agent1Data.transactions) && agent1Data.transactions.length > 0 && !anyGap('transactions');
+  const circularRisk = hasTransactions && typeof p5.circularTransactionRisk === 'string' ? p5.circularTransactionRisk : null;
+  if (circularRisk === null) notScored('counterparty circularity (no transaction list)');
+  else if (circularRisk.includes('HIGH')) baseScore -= 90;
+  else if (circularRisk.includes('MEDIUM')) baseScore -= 40;
+  else baseScore += 5;
+
+  const courtCases = isNum(externalOverrides?.courtCases) ? externalOverrides.courtCases : (isNum(p5.courtCases) ? p5.courtCases : null);
+  if (courtCases === null) caveats.push('Not verified: litigation / court cases');
+  else if (courtCases > 0) baseScore -= (courtCases * 35);
+  else baseScore += 7;
+
+  if (isNum(p5.cashWithdrawalRatio) && p5.cashWithdrawalRatio > 0.08) {
     baseScore -= Math.round((p5.cashWithdrawalRatio - 0.08) * 120);
   }
 
-  const finalScore = Math.max(320, Math.min(890, baseScore));
-  const riskLevel = finalScore >= 740 ? "LOW" : finalScore >= 620 ? "MEDIUM" : "HIGH";
+  const finalScore = Math.max(320, Math.min(885, baseScore));
+  const riskLevel = finalScore >= 750 ? "LOW" : finalScore >= 620 ? "MEDIUM" : "HIGH";
+
+  const NA = 'not available';
+  const fmt = (v, suffix = '') => (v === null ? NA : `${v}${suffix}`);
+  const daysText = bufferDays === null ? `${NA} minimum survival buffer days` : `${bufferDays} minimum survival buffer days`;
+  const bounceText = bounceRate === null && rawBounces === null
+    ? `inward bounce data ${NA}`
+    : (bounceRate ?? 0) > 0 || (rawBounces ?? 0) > 0
+      ? `${bounceRate ?? NA}% inward bounce friction${rawBounces !== null ? ` (${rawBounces} inward bounce(s))` : ''}`
+      : 'zero inward cheque/NACH dishonors';
+  const reconText = agent1Data.taxpayerType?.includes('Composition')
+    ? 'under Composition Scheme (CMP-08 quarterly filing)'
+    : `with GSTR-1 reconciliation at ${fmt(gstRecon, 'x')}`;
+  const balancesKnown = isNum(agent1Data.bankOpeningBalance) && isNum(agent1Data.bankClosingBalance);
 
   return {
     score: finalScore,
     riskLevel,
-    narrative: `Entity assessed with a ${riskLevel} risk profile (Score: ${finalScore}). Liquidity cushion with a Cash Buffer Ratio of ${p1.cashBufferRatio || '0.48'}x and ${p1.minimumCashBufferDays || 18} days minimum runway provide resilient NTC shock absorption.`,
-    reasoning: `Orc Chief Credit Officer synthesis: Pillar 1 liquidity demonstrates ${p1.status || 'ADEQUATE'} reserves above the 0.15x critical NTC baseline. Cash flow volatility (CV: ${p3.creditCoefficientOfVariation || '0.06'}) indicates stable merchant deposits with ${p3.inwardBounceRate || 0}% bounce friction. Debt coverage proxy is strong at ${p4.debtServiceCoverageProxy || '1.67'}x with ${p5.circularTransactionRisk || 'clean independent counterparties'}.`,
+    narrative: `Entity assessed with a ${riskLevel} risk profile (Score: ${finalScore}). Cash Buffer Ratio: ${fmt(cashBuffer, 'x')}; minimum cash buffer: ${bufferDays === null ? NA : `${bufferDays} days`}.${caveats.length ? ` ${caveats.length} input(s) could not be verified or scored; see caveats.` : ''}`,
+    reasoning: `Deterministic 5-pillar synthesis: liquidity status ${cashBuffer === null ? NA : (p1.status || NA)}; credit CV ${fmt(cv)}; ${bounceText}; DSCP ${fmt(dscp, 'x')}; counterparty circularity ${circularRisk || 'not assessed'}.`,
     citations: [
-      `[Pillar 1: Liquidity] Cash Buffer Ratio is ${p1.cashBufferRatio || '0.48'}x with ${p1.minimumCashBufferDays || 18} minimum survival buffer days${agent1Data?.sweepDeposits ? ` (inclusive of ₹${(agent1Data.sweepDeposits / 100000).toFixed(1)}L auto-sweep liquid reserves)` : ''}.`,
-      `[Pillar 2: Revenue] Annualized run rate verified at ₹${((p2.annualizedRevenueRunRate || 4840000) / 100000).toFixed(1)} Lacs ${agent1Data?.taxpayerType?.includes('Composition') ? 'under Composition Scheme (CMP-08 quarterly filing)' : `with GSTR-1 reconciliation at ${p2.gstVsBankReconciliation || 1.0}x`}.`,
-      `[Pillar 3: Stability] Credit CV is ${p3.creditCoefficientOfVariation || 0.06} with ${p3.inwardBounceRate > 0 ? `${p3.inwardBounceRate}% bounce friction` : 'zero inward cheque/NACH dishonors'}${agent1Data?.technicalBouncesExcluded ? ` (${agent1Data.technicalBouncesExcluded} technical bounce(s) excluded)` : ''}.`,
-      `[Pillar 4: Leverage] Debt Service Coverage Proxy (DSCP) is ${p4.debtServiceCoverageProxy || 1.67}x with an interest burden ratio of ${p4.interestEmiBurdenRatio || 5.2}%.`,
-      `[Pillar 5: Operational Flags] Operational payroll consistency is verified with cash withdrawal volume below 5%.`
+      `[Pillar 1: Liquidity] Cash Buffer Ratio is ${fmt(cashBuffer, 'x')} with ${daysText}${isNum(agent1Data.sweepDeposits) && agent1Data.sweepDeposits > 0 ? ` (inclusive of ₹${(agent1Data.sweepDeposits / 100000).toFixed(1)}L auto-sweep liquid reserves)` : ''}.`,
+      `[Pillar 2: Revenue] Annualized run rate ${runRate === null ? NA : `₹${(runRate / 100000).toFixed(1)} Lacs`} ${reconText}.`,
+      `[Pillar 3: Stability] Credit CV is ${fmt(cv)} with ${bounceText}${agent1Data.technicalBouncesExcluded ? ` (${agent1Data.technicalBouncesExcluded} technical bounce(s) excluded)` : ''}.`,
+      `[Pillar 4: Leverage] Debt Service Coverage Proxy (DSCP) is ${fmt(dscp, 'x')} with an interest burden ratio of ${fmt(emiBurden, '%')}.`,
+      `[Pillar 5: Operational Flags] ${circularRisk ? `Counterparty circularity: ${circularRisk}.` : 'Counterparty circularity not assessed (no transaction list).'}`
     ],
+    caveats,
     agentSafetyAudit: {
-      dataIntegrityStatus: "VERIFIED_SOUND (Ledger Parity & JEV Gatekeeper Confirmed)",
-      fraudSignalsDetected: 0,
-      confidenceRating: "99.6%"
+      dataIntegrityStatus: balancesKnown && agent1Data.balanceContinuity?.status ? agent1Data.balanceContinuity.status : 'NOT_ASSESSED',
+      confidenceRating: null
     }
   };
 }
