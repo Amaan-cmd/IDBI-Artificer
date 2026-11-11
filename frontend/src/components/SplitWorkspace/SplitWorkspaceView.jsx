@@ -7,6 +7,7 @@ import { exportAuditReport } from '../../utils/pdfExport';
 import { ProvenanceList, formatAdjustment } from '../Registry/RegistryProbeCard';
 import RegistryScreeningReport from '../Registry/RegistryScreeningReport';
 import SampleDataBadge from '../SampleDataBadge/SampleDataBadge';
+import RedFlagBanner from '../RedFlagBanner/RedFlagBanner';
 
 const NA = 'Not available';
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
@@ -84,6 +85,7 @@ export default function SplitWorkspaceView({
   const fm = report?.filingMetrics || null;
   const citations = Array.isArray(decision.citations) ? decision.citations : [];
   const caveats = Array.isArray(decision.caveats) ? decision.caveats : [];
+  const redFlags = Array.isArray(decision.redFlags) ? decision.redFlags : [];
   const adjustments = Array.isArray(decision.registryAdjustments) ? decision.registryAdjustments : [];
 
   // Monthly series straight from the statement extraction (skipped when flagged as a data gap).
@@ -214,6 +216,8 @@ export default function SplitWorkspaceView({
               </div>
             </div>
           </div>
+
+          {redFlags.length > 0 && <RedFlagBanner flags={redFlags} />}
 
           {/* 2. Key Drivers (backend decision citations) */}
           <div className="verdict-shap-card">

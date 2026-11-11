@@ -5,7 +5,8 @@ import {
   Layers, ChevronDown, ExternalLink, Shield, TrendingUp, DollarSign, Activity, Brain
 } from 'lucide-react';
 import './NewEvaluationView.css';
-import { getCompanyDecisionData } from '../../utils/orcIntelligence';
+import { getCompanyDecisionData, momentumText } from '../../utils/orcIntelligence';
+import RedFlagBanner from '../RedFlagBanner/RedFlagBanner';
 import { isDemoMode } from '../../utils/demoMode';
 import RegistryProbeCard, { ProvenanceList, formatAdjustment } from '../Registry/RegistryProbeCard';
 import RegistryScreeningReport from '../Registry/RegistryScreeningReport';
@@ -455,6 +456,8 @@ export default function NewEvaluationView({
               </button>
             </div>
 
+            {!isScreening && previewDecision?.redFlags?.length > 0 && <RedFlagBanner flags={previewDecision.redFlags} />}
+
             {isScreening ? (
               <RegistryScreeningReport payload={evaluationData} onSelectCin={selectCin} />
             ) : !previewDecision ? (
@@ -486,9 +489,9 @@ export default function NewEvaluationView({
                     <div className="finding-metric-sub">Benchmark: &gt; 0.25x</div>
                   </div>
                   <div className="finding-metric-box">
-                    <div className="finding-metric-label">SURVIVAL RUNWAY</div>
+                    <div className="finding-metric-label">MINIMUM CASH BUFFER</div>
                     <div className="finding-metric-value">{fmt(m.survivalRunwayDays, ' Days')}</div>
-                    <div className="finding-metric-sub">Derived from cash buffer ratio</div>
+                    <div className="finding-metric-sub">Lowest balance ÷ average daily debits</div>
                   </div>
                   <div className="finding-metric-box">
                     <div className="finding-metric-label">OVERDRAFT UTILIZATION</div>
@@ -497,7 +500,7 @@ export default function NewEvaluationView({
                   </div>
                 </div>
                 <div className="finding-citation-box">
-                  <strong>Method:</strong> Cash Buffer Ratio is Bank Closing Balance divided by Average Monthly Debit outflows; survival runway is the ratio expressed in operating days. Inputs not present in the statement are shown as "Not available" and are not scored.
+                  <strong>Method:</strong> Cash Buffer Ratio is Bank Closing Balance divided by Average Monthly Debit outflows (sweep deposits and 50% of any undrawn OD/CC limit are added only where the statement shows them). Minimum cash buffer is the lowest balance in the period divided by average daily debits. Inputs not present in the statement are shown as "Not available" and are not scored.
                 </div>
               </ScrollStackItem>
 
@@ -515,7 +518,7 @@ export default function NewEvaluationView({
                   <div className="finding-metric-box">
                     <div className="finding-metric-label">ANNUALIZED RUN RATE</div>
                     <div className="finding-metric-value">{fmtLakhs(m.annualizedRevenue)}</div>
-                    <div className="finding-metric-sub">{isNum(m.revenueGrowthRate) ? `${m.revenueGrowthRate >= 0 ? '+' : ''}${m.revenueGrowthRate}% half-on-half momentum` : 'Momentum: Not available'}</div>
+                    <div className="finding-metric-sub">{isNum(m.revenueGrowthRate) ? momentumText(m) : `Momentum: ${momentumText(m)}`}</div>
                   </div>
                   <div className="finding-metric-box">
                     <div className="finding-metric-label">GSTR-1 RECONCILIATION</div>
@@ -529,7 +532,7 @@ export default function NewEvaluationView({
                   </div>
                 </div>
                 <div className="finding-citation-box">
-                  <strong>Method:</strong> Run rate annualizes average monthly bank credits. Reconciliation compares GSTR-1 declared outward supplies to banked turnover; the tax gap compares GSTR-1 declared tax with GSTR-3B tax paid.
+                  <strong>Method:</strong> Run rate annualizes average monthly bank credits. Momentum compares the second half of the statement months with the first half (equal halves, middle month dropped when odd) and needs at least 4 months. Reconciliation compares GSTR-1 declared outward supplies to banked turnover; the tax gap compares GSTR-1 declared tax with GSTR-3B tax paid.
                 </div>
               </ScrollStackItem>
 
@@ -593,7 +596,7 @@ export default function NewEvaluationView({
                   </div>
                 </div>
                 <div className="finding-citation-box">
-                  <strong>Method:</strong> DSCP is net monthly operating inflow (credits minus debits) divided by monthly EMI obligations observed in the statement.
+                  <strong>Method:</strong> DSCP is net monthly operating inflow (credits minus debits, floored at 0) divided by monthly EMI obligations observed in the statement.
                 </div>
               </ScrollStackItem>
 
@@ -657,6 +660,7 @@ export default function NewEvaluationView({
                     <div className="finding-metric-sub">Working Capital / OD</div>
                   </div>
                 </div>
+                {previewDecision.redFlags.length > 0 && <RedFlagBanner flags={previewDecision.redFlags} compact />}
                 <div className="finding-citation-box" style={{ background: previewDecision.score >= 750 ? 'var(--status-green-bg)' : 'var(--status-red-bg)', borderColor: previewColor }}>
                   <strong>Decision summary:</strong> Score of {previewDecision.score} across 5 financial pillars. Cash Buffer Ratio {fmt(m.cashBufferRatio, 'x')}; inward return events {fmt(m.inwardBounces)}; peak OD utilization {fmt(m.odUtilization, '%')}.
                   {previewDecision.registryAdjustments.length > 0 && (

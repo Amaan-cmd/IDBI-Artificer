@@ -25,6 +25,12 @@ const fmt = (v, suffix = '') => (isNum(v) ? `${v}${suffix}` : NA);
 const fmtLakhs = (v, digits = 2) => (isNum(v) ? `₹${(v / RUPEES_PER_LAKH).toFixed(digits)}L` : NA);
 const fmtSignedPct = (v) => (isNum(v) ? `${v >= 0 ? '+' : ''}${v}%` : NA);
 const NAME_NOT_FOUND = 'Name not found in statement';
+const MIN_MOMENTUM_MONTHS = 4;
+const MOMENTUM_TOO_SHORT = `Not available (needs ≥ ${MIN_MOMENTUM_MONTHS} months of statements)`;
+// Half-on-half revenue momentum, or the reason it is not available.
+export const momentumText = (m) => (isNum(m?.revenueGrowthRate)
+  ? `${fmtSignedPct(m.revenueGrowthRate)} half-on-half momentum`
+  : (m?.revenueGrowthNote || NA));
 
 function riskTierFromLevel(level) {
   if (!level) return null;
@@ -75,31 +81,58 @@ export function getCompanyDecisionData(businessName, gstin, probeData = null, ev
   const inwardBounces = field('inwardBounces');
   const sampleData = Boolean(known);
 
+  // The backend telemetry (evaluationPayload.metrics, pillar1..5) is the single
+  // source of truth for every figure it reports, so the same metric shows the
+  // same value everywhere. A figure is computed locally only when the backend
+  // value key is absent (demo presets / older payloads), with the same formulas.
+  const backendMetrics = hasRealFinancials && evaluationPayload?.metrics && typeof evaluationPayload.metrics === 'object'
+    ? evaluationPayload.metrics
+    : null;
+  const pick = (pillar, key, local) => {
+    const p = backendMetrics?.[pillar];
+    if (p && typeof p === 'object' && Object.prototype.hasOwnProperty.call(p, key)) return isNum(p[key]) ? p[key] : null;
+    return local();
+  };
+
   // Compute 5 Pillars (null = not available; never substituted with a default)
-  const avgMonthlyCredit = credits.length ? sum(credits) / credits.length : null;
   const avgMonthlyDebit = debits.length ? sum(debits) / debits.length : null;
-  const annualizedRevenue = isNum(avgMonthlyCredit) ? Math.round(avgMonthlyCredit * 12) : null;
-  const cashBufferRatio = isNum(closingBalance) && avgMonthlyDebit > 0 ? +(closingBalance / avgMonthlyDebit).toFixed(2) : null;
-  const survivalRunwayDays = isNum(cashBufferRatio) ? Math.round(cashBufferRatio * 25) : null;
-  const odUtilization = sanctionedOdLimit > 0 && isNum(peakOdUsage) ? Math.round((peakOdUsage / sanctionedOdLimit) * 100) : null;
+  const avgMonthlyCredit = pick('pillar2_revenue', 'averageMonthlyCredit', () => (credits.length ? sum(credits) / credits.length : null));
+  const annualizedRevenue = pick('pillar2_revenue', 'annualizedRevenueRunRate', () => (isNum(avgMonthlyCredit) ? Math.round(avgMonthlyCredit * 12) : null));
+  const cashBufferRatio = pick('pillar1_liquidity', 'cashBufferRatio', () => (isNum(closingBalance) && avgMonthlyDebit > 0 ? +(Math.max(0, closingBalance) / avgMonthlyDebit).toFixed(2) : null));
+  // Minimum cash buffer days: lowest balance in the period / average daily debits.
+  const survivalRunwayDays = pick('pillar1_liquidity', 'minimumCashBufferDays', () => {
+    const balances = gaps.has('dailyClosingBalances') || !Array.isArray(src.dailyClosingBalances) ? [] : src.dailyClosingBalances.filter(isNum);
+    return balances.length && avgMonthlyDebit > 0 ? Math.round(Math.max(0, Math.min(...balances)) / (avgMonthlyDebit / 30)) : null;
+  });
+  const odUtilization = pick('pillar1_liquidity', 'overdraftLimitUtilization', () => (sanctionedOdLimit > 0 && isNum(peakOdUsage) ? Math.round((peakOdUsage / sanctionedOdLimit) * 10000) / 100 : null));
 
-  const half = Math.floor(credits.length / 2);
-  const firstHalf = half ? sum(credits.slice(0, half)) : 0;
-  const secondHalf = half ? sum(credits.slice(credits.length - half)) : 0;
-  const revenueGrowthRate = half && firstHalf > 0 ? +(((secondHalf - firstHalf) / firstHalf) * 100).toFixed(1) : null;
+  // Revenue momentum: >= 4 months, equal halves (middle month dropped when odd).
+  const localMomentum = () => {
+    if (credits.length < MIN_MOMENTUM_MONTHS) return null;
+    const half = Math.floor(credits.length / 2);
+    const firstHalf = sum(credits.slice(0, half));
+    const secondHalf = sum(credits.slice(credits.length - half));
+    return firstHalf > 0 ? Math.round(((secondHalf - firstHalf) / firstHalf) * 10000) / 100 : null;
+  };
+  const revenueGrowthRate = pick('pillar2_revenue', 'revenueGrowthRate', localMomentum);
+  const backendMomentumReason = backendMetrics?.pillar2_revenue?.revenueGrowthUnavailableReason;
+  const revenueGrowthNote = isNum(revenueGrowthRate) ? null
+    : (typeof backendMomentumReason === 'string' && backendMomentumReason) || (credits.length < MIN_MOMENTUM_MONTHS ? MOMENTUM_TOO_SHORT : NA);
   const totalCredits = sum(credits);
-  const gstReconciliation = isNum(gstr1Sales) && totalCredits > 0 ? +(gstr1Sales / totalCredits).toFixed(2) : null;
-  const taxGap = gstr1Tax > 0 && isNum(gstr3bTax) ? +(((gstr1Tax - gstr3bTax) / gstr1Tax) * 100).toFixed(1) : null;
+  const gstReconciliation = pick('pillar2_revenue', 'gstVsBankReconciliation', () => (isNum(gstr1Sales) && totalCredits > 0 ? +(gstr1Sales / totalCredits).toFixed(2) : null));
+  const taxGap = pick('pillar2_revenue', 'gstr1VsGstr3bGap', () => (gstr1Tax > 0 && isNum(gstr3bTax) ? Math.round(((gstr1Tax - gstr3bTax) / gstr1Tax) * 10000) / 100 : null));
 
-  let creditCV = null;
-  if (credits.length >= 2 && avgMonthlyCredit > 0) {
+  const creditCV = pick('pillar3_stability', 'creditCoefficientOfVariation', () => {
+    if (credits.length < 2 || !(avgMonthlyCredit > 0)) return null;
     const variance = credits.reduce((s, val) => s + Math.pow(val - avgMonthlyCredit, 2), 0) / credits.length;
-    creditCV = +(Math.sqrt(variance) / avgMonthlyCredit).toFixed(2);
-  }
+    return +(Math.sqrt(variance) / avgMonthlyCredit).toFixed(2);
+  });
 
-  const netOperatingInflow = isNum(avgMonthlyCredit) && isNum(avgMonthlyDebit) ? avgMonthlyCredit - avgMonthlyDebit : null;
-  const dscp = monthlyEmi > 0 && isNum(netOperatingInflow) ? +(netOperatingInflow / monthlyEmi).toFixed(2) : null;
-  const emiBurdenRatio = isNum(monthlyEmi) && avgMonthlyCredit > 0 ? +((monthlyEmi / avgMonthlyCredit) * 100).toFixed(1) : null;
+  const dscp = pick('pillar4_leverage', 'debtServiceCoverageProxy', () => {
+    const netOperatingInflow = isNum(avgMonthlyCredit) && isNum(avgMonthlyDebit) ? Math.max(0, avgMonthlyCredit - avgMonthlyDebit) : null;
+    return monthlyEmi > 0 && isNum(netOperatingInflow) ? +(netOperatingInflow / monthlyEmi).toFixed(2) : null;
+  });
+  const emiBurdenRatio = pick('pillar4_leverage', 'interestEmiBurdenRatio', () => (isNum(monthlyEmi) && avgMonthlyCredit > 0 ? Math.round((monthlyEmi / avgMonthlyCredit) * 10000) / 100 : null));
 
   // Court Cases & Forensic: no litigation provider is wired up, so these exist only for demo presets.
   const courtCases = known ? (demoKey === '27AAGCK8812L1ZQ' ? 1 : 0) : null; // null = not available from provider
@@ -115,16 +148,16 @@ export function getCompanyDecisionData(businessName, gstin, probeData = null, ev
     unavailableInputs.push('Cash buffer ratio (closing balance or monthly debits not available)');
   } else if (cashBufferRatio >= 0.75) {
     score += 25;
-    mathDrivers.push({ factor: 'Strong Cash Buffer (>= 0.75x)', points: '+25 pts', positive: true, detail: `Ratio ${cashBufferRatio}x with ${survivalRunwayDays} survival days` });
+    mathDrivers.push({ factor: 'Strong Cash Buffer (>= 0.75x)', points: '+25 pts', positive: true, detail: `Ratio ${cashBufferRatio}x with ${fmt(survivalRunwayDays, ' minimum cash buffer days')}` });
   } else if (cashBufferRatio >= 0.40) {
     score += 10;
-    mathDrivers.push({ factor: 'Adequate Cash Buffer (0.40–0.74x)', points: '+10 pts', positive: true, detail: `Ratio ${cashBufferRatio}x with ${survivalRunwayDays} survival days` });
+    mathDrivers.push({ factor: 'Adequate Cash Buffer (0.40–0.74x)', points: '+10 pts', positive: true, detail: `Ratio ${cashBufferRatio}x with ${fmt(survivalRunwayDays, ' minimum cash buffer days')}` });
   } else if (cashBufferRatio >= 0.20) {
     score -= 10;
-    mathDrivers.push({ factor: 'Tight Cash Buffer (0.20–0.39x)', points: '-10 pts', positive: false, detail: `Ratio ${cashBufferRatio}x provides only ${survivalRunwayDays} days runway` });
+    mathDrivers.push({ factor: 'Tight Cash Buffer (0.20–0.39x)', points: '-10 pts', positive: false, detail: `Ratio ${cashBufferRatio}x provides ${fmt(survivalRunwayDays, ' minimum cash buffer days')}` });
   } else {
     score -= 35;
-    mathDrivers.push({ factor: 'Depleted Cash Buffer (< 0.20x)', points: '-35 pts', positive: false, detail: `Ratio ${cashBufferRatio}x provides only ${survivalRunwayDays} days runway` });
+    mathDrivers.push({ factor: 'Depleted Cash Buffer (< 0.20x)', points: '-35 pts', positive: false, detail: `Ratio ${cashBufferRatio}x provides ${fmt(survivalRunwayDays, ' minimum cash buffer days')}` });
   }
 
   // P1: Overdraft / Limit Utilization
@@ -146,10 +179,10 @@ export function getCompanyDecisionData(businessName, gstin, probeData = null, ev
 
   // P2: Revenue Momentum
   if (revenueGrowthRate === null) {
-    unavailableInputs.push('Revenue momentum (insufficient monthly credit history)');
+    unavailableInputs.push(`Revenue momentum: ${revenueGrowthNote}`);
   } else if (revenueGrowthRate >= 10.0) {
     score += 20;
-    mathDrivers.push({ factor: 'Expansionary Revenue Momentum (>= 10%)', points: '+20 pts', positive: true, detail: `+${revenueGrowthRate}% 3M/3M growth` });
+    mathDrivers.push({ factor: 'Expansionary Revenue Momentum (>= 10%)', points: '+20 pts', positive: true, detail: `+${revenueGrowthRate}% half-on-half growth` });
   } else if (revenueGrowthRate >= 3.0) {
     score += 12;
     mathDrivers.push({ factor: 'Steady Revenue Momentum (3–9.9%)', points: '+12 pts', positive: true, detail: `+${revenueGrowthRate}% growth` });
@@ -343,6 +376,7 @@ export function getCompanyDecisionData(businessName, gstin, probeData = null, ev
       survivalRunwayDays,
       odUtilization,
       revenueGrowthRate,
+      revenueGrowthNote,
       gstReconciliation,
       taxGap,
       creditCV,
@@ -517,18 +551,18 @@ Calculation Telemetry:
     return `[PILLAR 01 AUDIT — LIQUIDITY & SURVIVAL RUNWAY]:
 Enterprise: ${c.name}
 • Cash Buffer Ratio: ${fmt(m.cashBufferRatio, 'x')} (Benchmark: >= 0.25x)
-• Autonomous Survival Runway: ${fmt(m.survivalRunwayDays, ' Days')} (Minimum requirement: 15–25 days)
+• Minimum Cash Buffer: ${fmt(m.survivalRunwayDays, ' Days')} (Minimum requirement: 15–25 days)
 • Overdraft Utilization: ${fmt(m.odUtilization, '%')} (Sanctioned limit drawn)
 
 Audit Rationale:
-Cash Buffer Ratio is calculated as Bank Closing Balance divided by Average Monthly Outflows; it is reported as not available when either input is missing.${sampleNote(c)}`;
+Cash Buffer Ratio is calculated as Bank Closing Balance divided by Average Monthly Debit outflows (sweep deposits and 50% of any undrawn OD/CC limit are added only where the statement shows them). Minimum cash buffer days is the lowest balance in the period divided by average daily debits. Each is reported as not available when an input is missing.${sampleNote(c)}`;
   }
 
   // 7. Pillar 2: GSTR-1 vs 3B Tax Gap & Revenue
   if (q.includes('gst') || q.includes('tax') || q.includes('gstr') || q.includes('reconciliation') || q.includes('pillar 2')) {
     return `[PILLAR 02 AUDIT — REVENUE & STATUTORY TAX GAP]:
 Enterprise: ${c.name}
-• Annualized Run Rate: ${fmtLakhs(m.annualizedRevenue)} (${fmtSignedPct(m.revenueGrowthRate)} momentum)
+• Annualized Run Rate: ${fmtLakhs(m.annualizedRevenue)} (${momentumText(m)})
 • GSTR-1 to Bank Reconciliation: ${fmt(m.gstReconciliation, 'x')} (Turnover alignment)
 • GSTR-3B Tax Gap: ${fmt(m.taxGap, '%')} (Declared vs Paid Tax)
 
@@ -562,7 +596,7 @@ Enterprise: ${c.name}
 • Monthly EMI Burden: ${fmt(m.emiBurdenRatio, '%')} of monthly inflow (Cap: 20.0%)
 
 Audit Rationale:
-DSCP is calculated as (Average Monthly Credit - Average Monthly Debit) divided by Monthly Scheduled EMI Obligations; it is not available when EMI obligations or monthly debits are missing.${sampleNote(c)}`;
+DSCP is calculated as (Average Monthly Credit - Average Monthly Debit, floored at 0) divided by Monthly Scheduled EMI Obligations; it is not available when EMI obligations or monthly debits are missing.${sampleNote(c)}`;
   }
 
   // 10. Pillar 5: Operational Regularity & MCA
@@ -599,7 +633,7 @@ Synthesized Score: ${c.score} / 900 · ${c.riskTier} · ${c.sanctionVerdict}
 
 Key Telemetry:
 • Cash Buffer: ${fmt(m.cashBufferRatio, 'x')} (${fmt(m.survivalRunwayDays, ' days')} runway)
-• Annualized Revenue: ${fmtLakhs(m.annualizedRevenue, 1)} (${fmtSignedPct(m.revenueGrowthRate)})
+• Annualized Revenue: ${fmtLakhs(m.annualizedRevenue, 1)} (${momentumText(m)})
 • GSTR Reconciliation: ${fmt(m.gstReconciliation, 'x')} (Tax gap: ${fmt(m.taxGap, '%')})
 • Banking Bounces: ${fmt(m.inwardBounces)} returns · CV: ${fmt(m.creditCV)}
 • DSCP Proxy: ${fmt(m.dscp, 'x')} · EMI Burden: ${fmt(m.emiBurdenRatio, '%')}

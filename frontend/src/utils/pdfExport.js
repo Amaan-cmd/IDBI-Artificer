@@ -27,6 +27,7 @@ export function exportAuditReport({ data, auditorNotes = '', officer = null }) {
     minute: '2-digit'
   });
 
+  const redFlags = Array.isArray(data.decision?.redFlags) ? data.decision.redFlags : [];
   const p1 = data.metrics?.pillar1_liquidity || {};
   const p2 = data.metrics?.pillar2_revenue || {};
   const p3 = data.metrics?.pillar3_stability || {};
@@ -253,6 +254,7 @@ export function exportAuditReport({ data, auditorNotes = '', officer = null }) {
     </div>
   </div>
 
+  ${redFlags.length ? `<div style="border: 1px solid #b91c1c; border-left-width: 4px; background: #fef2f2; color: #991b1b; padding: 10px 12px; margin: 0 0 16px; border-radius: 6px;"><strong>${redFlags.length > 1 ? `RED FLAGS (${redFlags.length})` : 'RED FLAG'}</strong><ul style="margin: 6px 0 0; padding-left: 18px;">${redFlags.map(f => `<li>${esc(typeof f === 'string' ? f : (f?.message || f?.label || JSON.stringify(f)))}</li>`).join('')}</ul></div>` : ''}
   <div class="section-title">Underwriting Evidence & 5-Pillar Ratios</div>
   <div class="grid-2">
     <div class="card">
@@ -266,7 +268,7 @@ export function exportAuditReport({ data, auditorNotes = '', officer = null }) {
     <div class="card">
       <div class="card-title">Pillar 2: Revenue & GST Match</div>
       <div class="metric-row"><span>Annualized Run Rate:</span><span class="metric-val">${isNum(p2.annualizedRevenueRunRate) ? `₹${p2.annualizedRevenueRunRate.toLocaleString('en-IN')}` : NA}</span></div>
-      <div class="metric-row"><span>Revenue Growth (3M):</span><span class="metric-val">${fx(p2.revenueGrowthRate, '%')}</span></div>
+      <div class="metric-row"><span>Revenue Momentum (half-on-half):</span><span class="metric-val">${isNum(p2.revenueGrowthRate) ? `${p2.revenueGrowthRate >= 0 ? '+' : ''}${p2.revenueGrowthRate}%` : esc(p2.revenueGrowthUnavailableReason || NA)}</span></div>
       <div class="metric-row"><span>GSTR-1 to Bank Ratio:</span><span class="metric-val">${fx(p2.gstVsBankReconciliation, 'x')}</span></div>
       <div class="metric-row"><span>Tax Gap (GSTR-1 vs 3B):</span><span class="metric-val">${fx(p2.gstr1VsGstr3bGap, '%')}</span></div>
     </div>
