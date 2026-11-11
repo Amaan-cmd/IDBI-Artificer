@@ -27,6 +27,7 @@ credentials.json
 uploads/
 backend/uploads/
 backend/data/telemetry_logins.json
+backend/data/local-store/
 *.tmp
 *.log
 
