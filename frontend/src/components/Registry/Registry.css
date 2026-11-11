@@ -1,0 +1,21 @@
+.registry-card { margin-top: 1rem; padding: 1rem 1.25rem; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); color: var(--text-primary); }
+.registry-card .registry-card { margin-top: 0.75rem; }
+.registry-row { display: grid; grid-template-columns: 180px 1fr; gap: 6px 12px; font-size: 0.85rem; }
+.registry-label { color: var(--text-muted); }
+.registry-unavailable { color: var(--text-muted); font-style: italic; }
+.registry-provenance { margin-top: 0.75rem; font-size: 0.72rem; color: var(--text-subtle); font-family: var(--font-mono, monospace); }
+.registry-provenance + .registry-provenance { margin-top: 2px; }
+.registry-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 700; }
+.registry-badge.REGULAR { background: var(--status-green-bg); color: var(--status-green-text); }
+.registry-badge.IRREGULAR { background: var(--status-amber-bg); color: var(--status-amber-text); }
+.registry-badge.DELINQUENT { background: var(--status-red-bg); color: var(--status-red-text); }
+.registry-badge.UNKNOWN { background: var(--surface-inset); color: var(--text-muted); }
+.registry-candidates button { display: block; margin: 4px 0; text-align: left; background: none; color: var(--text-primary); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; cursor: pointer; width: 100%; font-size: 0.82rem; }
+.registry-candidates button:hover { background: var(--surface-hover); }
+.registry-filings { width: 100%; border-collapse: collapse; margin-top: 0.75rem; font-size: 0.8rem; }
+.registry-filings th, .registry-filings td { text-align: left; padding: 4px 8px; border-bottom: 1px solid var(--border); }
+.registry-filings th { color: var(--text-muted); font-weight: 600; }
+.registry-list { margin: 0.5rem 0 0; padding-left: 1.1rem; font-size: 0.82rem; line-height: 1.5; }
+.registry-section-title { margin: 0.75rem 0 0.25rem; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+@media (max-width: 640px) { .registry-row { grid-template-columns: 1fr; } }
+.finding-card-badge.badge-neutral { background: var(--surface-inset); color: var(--text-muted); border: 1px solid var(--border); }

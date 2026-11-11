@@ -1,17 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, X, Building2, ShieldCheck, ArrowRight, CornerDownLeft, Sparkles } from 'lucide-react';
 import './CommandPalette.css';
-import { KNOWN_GSTINS, getGSTINProbeData } from '../../utils/gstinRegistry';
+import { KNOWN_GSTINS } from '../../utils/gstinRegistry';
+import { isDemoMode } from '../../utils/demoMode';
 import { sanitizeText } from '../../utils/sanitize';
+import SampleDataBadge from '../SampleDataBadge/SampleDataBadge';
 
-const QUICK_ENTITIES = [
-  { name: 'Apex Precision Engineering Pvt Ltd', id: '27AADCB2230M1Z2', cin: 'U28110MH2018PTC304891', score: 824, tier: 'LOW RISK' },
-  { name: 'Surat Textile Weaving Cluster LLP', id: '24AABCS4421P1Z9', cin: 'AAB-4421', score: 765, tier: 'LOW RISK' },
-  { name: 'Kalyan Agro Supply & Logistics', id: '27AAGCK8812L1ZQ', cin: 'Proprietorship', score: 610, tier: 'MODERATE' },
-  { name: 'ENVER-AITECH INDIA PRIVATE LIMITED', id: '27AAHCE5539J1ZA', cin: 'U47190MH2023PTC402519', score: 870, tier: 'LOW RISK' },
-  { name: 'Tata Motors Passenger Vehicles Limited', id: '27AAACT2727Q1ZW', cin: 'U34100MH2021PLC367069', score: 895, tier: 'PRIME' },
-  { name: 'Kariman Enterprises', id: '27AABPQ1063C1Z5', cin: 'Sole Proprietorship', score: 790, tier: 'LOW RISK' }
-];
+// Demo-mode presets only (labelled SAMPLE DATA); empty outside demo mode.
+const QUICK_ENTITIES = isDemoMode
+  ? Object.entries(KNOWN_GSTINS).map(([gstin, e]) => ({ name: e.legalEntityName, id: gstin, cin: e.cin || '' }))
+  : [];
 
 export default function CommandPalette({ isOpen, onClose, onSelectCompany }) {
   const [query, setQuery] = useState('');
@@ -77,7 +75,7 @@ export default function CommandPalette({ isOpen, onClose, onSelectCompany }) {
             ref={inputRef}
             type="text"
             className="cmd-palette-input"
-            placeholder="Type company name, GSTIN (e.g. 27AADCB2230M1Z2), CIN, or PAN..."
+            placeholder={isDemoMode ? 'Type a sample company name or a 15-character GSTIN...' : 'Enter a 15-character GSTIN...'}
             value={query}
             onChange={e => {
               setQuery(sanitizeText(e.target.value, 60));
@@ -93,7 +91,7 @@ export default function CommandPalette({ isOpen, onClose, onSelectCompany }) {
 
         <div className="cmd-palette-results">
           <div className="cmd-palette-group-label">
-            {query.trim() ? `Matching Enterprises (${filtered.length})` : 'Recent & Canonical Enterprises'}
+            {isDemoMode ? (query.trim() ? `Matching Sample Enterprises (${filtered.length})` : 'Sample Enterprises') : 'Registry Lookup'}
           </div>
 
           {filtered.map((item, idx) => (
@@ -114,10 +112,7 @@ export default function CommandPalette({ isOpen, onClose, onSelectCompany }) {
                   <span className="cmd-meta-cin">{item.cin}</span>
                 </div>
               </div>
-              <div className="cmd-item-score-pill">
-                <span className="cmd-score-val">{item.score}</span>
-                <span className="cmd-score-tier">{item.tier}</span>
-              </div>
+              <SampleDataBadge />
               <CornerDownLeft size={14} className="cmd-enter-hint" />
             </div>
           ))}
@@ -131,8 +126,8 @@ export default function CommandPalette({ isOpen, onClose, onSelectCompany }) {
                 <Sparkles size={16} />
               </div>
               <div className="cmd-item-info">
-                <div className="cmd-item-name">Evaluate "{query.trim().toUpperCase()}"</div>
-                <div className="cmd-item-meta">Instant Statutory Registry Resolution & 5-Pillar Underwrite</div>
+                <div className="cmd-item-name">Look up "{query.trim().toUpperCase()}"</div>
+                <div className="cmd-item-meta">GSTN & MCA21 registry lookup</div>
               </div>
               <div className="cmd-item-action-tag">
                 <span>PRESS ENTER ↵</span>
@@ -142,7 +137,7 @@ export default function CommandPalette({ isOpen, onClose, onSelectCompany }) {
 
           {filtered.length === 0 && query.trim().length < 10 && (
             <div className="cmd-palette-empty">
-              No exact match found. Enter a 15-character GSTIN or 10-character PAN to resolve dynamically.
+              Enter a 15-character GSTIN to look it up in GSTN and MCA21.
             </div>
           )}
         </div>
@@ -150,7 +145,7 @@ export default function CommandPalette({ isOpen, onClose, onSelectCompany }) {
         <div className="cmd-palette-footer">
           <div className="cmd-footer-shortcuts">
             <span><kbd>↑</kbd><kbd>↓</kbd> to navigate</span>
-            <span><kbd>↵</kbd> to jump to score</span>
+            <span><kbd>↵</kbd> to look up</span>
             <span><kbd>esc</kbd> to close</span>
           </div>
           <div className="cmd-footer-brand">
