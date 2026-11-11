@@ -76,3 +76,45 @@ test('registered after window → UNKNOWN (insufficient history)', () => {
   const r = computeFilingMetrics({ filings: [], registrationDate: '2026-10-20', taxpayerType: 'Regular', asOf });
   assert.equal(r.filingDiscipline, 'UNKNOWN');
 });
+
+test("'Not Filed' status is not counted as filed", () => {
+  const filings = monthlyFilings().map(f => (f.returnType === 'GSTR3B' && ['2026-09', '2026-05', '2026-01'].includes(f.period) ? { ...f, status: 'Not Filed' } : f));
+  const r = computeFilingMetrics({ filings, registrationDate: '2017-07-01', taxpayerType: 'Regular', asOf });
+  assert.deepEqual(r.primary.missingPeriods, ['2026-01', '2026-05', '2026-09']);
+  assert.equal(r.filingDiscipline, 'DELINQUENT');
+});
+
+test("status case-insensitive ('FILED') and valid:false ignored", () => {
+  const filings = monthlyFilings().map(f => ({ ...f, status: 'FILED' }));
+  filings.push({ returnType: 'GSTR3B', period: '2026-09', filedOn: '2026-10-01', status: 'Filed', valid: false });
+  const r = computeFilingMetrics({ filings, registrationDate: '2017-07-01', taxpayerType: 'Regular', asOf });
+  assert.equal(r.filingDiscipline, 'REGULAR');
+  assert.equal(r.primary.lateFilings, 0);
+});
+
+test('duplicate filings for a period: earliest filedOn decides lateness (order-independent)', () => {
+  const base = monthlyFilings();
+  const dup = { returnType: 'GSTR3B', period: '2026-09', filedOn: '2026-11-05', status: 'Filed', valid: true };
+  for (const filings of [[...base, dup], [dup, ...base]]) {
+    const r = computeFilingMetrics({ filings, registrationDate: '2017-07-01', taxpayerType: 'Regular', asOf });
+    assert.equal(r.primary.lateFilings, 0);
+  }
+});
+
+test('switch from monthly to QRMP before the window: old monthly filings outside the window do not force monthly', () => {
+  // Monthly Apr–Sep 2025 (outside window), quarterly from Q3 2025 onward.
+  const filings = [];
+  for (let m = 4; m <= 9; m++) {
+    const p = `2025-${String(m).padStart(2, '0')}`;
+    filings.push({ returnType: 'GSTR3B', period: p, filedOn: iso(2025, m + 1, 20), status: 'Filed', valid: true });
+    filings.push({ returnType: 'GSTR1', period: p, filedOn: iso(2025, m + 1, 11), status: 'Filed', valid: true });
+  }
+  for (const p of ['2025-12', '2026-03', '2026-06', '2026-09']) {
+    const [y, m] = p.split('-').map(Number); const [ny, nm] = next(y, m);
+    filings.push({ returnType: 'GSTR1', period: p, filedOn: iso(ny, nm, 13), status: 'Filed', valid: true });
+    filings.push({ returnType: 'GSTR3B', period: p, filedOn: iso(ny, nm, 22), status: 'Filed', valid: true });
+  }
+  const r = computeFilingMetrics({ filings, registrationDate: '2017-07-01', taxpayerType: 'Regular', asOf });
+  assert.equal(r.frequency, 'quarterly');
+  assert.equal(r.filingDiscipline, 'REGULAR');
+});

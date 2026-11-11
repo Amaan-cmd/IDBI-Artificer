@@ -21,14 +21,25 @@ async function cached(store, gstin, section, ttlMs, fetcher, now) {
   } catch (err) {
     console.warn(`[Registry] Cache read failed for ${gstin}/${section}: ${err.message}`);
   }
-  const fresh = await fetcher();
-  if (fresh.status === 'ok') {
-    await store.upsertEntity('registrycache', {
-      partitionKey: gstin,
-      rowKey: section,
-      payload: JSON.stringify(fresh),
-      storedAt: new Date(now()).toISOString()
-    }).catch(err => console.warn(`[Registry] Cache write failed for ${gstin}/${section}: ${err.message}`));
+  let fresh;
+  try {
+    fresh = await fetcher();
+  } catch (err) {
+    console.warn(`[Registry] Fetch failed for ${gstin}/${section}: ${err.message}`);
+    fresh = { status: 'unavailable', reason: 'Registry lookup failed', source: null };
+  }
+  // Partial results (e.g. one financial year missing) are never cached.
+  if (fresh.status === 'ok' && !fresh.partial) {
+    try {
+      await store.upsertEntity('registrycache', {
+        partitionKey: gstin,
+        rowKey: section,
+        payload: JSON.stringify(fresh),
+        storedAt: new Date(now()).toISOString()
+      });
+    } catch (err) {
+      console.warn(`[Registry] Cache write failed for ${gstin}/${section}: ${err.message}`);
+    }
   }
   return { ...fresh, cached: false };
 }
@@ -58,12 +69,14 @@ async function fetchFilings(gstin, gst, now) {
 }
 
 async function resolveMca(store, gstin, gst, cin, mca, now) {
+  // An officer-supplied CIN is looked up directly: it needs no GST data and
+  // deliberately bypasses the constitution check.
+  const clean = cin ? String(cin).trim().toUpperCase() : '';
+  if (clean) {
+    return cached(store, gstin, `mca:${clean}`, TTL.mca, () => mca.getCompany(clean), now);
+  }
   if (gst.status !== 'ok') {
     return { status: 'unavailable', reason: 'GST registration unavailable, so the MCA entity could not be resolved', source: null };
-  }
-  if (cin) {
-    const clean = String(cin).trim().toUpperCase();
-    return cached(store, gstin, `mca:${clean}`, TTL.mca, () => mca.getCompany(clean), now);
   }
   if (!COMPANY_CONSTITUTION.test(gst.data.constitution || '')) {
     return { status: 'unavailable', reason: 'Not an MCA-registered entity type', source: null };
@@ -87,7 +100,8 @@ async function getRegistryReport(gstin, {
   const mca = await resolveMca(store, g, gst, cin, providers.mca, now);
 
   const filingMetrics = computeFilingMetrics({
-    filings: filings.status === 'ok' ? filings.data : null,
+    // Partial history would count the failed year's months as missing.
+    filings: filings.status === 'ok' && !filings.partial ? filings.data : null,
     registrationDate: gst.status === 'ok' ? gst.data.registrationDate : null,
     taxpayerType: gst.status === 'ok' ? gst.data.taxpayerType : '',
     asOf: new Date(now())

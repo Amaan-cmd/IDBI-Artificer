@@ -8,7 +8,9 @@ const MAX_SCORE = 885;
 const NOT_MCA_ENTITY = 'Not an MCA-registered entity type';
 
 const riskFor = (score) => (score >= 750 ? 'LOW' : score >= 620 ? 'MEDIUM' : 'HIGH');
-const cite = (section) => `${section.source} · fetched ${section.fetchedAt} · txn ${section.transactionId}`;
+const cite = (section) => [section.source, section.fetchedAt && `fetched ${section.fetchedAt}`, section.transactionId && `txn ${section.transactionId}`]
+  .filter(Boolean)
+  .join(' · ');
 
 function applyRegistryAdjustments(decision, report) {
   if (!decision || typeof decision.score !== 'number' || !report) return decision;

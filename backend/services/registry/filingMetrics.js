@@ -20,9 +20,18 @@ function dueDate(y, m, returnType, frequency) {
   return Date.UTC(dy, dm - 1, DUE_DAY[returnType][frequency]);
 }
 
-function detectFrequency(returnType, filings) {
+// A filing counts only when the portal marks it filed. Explicit statuses like
+// 'Not Filed' must not match; a missing status on a tracked return is treated as filed.
+const isFiled = (f) => f.valid !== false && (!f.status || /^\s*filed\b/i.test(f.status));
+
+// Frequency is detected from the last 12 months only, so a switch to/from QRMP
+// before the window does not distort expected periods.
+function detectFrequency(returnType, filings, asOf) {
   if (returnType === 'CMP08') return 'quarterly';
-  const months = filings.filter(f => f.returnType === returnType).map(f => parsePeriod(f.period)[1]);
+  const from = periodKey(asOf.getUTCFullYear() - 1, asOf.getUTCMonth() + 1);
+  const months = filings
+    .filter(f => f.returnType === returnType && isFiled(f) && f.period >= from)
+    .map(f => parsePeriod(f.period)[1]);
   if (months.length > 0 && months.every(m => QUARTER_END_MONTHS.has(m))) return 'quarterly';
   return 'monthly';
 }
@@ -46,11 +55,14 @@ function expectedPeriods(returnType, frequency, asOf, registrationDate) {
 }
 
 function computeReturnMetrics(returnType, filings, { asOf, registrationDate }) {
-  const frequency = detectFrequency(returnType, filings);
+  const frequency = detectFrequency(returnType, filings, asOf);
   const expected = expectedPeriods(returnType, frequency, asOf, registrationDate);
   const filedByPeriod = new Map();
   for (const f of filings) {
-    if (f.returnType === returnType && f.valid !== false && /filed/i.test(f.status || 'Filed')) filedByPeriod.set(f.period, f);
+    if (f.returnType !== returnType || !isFiled(f)) continue;
+    // Duplicates for a period: the earliest filing date decides timeliness.
+    const prev = filedByPeriod.get(f.period);
+    if (!prev || (f.filedOn && (!prev.filedOn || f.filedOn < prev.filedOn))) filedByPeriod.set(f.period, f);
   }
 
   const missingPeriods = [];

@@ -54,3 +54,11 @@ test('missing report or score returns decision unchanged', () => {
   assert.equal(applyRegistryAdjustments(dec, null), dec);
   assert.deepEqual(applyRegistryAdjustments({ score: null }, report()), { score: null });
 });
+
+test('citation omits txn when the section has no transaction id', () => {
+  const r = report();
+  r.filings = { ...r.filings, transactionId: null };
+  const d = applyRegistryAdjustments(decision(700), r);
+  assert.ok(d.citations.some(c => c.includes('GST filing discipline')));
+  assert.ok(!d.citations.some(c => /txn (null|undefined)/.test(c)));
+});

@@ -89,3 +89,48 @@ test('GST outage → sections unavailable, never fabricated', async () => {
   assert.equal(r.gst.status, 'unavailable');
   assert.equal(r.mca.status, 'unavailable');
 });
+
+test('partial filing history (one FY fails) → filingMetrics UNKNOWN and not cached', async () => {
+  const s = store();
+  const p = providers();
+  const fullYear = [];
+  for (let m = 1; m <= 12; m++) fullYear.push({ returnType: 'GSTR3B', period: `2026-${String(m).padStart(2, '0')}`, filedOn: null, status: 'Filed', valid: true });
+  p.gst.trackReturns = async (_g, fy) => { p.calls.track++; return fy === 'FY 2026-27' ? ok(fullYear.filter(f => f.period >= '2026-04')) : { status: 'unavailable', reason: 'down', source: 'test' }; };
+  const r1 = await getRegistryReport(GSTIN, { store: s, providers: p, now });
+  assert.equal(r1.filings.status, 'ok');
+  assert.equal(r1.filings.partial, true);
+  assert.ok(r1.filings.data.length > 0); // partial data kept for display
+  assert.equal(r1.filingMetrics.filingDiscipline, 'UNKNOWN');
+  const r2 = await getRegistryReport(GSTIN, { store: s, providers: p, now });
+  assert.equal(p.calls.track, 4); // re-fetched, not cached
+  assert.equal(r2.filings.cached, false);
+});
+
+test('explicit cin resolves MCA even when GST is unavailable', async () => {
+  const p = providers({ gstStatus: 'down' });
+  const r = await getRegistryReport(GSTIN, { cin: ' u72900gj2019ptc111111 ', store: store(), providers: p, now });
+  assert.equal(r.gst.status, 'unavailable');
+  assert.equal(r.mca.status, 'ok');
+  assert.equal(r.mca.data.cin, 'U72900GJ2019PTC111111');
+});
+
+test('explicit cin bypasses constitution check', async () => {
+  const p = providers({ constitution: 'Proprietorship' });
+  const r = await getRegistryReport(GSTIN, { cin: 'U72900GJ2019PTC111111', store: store(), providers: p, now });
+  assert.equal(r.mca.status, 'ok');
+});
+
+test('provider that throws → section unavailable, report still built', async () => {
+  const p = providers();
+  p.mca.findCompanyByName = async () => { throw new Error('boom'); };
+  const r = await getRegistryReport(GSTIN, { store: store(), providers: p, now });
+  assert.equal(r.gst.status, 'ok');
+  assert.equal(r.mca.status, 'unavailable');
+});
+
+test('cache store write failure does not break the report', async () => {
+  const s = store();
+  s.upsertEntity = () => { throw new Error('disk full'); }; // synchronous throw
+  const r = await getRegistryReport(GSTIN, { store: s, providers: providers(), now });
+  assert.equal(r.gst.status, 'ok');
+});
