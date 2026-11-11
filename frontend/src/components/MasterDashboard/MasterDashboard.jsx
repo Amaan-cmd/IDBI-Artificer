@@ -8,53 +8,56 @@ import { apiFetch } from '../../utils/apiClient';
 export default function MasterDashboard({ onBack }) {
   const [users, setUsers] = useState([]);
   const [history, setHistory] = useState([]);
-  const [_loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('telemetry'); // 'telemetry' | 'audit' | 'security'
   const [logins, setLogins] = useState([]);
+  const [errors, setErrors] = useState({ users: null, history: null, logins: null });
 
   useEffect(() => {
-    Promise.all([
-      apiFetch('/api/v1/users').then(r => r.json()).catch(() => ({ status: 'fallback', users: [] })),
-      apiFetch('/api/v1/history').then(r => r.json()).catch(() => ({ status: 'fallback', history: [] })),
-      apiFetch('/api/v1/telemetry/logins').then(r => r.json()).catch(() => ({ status: 'fallback', logins: [] }))
-    ])
-      .then(([userData, histData, loginData]) => {
-        if (loginData.status === 'success' && loginData.logins?.length) {
-          setLogins(loginData.logins);
-        }
-        if (userData.status === 'success' && userData.users?.length) {
-          setUsers(userData.users);
-        } else {
-          // Robust demo fallback
-          setUsers([
-            { id: 'u_andalaus_master', username: 'Amaan Shaikh', email: 'amaan@enveraitech.com', role: 'Founder & Applied AI Architect', status: 'Active (MFA Enforced)', calls: 142, cost: 2.84, lastLogin: '2026-09-23T18:30:00Z' },
-            { id: 'u_needa_director', username: 'Needa Kaiser Shaikh', email: 'needa@enveraitech.com', role: 'Co-Founder & Governance Director', status: 'Active (MFA Enforced)', calls: 86, cost: 1.72, lastLogin: '2026-09-23T19:15:00Z' },
-            { id: 'u_idbi_officer', username: 'IDBI Senior Risk Officer', email: 'cro-desk@idbibank.in', role: 'Institutional Underwriter', status: 'Active (OAuth Token Valid)', calls: 310, cost: 6.20, lastLogin: '2026-09-23T21:45:00Z' }
-          ]);
-        }
+    let cancelled = false;
+    const load = async (path) => {
+      try {
+        const res = await apiFetch(path);
+        if (!res.ok) return { error: `HTTP ${res.status}` };
+        const data = await res.json();
+        if (data?.status !== 'success') return { error: data?.message || 'Unexpected response' };
+        return { data };
+      } catch {
+        return { error: 'Network error' };
+      }
+    };
 
-        if (histData.status === 'success' && histData.history?.length) {
-          setHistory(histData.history);
-        } else {
-          // Preload default audit archive
-          setHistory([
-            { id: 'h_1789854683417', name: 'Apex Precision Engineering Pvt Ltd', score: 824, risk: 'LOW', revenue: 9680000, buffer: '0.71x', compliance: '100% Attested', timestamp: '2026-09-23T20:10:00Z' },
-            { id: 'h_1789854683418', name: 'Surat Textile Weaving Cluster LLP', score: 765, risk: 'LOW', revenue: 14200000, buffer: '0.48x', compliance: '98.5% Attested', timestamp: '2026-09-23T18:40:00Z' },
-            { id: 'h_1789854683419', name: 'Kalyan Agro Supply & Logistics', score: 610, risk: 'MEDIUM', revenue: 6800000, buffer: '0.22x', compliance: 'Minor Tax Gap (3.2%)', timestamp: '2026-09-23T17:15:00Z' },
-            { id: 'h_1789854683420', name: 'Nashik Precision Spares', score: 840, risk: 'LOW', revenue: 18500000, buffer: '0.85x', compliance: 'Clean Attestation', timestamp: '2026-09-23T15:20:00Z' }
-          ]);
-        }
-        setLoading(false);
-      })
-      .catch(() => {
-        setLoading(false);
+    Promise.all([
+      load('/api/v1/users'),
+      load('/api/v1/history'),
+      load('/api/v1/telemetry/logins')
+    ]).then(([userRes, histRes, loginRes]) => {
+      if (cancelled) return;
+      setUsers(userRes.data?.users || []);
+      setHistory(histRes.data?.history || []);
+      setLogins(loginRes.data?.logins || []);
+      setErrors({
+        users: userRes.error ? `Could not load users (${userRes.error})` : null,
+        history: histRes.error ? `Could not load audit history (${histRes.error})` : null,
+        logins: loginRes.error ? `Could not load access events (${loginRes.error})` : null
       });
+      setLoading(false);
+    });
+    return () => { cancelled = true; };
   }, []);
 
-  const totalCalls = users.reduce((acc, u) => acc + (u.calls || 0), 0) || 538;
-  const rawCost = users.reduce((acc, u) => acc + (Number(u.cost) || 0), 0) || 10.76;
+  const emptyRow = (colSpan, message) => (
+    <tr>
+      <td colSpan={colSpan} role={message.startsWith('Could not') ? 'alert' : undefined} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>
+        {message}
+      </td>
+    </tr>
+  );
+
+  const totalCalls = users.reduce((acc, u) => acc + (u.calls || 0), 0);
+  const rawCost = users.reduce((acc, u) => acc + (Number(u.cost) || 0), 0);
   const totalCost = Number(rawCost.toFixed(2));
-  const totalEvaluatedVolume = history.reduce((acc, h) => acc + (Number(h.revenue) || 0), 0) || 49180000;
+  const totalEvaluatedVolume = history.reduce((acc, h) => acc + (Number(h.revenue) || 0), 0);
 
   return (
     <div className="master-dashboard animate-fade-up">
@@ -215,6 +218,7 @@ export default function MasterDashboard({ onBack }) {
               </tr>
             </thead>
             <tbody>
+              {users.length === 0 && emptyRow(6, loading ? 'Loading users…' : (errors.users || 'No users found.'))}
               {users.map(u => (
                 <tr key={u.id}>
                   <td>
@@ -262,6 +266,7 @@ export default function MasterDashboard({ onBack }) {
               </tr>
             </thead>
             <tbody>
+              {history.length === 0 && emptyRow(8, loading ? 'Loading audit history…' : (errors.history || 'No evaluations recorded.'))}
               {history.map(h => (
                 <tr key={h.id}>
                   <td>
@@ -360,7 +365,7 @@ export default function MasterDashboard({ onBack }) {
               <div className="sec-feature">
                 <Shield size={16} color="var(--brand-gold)" />
                 <div>
-                  <strong>Identity & Access Control:</strong> Google Enterprise OAuth 2.0 with domain-restricted ACLs (`@enveraitech.com`) plus fallback Citadel keys.
+                  <strong>Identity & Access Control:</strong> Google Enterprise OAuth 2.0 with domain-restricted ACLs (`@enveraitech.com`) plus server-verified email OTP.
                 </div>
               </div>
 
@@ -415,13 +420,13 @@ export default function MasterDashboard({ onBack }) {
                       </code>
                     </td>
                     <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem' }}>
-                      {l.type === 'google_workspace' ? 'Google Workspace SSO' : 'Citadel Security Key'}
+                      {l.type === 'google_workspace' ? 'Google Workspace SSO' : l.type === 'email_otp' ? 'Email OTP' : (l.type || 'Unknown')}
                     </td>
                     <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                       {l.ip || '127.0.0.1'}
                     </td>
                     <td>
-                      <span className={`badge ${l.status === 'AUTHORIZED' ? 'badge-LOW' : 'badge-HIGH'}`}>
+                      <span className={`badge ${l.status === 'AUTHORIZED' || l.status === 'SUCCESS' ? 'badge-LOW' : 'badge-HIGH'}`}>
                         {l.status || 'AUTHORIZED'}
                       </span>
                     </td>
@@ -430,7 +435,7 @@ export default function MasterDashboard({ onBack }) {
               ) : (
                 <tr>
                   <td colSpan={5} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>
-                    No recent access events recorded.
+                    {loading ? 'Loading access events…' : (errors.logins || 'No recent access events recorded.')}
                   </td>
                 </tr>
               )}

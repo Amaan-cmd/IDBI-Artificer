@@ -21,7 +21,6 @@ export default function VerificationGate({ onVerified }) {
   // Email OTP state
   const [emailInput, setEmailInput] = useState('');
   const [codeInput, setCodeInput] = useState('');
-  const [serverDemoCode, setServerDemoCode] = useState('');
   
   const [authLoading, setAuthLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -147,9 +146,6 @@ export default function VerificationGate({ onVerified }) {
         setError(data.error || 'Could not send a verification code. Please retry.');
         return;
       }
-      if (data.demoCode) {
-        setServerDemoCode(data.demoCode);
-      }
       setNotice(`Verification code dispatched to ${cleanEmail}. Enter code to verify.`);
       setOtpStep('code');
     } catch {
@@ -215,14 +211,14 @@ export default function VerificationGate({ onVerified }) {
         </div>
 
         {error && (
-          <div className="verification-error animate-fade-up">
+          <div className="verification-error animate-fade-up" role="alert">
             <ShieldAlert size={16} />
             <span>{error}</span>
           </div>
         )}
 
         {notice && (
-          <div className="verification-notice animate-fade-up">
+          <div className="verification-notice animate-fade-up" role="status" aria-live="polite">
             <CheckCircle2 size={16} />
             <span>{notice}</span>
           </div>
@@ -292,6 +288,7 @@ export default function VerificationGate({ onVerified }) {
             className="auth-passkey-toggle-btn"
             onClick={() => setShowEnterprise(prev => !prev)}
             aria-expanded={showEnterprise}
+            aria-controls="email-otp-panel"
           >
             <Mail size={13} />
             <span>Sign in with Email Code</span>
@@ -301,7 +298,7 @@ export default function VerificationGate({ onVerified }) {
 
         {/* Collapsible Email OTP Form */}
         {showEnterprise && (
-          <div className="auth-passkey-accordion animate-fade-up">
+          <div className="auth-passkey-accordion animate-fade-up" id="email-otp-panel">
             <div className="auth-divider">
               <span>Email OTP Verification</span>
             </div>
@@ -346,7 +343,7 @@ export default function VerificationGate({ onVerified }) {
                       </span>
                       <button
                         type="button"
-                        onClick={() => { setOtpStep('email'); setNotice(null); }}
+                        onClick={() => { setOtpStep('email'); setCodeInput(''); setNotice(null); }}
                         style={{ background: 'none', border: 'none', color: '#10B981', fontSize: '0.72rem', cursor: 'pointer', textDecoration: 'underline' }}
                       >
                         Change

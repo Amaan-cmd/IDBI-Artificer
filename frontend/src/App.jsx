@@ -235,6 +235,7 @@ function App() {
     if (userId) {
       try {
         const res = await apiFetch('/api/v1/history');
+        if (res.status === 401) return; // session expired; onUnauthorized already logged out
         const resData = await res.json();
         if (resData.status === 'success' && resData.history?.length) {
           const merged = [...userRuns, ...resData.history.filter(rh => !userRuns.some(uh => (uh.id === rh.id || uh.gstin === rh.gstin)))];
@@ -338,6 +339,7 @@ function App() {
     setIsSessionLocked(false);
     setInactivitySeconds(300);
     setCurrentView('evaluator');
+    setLoading(false);
   };
 
   const handleFileChange = (e) => {
@@ -607,6 +609,12 @@ function App() {
         method: 'POST',
         body: formData
       });
+
+      if (response.status === 401) {
+        // Session expired: onUnauthorized has already logged out. Do not fabricate a result.
+        setLoading(false);
+        return;
+      }
 
       if (!response.ok) {
         throw new Error(`Underwriting Engine returned HTTP ${response.status}`);
