@@ -9,7 +9,7 @@ const { incrementUserUsage } = require('./userController');
 const { addHistoryRecord } = require('./historyController');
 const { sendSlackNotification } = require('../services/slackNotifier');
 const { applyRegistryAdjustments } = require('../services/registry/registryAdjustments');
-const { GSTIN_RE } = require('./registryController');
+const { isAcceptedGstin } = require('../utils/gstin');
 
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 
@@ -37,7 +37,7 @@ async function evaluateMSMECredit(req, res) {
     if (!file && !manualData && !gstin) {
       return res.status(400).json({ error: 'No input provided. Please enter a GSTIN, upload a file, or enter manual data.' });
     }
-    if (!file && !manualData && !GSTIN_RE.test(String(gstin).trim().toUpperCase())) {
+    if (!file && !manualData && !isAcceptedGstin(String(gstin).trim().toUpperCase())) {
       return res.status(400).json({ code: 'INVALID_GSTIN', error: 'Enter a valid 15-character GSTIN.' });
     }
 

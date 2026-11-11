@@ -32,11 +32,19 @@ test('invalid GSTIN is rejected before any provider call', async () => {
   assert.equal(calls.length, 0);
 });
 
+test('GSTIN with a wrong check digit is rejected before any provider call', async () => {
+  const r = await run({ gstin: '24AAACQ1234A1Z5' });
+  assert.equal(r.status, 400);
+  assert.equal(r.body.code, 'INVALID_GSTIN');
+  assert.match(r.body.error, /check digit/);
+  assert.equal(calls.length, 0);
+});
+
 test('provider failure returns 503 without leaking the error', async () => {
   impl = async () => { throw new Error('SANDBOX_API_KEY=sk_live_secret rejected'); };
   const orig = console.error; console.error = () => {};
   try {
-    const r = await run({ gstin: '24aaacq1234a1z5' });
+    const r = await run({ gstin: '24aaacq1234a1za' });
     assert.equal(r.status, 503);
     assert.equal(r.body.code, 'REGISTRY_UNAVAILABLE');
     assert.doesNotMatch(JSON.stringify(r.body), /secret|SANDBOX/);
@@ -44,10 +52,10 @@ test('provider failure returns 503 without leaking the error', async () => {
 });
 
 test('GSTIN is normalised and cin query is passed through upper-cased', async () => {
-  const r = await run({ gstin: ' 24aaacq1234a1z5 ' }, { cin: ' u12345mh2020ptc123456 ' });
+  const r = await run({ gstin: ' 24aaacq1234a1za ' }, { cin: ' u12345mh2020ptc123456 ' });
   assert.equal(r.status, 200);
-  assert.deepEqual(calls[0], ['24AAACQ1234A1Z5', { cin: 'U12345MH2020PTC123456' }]);
-  await run({ gstin: '24AAACQ1234A1Z5' }, { cin: ['a', 'b'] });
+  assert.deepEqual(calls[0], ['24AAACQ1234A1ZA', { cin: 'U12345MH2020PTC123456' }]);
+  await run({ gstin: '24AAACQ1234A1ZA' }, { cin: ['a', 'b'] });
   assert.deepEqual(calls[1][1], { cin: null });
 });
 
@@ -63,6 +71,6 @@ test('preset GSTIN returns sample data only in demo mode', async () => {
   assert.equal(r.body.registryReport.sampleData, true);
   assert.equal(r.body.registryReport.gst.source, 'Sample data (demo mode)');
 
-  r = await run({ gstin: '24AAACQ1234A1Z5' });
+  r = await run({ gstin: '24AAACQ1234A1ZA' });
   assert.equal(calls.length, 2, 'non-preset GSTIN in demo mode still uses the real service');
 });

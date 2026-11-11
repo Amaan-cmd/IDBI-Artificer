@@ -287,3 +287,17 @@ test('GSTIN-only request with a malformed GSTIN is rejected with 400 before stre
   assert.match(body.error, /GSTIN/);
   assert.equal(called, false);
 });
+
+test('GSTIN-only request with a wrong check digit is rejected before ingestion', async () => {
+  let called = false;
+  ingestion.ingestAlternateData = async () => { called = true; return {}; };
+  let statusCode = null;
+  let body = null;
+  const res = fakeRes();
+  res.status = (c) => { statusCode = c; return res; };
+  res.json = (b) => { body = b; return res; };
+  await quiet(() => evaluateMSMECredit(fakeReq({ gstin: '29AABCI1681G1ZN' }), res));
+  assert.equal(statusCode, 400);
+  assert.equal(body.code, 'INVALID_GSTIN');
+  assert.equal(called, false);
+});

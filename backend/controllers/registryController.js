@@ -2,12 +2,15 @@ const { getRegistryReport } = require('../services/registry/registryService');
 const { isDemoMode } = require('../platform/demoMode');
 const { demoRegistryReport } = require('../demo/demoEntities');
 
-const { GSTIN_RE } = require('../utils/gstin');
+const { GSTIN_RE, isAcceptedGstin } = require('../utils/gstin');
 
 async function getRegistry(req, res) {
   const gstin = String(req.params.gstin || '').trim().toUpperCase();
   if (!GSTIN_RE.test(gstin)) {
     return res.status(400).json({ code: 'INVALID_GSTIN', error: 'Enter a valid 15-character GSTIN.' });
+  }
+  if (!isAcceptedGstin(gstin)) {
+    return res.status(400).json({ code: 'INVALID_GSTIN', error: 'Enter a valid 15-character GSTIN (check digit mismatch).' });
   }
   if (isDemoMode()) {
     const sample = demoRegistryReport(gstin);

@@ -55,7 +55,7 @@ const { runGrokTool } = require('../utils/grokClient');
 test('scrape_gstin_registry rejects invalid GSTINs without calling the registry', async () => {
   const calls = [];
   const deps = { getRegistryReport: async (g) => { calls.push(g); return { status: 'ok' }; } };
-  for (const gstin of [undefined, '', 'ABC', '27AAACR5055K1Z', '27AAACR5055K1ZXX', { x: 1 }, '27AAACR5055K1Z5; DROP']) {
+  for (const gstin of [undefined, '', 'ABC', '27AAACR5055K1Z', '27AAACR5055K1ZXX', { x: 1 }, '27AAACR5055K1Z7; DROP', '27AAACR5055K1Z5']) {
     const out = await runGrokTool('scrape_gstin_registry', { gstin }, deps);
     assert.deepEqual(out, { status: 'unavailable', reason: 'Invalid GSTIN' });
   }
@@ -65,9 +65,9 @@ test('scrape_gstin_registry rejects invalid GSTINs without calling the registry'
 test('scrape_gstin_registry normalises and forwards a valid GSTIN', async () => {
   const calls = [];
   const deps = { getRegistryReport: async (g) => { calls.push(g); return { status: 'ok', gstin: g }; } };
-  const out = await runGrokTool('scrape_gstin_registry', { gstin: ' 27aaacr5055k1z5 ' }, deps);
-  assert.deepEqual(calls, ['27AAACR5055K1Z5']);
-  assert.deepEqual(out, { status: 'ok', gstin: '27AAACR5055K1Z5' });
+  const out = await runGrokTool('scrape_gstin_registry', { gstin: ' 27aaacr5055k1z7 ' }, deps);
+  assert.deepEqual(calls, ['27AAACR5055K1Z7']);
+  assert.deepEqual(out, { status: 'ok', gstin: '27AAACR5055K1Z7' });
 });
 
 test('query_mca_master_data stays unavailable and unknown tools return null', async () => {

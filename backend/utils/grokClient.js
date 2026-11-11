@@ -7,7 +7,7 @@
  */
 
 const { getRegistryReport } = require('../services/registry/registryService');
-const { GSTIN_RE } = require('./gstin');
+const { isValidGstin } = require('./gstin');
 
 // Available tools for Grok 4.6
 const GROK_TOOLS = [
@@ -48,7 +48,7 @@ const GROK_TOOLS = [
 async function runGrokTool(name, args, deps = { getRegistryReport }) {
   if (name === 'scrape_gstin_registry') {
     const gstin = typeof args?.gstin === 'string' ? args.gstin.trim().toUpperCase() : '';
-    if (!GSTIN_RE.test(gstin)) return { status: 'unavailable', reason: 'Invalid GSTIN' };
+    if (!isValidGstin(gstin)) return { status: 'unavailable', reason: 'Invalid GSTIN' };
     return deps.getRegistryReport(gstin);
   }
   if (name === 'query_mca_master_data') {

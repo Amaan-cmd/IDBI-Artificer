@@ -5,6 +5,7 @@ const { applyGuardrails } = require('../utils/nemoGuardrails');
 const { getRegistryReport } = require('../services/registry/registryService');
 const { isDemoMode } = require('../platform/demoMode');
 const { demoFinancials, demoRegistryReport } = require('../demo/demoEntities');
+const { isAcceptedGstin } = require('../utils/gstin');
 
 const GSTIN_PATTERN = /[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}/i;
 const GSTIN_EXACT = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/i;
@@ -249,7 +250,11 @@ function coerceNumber(v) {
   return v;
 }
 
-const validGstin = (g) => (typeof g === 'string' && GSTIN_EXACT.test(g.trim()) ? g.trim().toUpperCase() : null);
+// Format plus check digit, so a mistyped GSTIN never reaches a billed lookup.
+const validGstin = (g) => {
+  const clean = typeof g === 'string' ? g.trim().toUpperCase() : '';
+  return isAcceptedGstin(clean) ? clean : null;
+};
 
 // LLM extraction goes through the same normalisation as the heuristic, so a
 // field the model left out or set to null becomes a dataGap, not a fact.

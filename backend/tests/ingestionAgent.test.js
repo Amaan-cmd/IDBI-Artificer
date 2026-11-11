@@ -226,5 +226,6 @@ test('Route B: scraper disabled means no registry lookup', async () => {
 test('Route C: an invalid GSTIN is rejected without a registry call', async () => {
   registryCalls.length = 0;
   await assert.rejects(quiet(() => ingestAlternateData({ gstin: 'not-a-gstin' })), /Invalid GSTIN/);
+  await assert.rejects(quiet(() => ingestAlternateData({ gstin: '29AABCI1681G1ZN' })), /Invalid GSTIN/);
   assert.deepEqual(registryCalls, []);
 });
