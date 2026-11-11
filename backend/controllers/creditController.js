@@ -8,6 +8,7 @@ const { azureStorage } = require('../utils/azureStorage');
 const { incrementUserUsage } = require('./userController');
 const { addHistoryRecord } = require('./historyController');
 const { sendSlackNotification } = require('../services/slackNotifier');
+const { applyRegistryAdjustments } = require('../services/registry/registryAdjustments');
 
 async function evaluateMSMECredit(req, res) {
   // Declared here so the outer catch can always stop the SSE heartbeat.
@@ -18,15 +19,6 @@ async function evaluateMSMECredit(req, res) {
     const gstin = req.body.gstin;
     const { uid: userId, email: userEmail, name: userName, role: userRole } = req.session;
     const enableScraper = req.body.enableScraper === 'true' || req.body.enableScraper === true;
-
-    let scraperData = null;
-    try {
-      if (req.body.scraperData) {
-        scraperData = typeof req.body.scraperData === 'string' ? JSON.parse(req.body.scraperData) : req.body.scraperData;
-      }
-    } catch (e) {
-      console.warn('Failed to parse scraperData:', e);
-    }
 
     if (!file && !manualData && !gstin) {
       return res.status(400).json({ error: 'No input provided. Please enter a GSTIN, upload a file, or enter manual data.' });
@@ -69,6 +61,26 @@ async function evaluateMSMECredit(req, res) {
       // 1. Live Google Gemini / Grok 4.6 Ingestion & Live Web Scraper (Agent 1 - Fetcha)
       res.write(`data: ${JSON.stringify({ step: 0, agent: 'FETCHA' })}\n\n`);
       const structuredData = await ingestAlternateData({ file, manualData, gstin, enableScraper });
+
+      // GSTIN-only run: registry screening, no financials and therefore no score.
+      if (structuredData.reportType === 'REGISTRY_SCREENING') {
+        const report = structuredData.registryReport;
+        const screeningPayload = {
+          status: 'success',
+          reportType: 'REGISTRY_SCREENING',
+          gstin: structuredData.gstin,
+          businessName: report?.gst?.status === 'ok' ? report.gst.data.legalName : structuredData.gstin,
+          registryReport: report
+        };
+        addHistoryRecord({
+          userId, userEmail, userName: userName || userEmail, userRole: userRole || 'Institutional Credit Officer',
+          name: screeningPayload.businessName, gstin: screeningPayload.gstin, score: null, risk: null,
+          reason: 'Registry screening (no statement uploaded)', fullPayload: screeningPayload
+        });
+        res.write(`data: ${JSON.stringify({ step: 4, payload: screeningPayload })}\n\n`);
+        cleanup();
+        return res.end();
+      }
       
       // 2. JEV System 1 Cognitive Gatekeeper (Appropriateness & Injection Filter)
       res.write(`data: ${JSON.stringify({ step: 1, agent: 'JEV' })}\n\n`);
@@ -103,7 +115,12 @@ async function evaluateMSMECredit(req, res) {
       
       // 4. Chief Credit Officer Synthesis & XAI Audit (Agent 3 - Orc)
       res.write(`data: ${JSON.stringify({ step: 3, agent: 'ORC' })}\n\n`);
-      const finalDecision = await synthesizeScore(structuredData, calculationMatrix, scraperData);
+      // The registry report reaches the LLM via structuredData; it is not an override.
+      // Registry facts move the score only through the deterministic adjustments.
+      const finalDecision = applyRegistryAdjustments(
+        await synthesizeScore(structuredData, calculationMatrix, null),
+        structuredData.registryReport
+      );
 
       // Clean up uploaded file if it exists
       if (file && fs.existsSync(file.path)) {
@@ -118,6 +135,7 @@ async function evaluateMSMECredit(req, res) {
         metrics: calculationMatrix,
         decision: finalDecision,
         jevAudit: jevReport,
+        registryReport: structuredData.registryReport || null,
         agent1Telemetry: structuredData
       };
 
@@ -127,7 +145,7 @@ async function evaluateMSMECredit(req, res) {
         userName: userName || userEmail,
         userRole: userRole || 'Institutional Credit Officer',
         name: responsePayload.businessName,
-        gstin: structuredData.gstin || gstin || '27AAHCE5539J1ZA',
+        gstin: structuredData.gstin || gstin || null,
         score: responsePayload.decision.score,
         risk: responsePayload.decision.riskLevel,
         revenue: responsePayload.metrics?.revenueRunRate || 0,
@@ -165,15 +183,16 @@ async function evaluateMSMECredit(req, res) {
       try {
         fallbackStructured = await ingestAlternateData({ file, manualData, gstin, enableScraper: false });
       } catch (ingErr) {
-        fallbackStructured = {
-          businessName: gstin ? `Enterprise (${gstin})` : (file?.originalname?.replace(/\.[^/.]+$/, "") || 'Evaluated Enterprise'),
-          gstin: gstin || '27AADCB2230M1Z2',
-          totalRevenue: 9680000,
-          totalCreditVolume: 4840000,
-          totalDebitVolume: 4260000,
-          bankClosingBalance: 680200,
-          inwardBounces: 0
-        };
+        console.warn('[Credit Engine] Fallback extraction failed:', ingErr.message);
+        if (file && fs.existsSync(file.path)) fs.unlinkSync(file.path);
+        res.write(`data: ${JSON.stringify({ step: 99, error: 'Could not extract financials from the uploaded statement. Please upload a clearer statement (PDF or CSV).' })}\n\n`);
+        cleanup();
+        return res.end();
+      }
+      if (fallbackStructured.reportType === 'REGISTRY_SCREENING') {
+        res.write(`data: ${JSON.stringify({ step: 99, error: 'Registry screening could not be completed. Please retry.' })}\n\n`);
+        cleanup();
+        return res.end();
       }
 
       res.write(`data: ${JSON.stringify({ step: 1, agent: 'JEV' })}\n\n`);
@@ -183,7 +202,10 @@ async function evaluateMSMECredit(req, res) {
       const deterministic = computeFinancialTelemetry(fallbackStructured);
 
       res.write(`data: ${JSON.stringify({ step: 3, agent: 'ORC' })}\n\n`);
-      const finalDecision = await synthesizeScore(fallbackStructured, deterministic, scraperData, { deterministicOnly: true });
+      const finalDecision = applyRegistryAdjustments(
+        await synthesizeScore(fallbackStructured, deterministic, null, { deterministicOnly: true }),
+        fallbackStructured.registryReport
+      );
 
       if (file && fs.existsSync(file.path)) {
         fs.unlinkSync(file.path);
@@ -192,10 +214,11 @@ async function evaluateMSMECredit(req, res) {
       const responsePayload = {
         status: 'success',
         businessName: fallbackStructured.businessName,
-        gstin: fallbackStructured.gstin || gstin || '27AADCB2230M1Z2',
+        gstin: fallbackStructured.gstin || gstin || null,
         metrics: deterministic,
         decision: finalDecision,
         jevAudit: jevReport,
+        registryReport: fallbackStructured.registryReport || null,
         agent1Telemetry: fallbackStructured
       };
 
