@@ -1,0 +1,9 @@
+{ "code": 200, "timestamp": 1782021074236, "data": [ {
+  "updated_at": 1783351002317, "@entity": "in.co.sandbox.kyc.mca.company_master_data",
+  "cin": "U72900GJ2015PTC082637", "company_name": "QUICKO INFOSOFT PRIVATE LIMITED", "company_roc_code": "ROC Ahmedabad",
+  "company_category": "Company limited by shares", "company_sub_category": "Non-government company", "company_class": "Private",
+  "authorized_capital": 15200000, "paidup_capital": 14566670, "company_registration_date": "2015-03-19",
+  "registered_office_address": "B/701, Amrapali Lakeview Tower, Vastrapur, Ahmedabad, Gujarat, 380015-India",
+  "listing_status": "Unlisted", "company_status": "Active", "company_state_code": "gujarat", "company_origin": "India",
+  "nic_code": "72900", "company_industrial_classification": "Business Services" } ],
+  "transaction_id": "321e98ad-b002-4c4e-ad6b-34121e06c127" }

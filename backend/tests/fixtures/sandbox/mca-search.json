@@ -1,0 +1,6 @@
+{ "code": 200, "timestamp": 1783319160519, "data": { "@entity": "in.co.sandbox.kyc.mca.company_master_data_search_response",
+  "records": [
+    { "@entity": "in.co.sandbox.kyc.mca.company_master_data_search_result", "cin": "U72900GJ2015PTC082637", "company_name": "QUICKO INFOSOFT PRIVATE LIMITED" },
+    { "@entity": "in.co.sandbox.kyc.mca.company_master_data_search_result", "cin": "U72900GJ2019PTC111111", "company_name": "QUICKO INFOSOFT SERVICES PRIVATE LIMITED" }
+  ], "limit": 5, "offset": 0, "count": 2, "has_more": false },
+  "transaction_id": "5979f864-959f-4cf3-9c24-ecc9f2bd6431" }
