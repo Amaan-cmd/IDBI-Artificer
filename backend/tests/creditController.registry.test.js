@@ -301,3 +301,32 @@ test('GSTIN-only request with a wrong check digit is rejected before ingestion',
   assert.equal(body.code, 'INVALID_GSTIN');
   assert.equal(called, false);
 });
+
+test('statement account holder that differs from the GST name skips registry adjustments (live path)', async () => {
+  history.length = 0;
+  ingestion.ingestAlternateData = async () => ({ businessName: 'Other Entity Pvt Ltd', gstin: REPORT.gstin, registryReport: REPORT });
+  const res = fakeRes();
+  await quiet(() => evaluateMSMECredit(fakeReq({ manualData: 'statement text' }), res));
+
+  const final = res.events.find(e => e.step === 4);
+  assert.ok(final, 'step 4 emitted');
+  assert.equal(final.payload.decision.score, 700);
+  assert.deepEqual(final.payload.decision.registryAdjustments, []);
+  assert.ok(final.payload.decision.redFlags.some(f => /'Other Entity Pvt Ltd' does not match GST registered name 'Real Co Pvt Ltd'/.test(f)));
+});
+
+test('statement account holder mismatch is also checked on the fallback path', async () => {
+  history.length = 0;
+  let n = 0;
+  ingestion.ingestAlternateData = async () => {
+    if (++n === 1) throw new Error('LLM outage');
+    return { businessName: 'Other Entity Pvt Ltd', gstin: REPORT.gstin, monthlyCredits: [1, 2, 3], registryReport: REPORT };
+  };
+  const res = fakeRes();
+  await quiet(() => evaluateMSMECredit(fakeReq({ manualData: 'statement text', enableScraper: 'true' }), res));
+
+  const final = res.events.find(e => e.step === 4);
+  assert.ok(final, 'step 4 emitted');
+  assert.deepEqual(final.payload.decision.registryAdjustments, []);
+  assert.ok(final.payload.decision.redFlags.some(f => /does not match GST registered name/.test(f)));
+});

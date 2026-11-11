@@ -136,7 +136,8 @@ async function evaluateMSMECredit(req, res) {
       // Registry facts move the score only through the deterministic adjustments.
       const finalDecision = applyRegistryAdjustments(
         await synthesizeScore(structuredData, calculationMatrix, null),
-        structuredData.registryReport
+        structuredData.registryReport,
+        { statementName: structuredData.businessName }
       );
 
       // Clean up uploaded file if it exists
@@ -236,7 +237,8 @@ async function evaluateMSMECredit(req, res) {
       res.write(`data: ${JSON.stringify({ step: 3, agent: 'ORC' })}\n\n`);
       const finalDecision = applyRegistryAdjustments(
         await synthesizeScore(fallbackStructured, deterministic, null, { deterministicOnly: true }),
-        fallbackStructured.registryReport
+        fallbackStructured.registryReport,
+        { statementName: fallbackStructured.businessName }
       );
 
       if (file && fs.existsSync(file.path)) {
