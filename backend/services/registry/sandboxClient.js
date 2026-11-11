@@ -16,11 +16,11 @@ function createSandboxClient({
 } = {}) {
   let token = null;
   let tokenExpiresAt = 0;
+  let inflightAuth = null;
 
   const request = (url, init) => fetchImpl(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
 
-  async function getToken() {
-    if (token && now() < tokenExpiresAt) return { token };
+  async function authenticate() {
     if (!apiKey || !apiSecret) {
       return { error: { ok: false, kind: 'unavailable', code: 'NO_CREDENTIALS', message: 'Sandbox credentials are not configured', transactionId: null } };
     }
@@ -40,6 +40,24 @@ function createSandboxClient({
       return { token };
     } catch (err) {
       return { error: { ok: false, kind: 'unavailable', code: 'NETWORK', message: err.message, transactionId: null } };
+    }
+  }
+
+  // Concurrent callers share a single in-flight /authenticate request.
+  function getToken() {
+    if (token && now() < tokenExpiresAt) return Promise.resolve({ token });
+    if (!inflightAuth) {
+      inflightAuth = authenticate().finally(() => { inflightAuth = null; });
+    }
+    return inflightAuth;
+  }
+
+  // Only discard the token that was actually rejected; a concurrent request
+  // may already have replaced it with a fresh one.
+  function invalidate(staleToken) {
+    if (token === staleToken) {
+      token = null;
+      tokenExpiresAt = 0;
     }
   }
 
@@ -66,7 +84,7 @@ function createSandboxClient({
     }
 
     if ((res.status === 401 || res.status === 403) && !reauthenticated) {
-      token = null;
+      invalidate(auth.token);
       return send(method, pathAndQuery, body, attempt, true);
     }
     if (res.status >= 500 && res.status !== 521 && attempt < 1) {

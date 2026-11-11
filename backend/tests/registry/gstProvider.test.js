@@ -50,3 +50,22 @@ test('financialYearOf', () => {
   assert.equal(gst.financialYearOf(new Date('2026-11-11T00:00:00Z')), 'FY 2026-27');
   assert.equal(gst.financialYearOf(new Date('2026-02-01T00:00:00Z')), 'FY 2025-26');
 });
+
+test('financialYearOf rolls over at midnight IST on 1 April', () => {
+  assert.equal(gst.financialYearOf(new Date('2026-03-31T18:29:59Z')), 'FY 2025-26');
+  assert.equal(gst.financialYearOf(new Date('2026-03-31T18:30:00Z')), 'FY 2026-27');
+  assert.equal(gst.financialYearOf(new Date('2099-06-01T00:00:00Z')), 'FY 2099-00');
+});
+
+test('trackReturns normalises return types and drops unparseable periods', async () => {
+  const body = { data: { data: { EFiledlist: [
+    { rtntype: 'GSTR-3B', ret_prd: '042026', dof: '20-05-2026', valid: 'Y' },
+    { rtntype: 'cmp-08', ret_prd: '062026', dof: '18/07/2026', valid: 'N' },
+    { rtntype: 'GSTR9', ret_prd: '2025-26', dof: '31-12-2026' }
+  ] } } };
+  const r = await gst.trackReturns('24AAACQ1234A1Z5', 'FY 2026-27', { client: clientReturning({ ok: true, body, transactionId: 't' }), now: fixedNow });
+  assert.deepEqual(r.data.map(f => [f.returnType, f.period, f.filedOn, f.valid]), [
+    ['GSTR3B', '2026-04', '2026-05-20', true],
+    ['CMP08', '2026-06', '2026-07-18', false]
+  ]);
+});

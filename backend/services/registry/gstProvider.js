@@ -56,9 +56,14 @@ function mapFiling(f) {
   };
 }
 
+const IST_OFFSET_MS = 330 * 60 * 1000;
+
+// Indian financial year (April–March), evaluated in IST so the 1 April
+// rollover happens at local midnight rather than 05:30 IST.
 function financialYearOf(date) {
-  const year = date.getUTCFullYear();
-  const start = date.getUTCMonth() + 1 >= 4 ? year : year - 1;
+  const ist = new Date(date.getTime() + IST_OFFSET_MS);
+  const year = ist.getUTCFullYear();
+  const start = ist.getUTCMonth() + 1 >= 4 ? year : year - 1;
   return `FY ${start}-${String((start + 1) % 100).padStart(2, '0')}`;
 }
 

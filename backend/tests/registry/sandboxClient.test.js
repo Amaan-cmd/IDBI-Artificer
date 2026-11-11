@@ -82,3 +82,80 @@ test('GET sends no body', async () => {
   assert.equal(f.calls[1].init.method, 'GET');
   assert.equal(f.calls[1].init.body, undefined);
 });
+
+test('concurrent first calls share one in-flight authentication', async () => {
+  let releaseAuth;
+  const authGate = new Promise(r => { releaseAuth = r; });
+  const f = fakeFetch([
+    async () => { await authGate; return AUTH_OK; },
+    jsonResponse(200, { code: 200, data: { n: 1 } }),
+    jsonResponse(200, { code: 200, data: { n: 2 } }),
+    jsonResponse(200, { code: 200, data: { n: 3 } })
+  ]);
+  const c = createSandboxClient(opts(f));
+  const pending = [c.post('/a', {}), c.post('/b', {}), c.get('/c')];
+  await new Promise(r => setImmediate(r));
+  releaseAuth();
+  const results = await Promise.all(pending);
+  assert.ok(results.every(r => r.ok));
+  assert.equal(f.calls.filter(x => x.url.endsWith('/authenticate')).length, 1);
+});
+
+test('failed authentication is not cached; next call retries auth', async () => {
+  const f = fakeFetch([
+    jsonResponse(500, { code: 500, message: 'down' }),
+    AUTH_OK,
+    jsonResponse(200, { code: 200, data: {} })
+  ]);
+  const c = createSandboxClient(opts(f));
+  const first = await c.post('/x', {});
+  assert.equal(first.kind, 'unavailable'); assert.equal(first.code, 'AUTH_500');
+  const second = await c.post('/x', {});
+  assert.equal(second.ok, true);
+});
+
+test('concurrent 401s on the same stale token trigger a single re-authentication', async () => {
+  let authCount = 0;
+  const seq = [];
+  const g = async (url, init) => {
+    seq.push({ url, auth: init.headers.authorization });
+    if (url.endsWith('/authenticate')) { authCount += 1; return jsonResponse(200, { code: 200, data: { access_token: `tok${authCount}` } }); }
+    await new Promise(r => setImmediate(r));
+    if (init.headers.authorization === 'tok1' && !url.endsWith('/warm')) return jsonResponse(401, { code: 401 });
+    return jsonResponse(200, { code: 200, data: {} });
+  };
+  const c = createSandboxClient(opts(g));
+  await c.post('/warm', {});
+  const [a, b] = await Promise.all([c.post('/a', {}), c.post('/b', {})]);
+  assert.equal(a.ok, true); assert.equal(b.ok, true);
+  assert.equal(authCount, 2);
+  assert.equal(seq.filter(s => !s.url.endsWith('/authenticate')).at(-1).auth, 'tok2');
+});
+
+test('retries once on 5xx then succeeds', async () => {
+  const f = fakeFetch([AUTH_OK, jsonResponse(503, { code: 503, message: 'busy' }), jsonResponse(200, { code: 200, data: { ok: 1 } })]);
+  const r = await createSandboxClient(opts(f)).post('/x', {});
+  assert.equal(r.ok, true);
+  assert.equal(f.calls.length, 3);
+});
+
+test('does not retry 521 (not found)', async () => {
+  const f = fakeFetch([AUTH_OK, jsonResponse(521, { code: 521, message: 'nf' })]);
+  const r = await createSandboxClient(opts(f)).post('/x', {});
+  assert.equal(r.kind, 'not_found');
+  assert.equal(f.calls.length, 2);
+});
+
+test('a second 401 after re-auth is reported, not looped', async () => {
+  const f = fakeFetch([AUTH_OK, jsonResponse(401, { code: 401 }), AUTH_OK, jsonResponse(401, { code: 401, message: 'denied' })]);
+  const r = await createSandboxClient(opts(f)).post('/x', {});
+  assert.equal(r.ok, false); assert.equal(r.kind, 'unavailable'); assert.equal(r.code, '401');
+  assert.equal(f.calls.length, 4);
+});
+
+test('timeout abort is classified as unavailable', async () => {
+  const abort = () => { const e = new Error('The operation was aborted due to timeout'); e.name = 'TimeoutError'; throw e; };
+  const f = fakeFetch([AUTH_OK, abort, abort]);
+  const r = await createSandboxClient(opts(f)).post('/x', {});
+  assert.equal(r.kind, 'unavailable'); assert.equal(r.code, 'NETWORK');
+});

@@ -57,3 +57,27 @@ test('findCompanyByName with no exact match → ambiguous candidates', async () 
 test('normaliseCompanyName', () => {
   assert.equal(mca.normaliseCompanyName('M/s. Apex & Co. Pvt. Ltd.'), 'APEX AND CO PRIVATE LIMITED');
 });
+
+test('normaliseCompanyName edge cases', () => {
+  const n = mca.normaliseCompanyName;
+  assert.equal(n('Apex Infra PVT.LTD.'), 'APEX INFRA PRIVATE LIMITED');
+  assert.equal(n('Apex Infra Private Ltd'), 'APEX INFRA PRIVATE LIMITED');
+  assert.equal(n('Apex (OPC) Private Limited.'), 'APEX OPC PRIVATE LIMITED');
+  assert.equal(n('A&B Traders Pvt Ltd,'), 'A AND B TRADERS PRIVATE LIMITED');
+  assert.equal(n(null), '');
+});
+
+test('findCompanyByName with two identical normalised names → ambiguous', async () => {
+  const body = { data: { records: [
+    { cin: 'U72900GJ2015PTC082637', company_name: 'APEX PRIVATE LIMITED' },
+    { cin: 'U72900MH2016PTC082638', company_name: 'Apex Pvt. Ltd.' }
+  ] } };
+  const r = await mca.findCompanyByName('Apex Pvt Ltd', { client: client({ ok: true, body, transactionId: 't' }) });
+  assert.equal(r.status, 'ambiguous');
+  assert.equal(r.candidates.length, 2);
+});
+
+test('findCompanyByName with empty records → unavailable', async () => {
+  const r = await mca.findCompanyByName('Nobody Ltd', { client: client({ ok: true, body: { data: { records: [] } }, transactionId: 't' }) });
+  assert.equal(r.status, 'unavailable');
+});
