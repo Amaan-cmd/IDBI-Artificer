@@ -68,7 +68,7 @@ Provide your direct forensic response:`;
       console.warn('[Chat] Azure Foundry Claude check:', foundryErr.message);
     }
 
-    // 2. Fallback Engine: Google Gemini (with 5s timeout safety)
+    // 2. Fallback Engine: Google Gemini (bounded by GEMINI_TIMEOUT_MS)
     if (!rawAnswer) {
       try {
         const model = process.env.AGENT3_MODEL || process.env.GEMINI_PRO_MODEL || flashModel();

@@ -1,5 +1,5 @@
 const { VertexAI } = require('@google-cloud/vertexai');
-const { flashModel, candidateModels } = require('./geminiModels');
+const { flashModel, candidateModels, timeoutMs: geminiTimeoutMs } = require('./geminiModels');
 let secretClient = null;
 
 /**
@@ -118,18 +118,25 @@ async function executeGeminiCall(modelName, systemPrompt, userPrompt, secretKeyN
 }
 
 /**
- * Execute Gemini Enterprise with a strict 5-second timeout to prevent hanging.
+ * Execute Gemini Enterprise with a bounded timeout (GEMINI_TIMEOUT_MS,
+ * default 25s) to prevent hanging.
  */
 async function callGemini(modelName = flashModel(), systemPrompt = '', userPrompt = '', secretKeyName = null) {
-  const timeoutMs = 5000;
-  const timeoutPromise = new Promise((_, reject) => 
-    setTimeout(() => reject(new Error('Gemini inference timeout (5s exceeded)')), timeoutMs)
-  );
+  const timeoutMs = geminiTimeoutMs();
+  let timer;
+  const timeoutPromise = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`Gemini inference timeout (${timeoutMs}ms exceeded)`)), timeoutMs);
+    if (typeof timer.unref === 'function') timer.unref();
+  });
 
-  return Promise.race([
-    executeGeminiCall(modelName, systemPrompt, userPrompt, secretKeyName),
-    timeoutPromise
-  ]);
+  try {
+    return await Promise.race([
+      executeGeminiCall(modelName, systemPrompt, userPrompt, secretKeyName),
+      timeoutPromise
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 module.exports = { callGemini };
