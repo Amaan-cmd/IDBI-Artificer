@@ -20,7 +20,8 @@ stub('services/registry/registryService', {
   getRegistryReport: async (gstin) => { registryCalls.push(gstin); return { gstin, gst: { status: 'unavailable' } }; }
 });
 const llmCalls = [];
-stub('utils/grokClient', { callGrok: async () => { llmCalls.push('grok'); throw new Error('offline'); } });
+const grok = { reply: null };
+stub('utils/grokClient', { callGrok: async () => { llmCalls.push('grok'); if (grok.reply) return grok.reply; throw new Error('offline'); } });
 stub('utils/googleGemini', { callGemini: async () => { llmCalls.push('gemini'); throw new Error('offline'); } });
 stub('utils/nemoGuardrails', { applyGuardrails: async (s, u, fn) => fn() });
 
@@ -144,4 +145,86 @@ test('Route B: provided values pass through unchanged, including zeros', async (
   assert.equal(r.bankOpeningBalance, 0);
   assert.equal(r.totalDebitAttempts, 10);
   assert.equal(r.gstComplianceScore, 90);
+});
+
+test('LLM extraction is normalised: missing or null fields become dataGaps, not facts', async () => {
+  grok.reply = JSON.stringify({
+    businessName: 'Real Widgets Private Limited', gstin: 'NA', monthlyCredits: ['5,10,000', 540000, 525000],
+    monthlyDebits: [490000, 520000, 530000], bankOpeningBalance: 120000, bankClosingBalance: 155000,
+    sanctionedOdLimit: null, monthlyEmiObligations: null, inwardBounces: 0, dataGaps: []
+  });
+  try {
+    const r = await quiet(() => ingestAlternateData({ manualData: STATEMENT, enableScraper: false }));
+    assert.deepEqual(r.monthlyCredits, [510000, 540000, 525000]);
+    assert.equal(r.gstin, GSTIN); // 'NA' from the LLM; the GSTIN printed in the statement is used
+    assert.equal(r.inwardBounces, 0);
+    assert.ok(!r.dataGaps.includes('inwardBounces'));
+    for (const f of ['sanctionedOdLimit', 'monthlyEmiObligations', 'gstr1OutwardTaxable', 'totalDebitAttempts', 'transactions']) {
+      assert.ok(r.dataGaps.includes(f), `gap ${f}`);
+    }
+  } finally {
+    grok.reply = null;
+  }
+});
+
+test('LLM extraction without a monthly credit series falls back to the labelled table', async () => {
+  grok.reply = JSON.stringify({ businessName: 'Invented Co', totalRevenue: 9999999 });
+  try {
+    const r = await quiet(() => ingestAlternateData({ manualData: STATEMENT, enableScraper: false }));
+    assert.deepEqual(r.monthlyCredits, [510000, 540000, 525000]);
+    assert.equal(r.businessName, 'Real Widgets Private Limited');
+  } finally {
+    grok.reply = null;
+  }
+});
+
+test('heuristic reads Dr / negative / bracketed balances as negative, Cr as positive', () => {
+  const text = `Month Credits Debits Balance
+Jan 2025 1,00,000 1,20,000 20,000.00 Dr
+Feb 2025 1,10,000 95,000 (5,000.00)
+Mar 2025 1,20,000 99,000 -1,000
+Apr 2025 1,30,000 90,000 39,000 Cr
+Closing Balance: Rs. 39,000.00 Cr`;
+  const r = extractHeuristicFinancials(text, 'x.csv');
+  assert.deepEqual(r.monthlyCredits, [100000, 110000, 120000, 130000]);
+  assert.deepEqual(r.monthlyDebits, [120000, 95000, 99000, 90000]);
+  assert.deepEqual(r.dailyClosingBalances, [-20000, -5000, -1000, 39000]);
+  assert.equal(r.bankClosingBalance, 39000);
+});
+
+test('heuristic reads a labelled overdrawn closing balance as negative', () => {
+  const text = `Month Credits Debits
+Jan 2025 1,00,000 90,000
+Feb 2025 1,10,000 95,000
+Mar 2025 1,20,000 99,000
+Closing Balance: Rs. 12,500.00 Dr`;
+  assert.equal(extractHeuristicFinancials(text, 'x.csv').bankClosingBalance, -12500);
+});
+
+test('heuristic rejects rows whose figures do not match the header columns', () => {
+  const text = `Month Txn Count Credits Debits Balance
+Jan 2025 42 1,00,000 90,000 10,000
+Feb 2025 40 1,10,000 95,000 25,000
+Mar 2025 45 1,20,000 99,000 46,000`;
+  assert.throws(() => extractHeuristicFinancials(text, 'x.csv'), /Could not extract financials/);
+});
+
+test('Route B: raw statement text with a GSTIN gets the registry report', async () => {
+  registryCalls.length = 0;
+  const r = await quiet(() => ingestAlternateData({ manualData: STATEMENT, enableScraper: true }));
+  assert.deepEqual(registryCalls, [GSTIN]);
+  assert.equal(r.registryReport.gstin, GSTIN);
+});
+
+test('Route B: scraper disabled means no registry lookup', async () => {
+  registryCalls.length = 0;
+  const r = await quiet(() => ingestAlternateData({ manualData: STATEMENT, enableScraper: false }));
+  assert.deepEqual(registryCalls, []);
+  assert.equal(r.registryReport, null);
+});
+
+test('Route C: an invalid GSTIN is rejected without a registry call', async () => {
+  registryCalls.length = 0;
+  await assert.rejects(quiet(() => ingestAlternateData({ gstin: 'not-a-gstin' })), /Invalid GSTIN/);
+  assert.deepEqual(registryCalls, []);
 });
