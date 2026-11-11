@@ -144,6 +144,7 @@ function App() {
   const [gstinProbeData, setGstinProbeData] = useState(null);
   const [probeState, setProbeState] = useState({ loading: false, error: null });
   const probeTimerRef = useRef(null);
+  const probeAbortRef = useRef(null);
   const [file, setFile] = useState(null);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -364,18 +365,25 @@ function App() {
   const probeGSTIN = (gstin, { cin } = {}) => {
     const clean = (gstin || '').trim().toUpperCase();
     setGstinInput(clean);
+    // Cancel any pending debounce and any in-flight lookup so a slow response for an
+    // earlier GSTIN can never overwrite the state for the GSTIN now in the input.
     clearTimeout(probeTimerRef.current);
+    probeAbortRef.current?.abort();
+    probeAbortRef.current = null;
+    setGstinProbeData(null);
     if (!GSTIN_RE.test(clean)) {
-      setGstinProbeData(null);
       setProbeState({ loading: false, error: null });
       return;
     }
     setProbeState({ loading: true, error: null });
     probeTimerRef.current = setTimeout(async () => {
+      const controller = new AbortController();
+      probeAbortRef.current = controller;
       try {
         const qs = cin ? `?cin=${encodeURIComponent(cin)}` : '';
-        const res = await apiFetch(`/api/v1/registry/gstin/${clean}${qs}`);
+        const res = await apiFetch(`/api/v1/registry/gstin/${clean}${qs}`, { signal: controller.signal });
         const body = await res.json().catch(() => ({}));
+        if (controller.signal.aborted) return;
         if (res.ok && body.registryReport) {
           setGstinProbeData({ gstin: clean, registryReport: body.registryReport });
           setProbeState({ loading: false, error: null });
@@ -384,13 +392,19 @@ function App() {
           setProbeState({ loading: false, error: body.error || `Registry lookup failed (HTTP ${res.status})` });
         }
       } catch {
+        if (controller.signal.aborted) return;
         setGstinProbeData(null);
         setProbeState({ loading: false, error: 'Registry lookup failed. Check your connection.' });
+      } finally {
+        if (probeAbortRef.current === controller) probeAbortRef.current = null;
       }
     }, 600);
   };
 
-  useEffect(() => () => clearTimeout(probeTimerRef.current), []);
+  useEffect(() => () => {
+    clearTimeout(probeTimerRef.current);
+    probeAbortRef.current?.abort();
+  }, []);
 
   // Demo-mode only: deterministic sample evaluation from preset figures (always flagged sampleData).
   const generateGroundedEvaluation = (rawPayload, rawScraper) => {
@@ -707,8 +721,9 @@ function App() {
         risk: completedPayload.decision?.riskLevel ?? null,
         evaluatedDate: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
         status: completedPayload.reportType === 'REGISTRY_SCREENING' ? 'Registry Screening' : 'Completed (Live Pipeline)',
-        compliance: completedPayload.metrics?.taxCompliance || "MCA Active · Grounded",
-        reason: completedPayload.decision?.narrative || "Evaluated under RBI Digital Lending Master Direction.",
+        compliance: completedPayload.metrics?.taxCompliance ?? null,
+        reason: completedPayload.decision?.narrative
+          ?? (completedPayload.reportType === 'REGISTRY_SCREENING' ? 'Registry screening (no statement uploaded)' : null),
         fullPayload: completedPayload
       };
 
