@@ -3,7 +3,7 @@ import { Terminal, Send, Trash2, Sparkles, ChevronRight, Cpu, Building2, HelpCir
 import './OrcTerminal.css';
 import { getCompanyDecisionData, generateOrcResponse } from '../../utils/orcIntelligence';
 
-const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:4000');
+import { apiFetch } from '../../utils/apiClient';
 
 export default function OrcTerminal({ currentBusiness, onQuickInspect }) {
   // Compute enriched decision data for the currently selected business
@@ -92,8 +92,8 @@ You may interrogate why this specific decision was taken, the 300–900 points b
     }
 
     try {
-      if (API_BASE) {
-        const res = await fetch(`${API_BASE}/api/v1/chat/xai`, {
+      {
+        const res = await apiFetch('/api/v1/chat/xai', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

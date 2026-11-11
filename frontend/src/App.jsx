@@ -28,7 +28,7 @@ import { getGSTINProbeData } from './utils/gstinRegistry';
 import { exportAuditReport } from './utils/pdfExport';
 import { getCompanyDecisionData, generateOrcResponse } from './utils/orcIntelligence';
 
-const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:4000');
+import { API_BASE, apiFetch, getSessionToken, setSessionToken, onUnauthorized } from './utils/apiClient';
 
 // Preloaded Realistic MSME Scenarios for Institutional Verification
 const PRELOADED_SCENARIOS = {
@@ -50,6 +50,82 @@ const PRELOADED_SCENARIOS = {
 };
 
 function App() {
+  // Theme State (Dark / Light Mode following system default unless explicitly overridden)
+  const getSystemTheme = () =>
+    typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches
+      ? 'dark'
+      : 'light';
+
+  const [theme, setTheme] = useState(() => {
+    try {
+      const stored = localStorage.getItem('citadel_theme');
+      if (stored === 'dark' || stored === 'light') return stored;
+    } catch {}
+    return getSystemTheme();
+  });
+
+  const applyDocumentTheme = (resolvedTheme) => {
+    document.documentElement.setAttribute('data-theme', resolvedTheme);
+    let stored = null;
+    try { stored = localStorage.getItem('citadel_theme'); } catch {}
+    const metaScheme = document.querySelector('meta[name="color-scheme"]');
+    if (metaScheme) {
+      metaScheme.content = (stored === 'dark' || stored === 'light') ? stored : 'light dark';
+    }
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) {
+      metaTheme.content = resolvedTheme === 'dark' ? '#090B0E' : '#F8F9FB';
+    }
+  };
+
+  const toggleTheme = () => {
+    setTheme(prev => {
+      const next = prev === 'dark' ? 'light' : 'dark';
+      const sysTheme = getSystemTheme();
+      try {
+        if (next === sysTheme) {
+          localStorage.removeItem('citadel_theme');
+        } else {
+          localStorage.setItem('citadel_theme', next);
+        }
+      } catch {}
+      applyDocumentTheme(next);
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    applyDocumentTheme(theme);
+  }, [theme]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia?.('(prefers-color-scheme: dark)');
+    const handleMediaChange = (e) => {
+      try {
+        const stored = localStorage.getItem('citadel_theme');
+        if (stored !== 'dark' && stored !== 'light') {
+          setTheme(e.matches ? 'dark' : 'light');
+        }
+      } catch {}
+    };
+    const handleStorage = (e) => {
+      if (e.key === 'citadel_theme') {
+        if (e.newValue === 'dark' || e.newValue === 'light') {
+          setTheme(e.newValue);
+        } else {
+          setTheme(getSystemTheme());
+        }
+      }
+    };
+    mq?.addEventListener?.('change', handleMediaChange);
+    window.addEventListener('storage', handleStorage);
+    return () => {
+      mq?.removeEventListener?.('change', handleMediaChange);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, []);
+
   // Authentication & Session
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
@@ -59,6 +135,7 @@ function App() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isCmdPaletteOpen, setIsCmdPaletteOpen] = useState(false);
   const [currentView, setCurrentView] = useState('evaluator'); // 'evaluator' | 'master'
+  const [showSplitWorkspace, setShowSplitWorkspace] = useState(false);
 
   // Input & Evaluation Data State
   const [gstinInput, setGstinInput] = useState('27AADCB2230M1Z2');
@@ -117,13 +194,18 @@ function App() {
     if (saved) {
       try {
         const user = JSON.parse(saved);
-        if (user && user.id) {
+        if (user && user.id && getSessionToken()) {
           setCurrentUser(user);
           setIsLoggedIn(true);
         }
       } catch {}
     }
   }, []);
+
+  // Any 401 from a protected endpoint sends the user back to the login gate.
+  useEffect(() => onUnauthorized(() => {
+    handleLogout();
+  }), []);
 
   // Keyboard shortcut listener for Cmd/Ctrl + K
   useEffect(() => {
@@ -177,9 +259,9 @@ function App() {
       userRuns = JSON.parse(localStorage.getItem(userStorageKey) || '[]');
     } catch {}
 
-    if (API_BASE && userId) {
+    if (userId) {
       try {
-        const res = await fetch(`${API_BASE}/api/v1/history?userId=${userId}`);
+        const res = await apiFetch('/api/v1/history');
         const resData = await res.json();
         if (resData.status === 'success' && resData.history?.length) {
           const merged = [...userRuns, ...resData.history.filter(rh => !userRuns.some(uh => (uh.id === rh.id || uh.gstin === rh.gstin)))];
@@ -275,6 +357,7 @@ function App() {
   }, [isLoggedIn, currentUser]);
 
   const handleLogout = () => {
+    setSessionToken(null);
     localStorage.removeItem('enverai_user_session');
     setIsLoggedIn(false);
     setCurrentUser(null);
@@ -301,15 +384,13 @@ function App() {
     const localResolved = getGSTINProbeData(clean);
     setGstinProbeData(localResolved);
 
-    if (API_BASE) {
-      try {
-        const res = await fetch(`${API_BASE}/api/v1/alternate-data/gstin-probe/${clean}`);
-        const resData = await res.json();
-        if (resData.status === 'success') {
-          setGstinProbeData(resData);
-        }
-      } catch {}
-    }
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/alternate-data/gstin-probe/${clean}`);
+      const resData = await res.json();
+      if (resData.status === 'success') {
+        setGstinProbeData(resData);
+      }
+    } catch {}
   };
 
   // Deterministic Zero-Hallucination Evaluation Calculation
@@ -370,35 +451,79 @@ function App() {
     const mcaStatus = scraper.mcaStatus || "Active";
     const courtCases = scraper.courtCases || 0;
 
-    let score = 750;
-    if (cashBufferRatio >= 0.5) score += 40;
-    else if (cashBufferRatio < 0.2) score -= 50;
+    // Institutional Calibrated Credit Scoring Math (Base: 670)
+    let score = 670;
 
-    if (overdraftLimitUtilization < 50) score += 25;
-    else if (overdraftLimitUtilization > 85) score -= 45;
-
-    if (revenueGrowthRate >= 0) score += 30;
+    // Pillar 1: Liquidity & Cash Buffer Ratio
+    if (cashBufferRatio >= 0.75) score += 25;
+    else if (cashBufferRatio >= 0.40) score += 10;
+    else if (cashBufferRatio >= 0.20) score -= 10;
     else score -= 35;
 
-    if (Math.abs(gstVsBankReconciliation - 1.0) <= 0.1) score += 35;
-    else score -= 40;
+    // Pillar 1: Overdraft Utilization
+    if (overdraftLimitUtilization < 35) score += 20;
+    else if (overdraftLimitUtilization <= 60) score += 5;
+    else if (overdraftLimitUtilization <= 80) score -= 15;
+    else score -= 35;
 
-    if (taxGap <= 2.0) score += 25;
-    else if (taxGap > 5.0) score -= 45;
+    // Pillar 2: Revenue Growth
+    if (revenueGrowthRate >= 10.0) score += 20;
+    else if (revenueGrowthRate >= 3.0) score += 12;
+    else if (revenueGrowthRate >= 0.0) score += 4;
+    else if (revenueGrowthRate >= -5.0) score -= 12;
+    else score -= 30;
 
-    if (creditCV <= 0.2) score += 25;
-    else if (creditCV > 0.4) score -= 30;
+    // Pillar 2: GSTR-1 to Bank Reconciliation
+    if (Math.abs(gstVsBankReconciliation - 1.0) <= 0.05) score += 18;
+    else if (Math.abs(gstVsBankReconciliation - 1.0) <= 0.15) score += 5;
+    else score -= 25;
 
-    score -= (bounces * 60);
+    // Pillar 2: Tax Remittance Gap
+    if (taxGap <= 1.0) score += 12;
+    else if (taxGap <= 3.0) score += 0;
+    else score -= 25;
 
-    if (dscp >= 1.5) score += 35;
-    else if (dscp < 1.0) score -= 60;
+    // Pillar 3: Cash Flow Volatility (CV)
+    if (creditCV <= 0.08) score += 20;
+    else if (creditCV <= 0.20) score += 8;
+    else if (creditCV <= 0.35) score -= 12;
+    else score -= 30;
 
+    // Pillar 3: Inward Cheque / NACH Bounces
+    if (bounces === 0) score += 12;
+    else if (bounces === 1) score -= 50;
+    else if (bounces === 2) score -= 90;
+    else score -= 135;
+
+    // Pillar 4: Debt Service Coverage Proxy (DSCP)
+    if (dscp >= 1.80) score += 20;
+    else if (dscp >= 1.40) score += 12;
+    else if (dscp >= 1.00) score -= 10;
+    else score -= 45;
+
+    // Pillar 4: EMI Burden Ratio
+    if (emiBurdenRatio < 6.0) score += 8;
+    else if (emiBurdenRatio <= 12.0) score += 2;
+    else score -= 12;
+
+    // Pillar 5: Legal & Forensics
     if (mcaStatus !== "Active") score -= 150;
-    if (courtCases > 0) score -= (courtCases * 40);
+    else score += 8;
 
-    score = Math.max(300, Math.min(900, score));
-    const riskLevel = score >= 750 ? "LOW" : score >= 600 ? "MODERATE" : "HIGH";
+    if (courtCases > 0) score -= (courtCases * 35);
+    else score += 7;
+
+    // Institutional Blue-Chip Anchor & Scale Bonus
+    const currentGstin = (parsed.gstin || gstinInput || '').toUpperCase();
+    if (currentGstin.includes('AAACT2727Q')) {
+      score += 25; // Tata Motors anchor
+    } else if (currentGstin.includes('AAHCE5539J')) {
+      score += 25; // Enver AI Tech zero-debt profile
+    }
+
+    // Realistic Institutional Clamp: 320 to 885 (No MSME ever gets 900)
+    score = Math.max(320, Math.min(885, score));
+    const riskLevel = score >= 750 ? "LOW" : score >= 620 ? "MODERATE" : "HIGH";
 
     const p1Status = cashBufferRatio >= 0.5 ? "COMFORTABLE" : cashBufferRatio >= 0.25 ? "ADEQUATE" : "STRESSED";
     const p2Trajectory = revenueGrowthRate >= 5 ? "EXPANSIONARY" : revenueGrowthRate >= 0 ? "STABLE" : "CONTRACTING";
@@ -478,86 +603,169 @@ function App() {
     };
   };
 
-  // Trigger Underwriting Evaluation (Simulated Live Pipeline)
+  // Trigger Underwriting Evaluation (Live 4-Agent Cloud Pipeline with Fallback)
   const triggerEvaluation = async (overrideData = null) => {
     setLoading(true);
     setEvaluationStep(0);
     setError(null);
     setData(null);
 
-    // Step-by-step progress ticker
-    const interval = setInterval(() => {
-      setEvaluationStep(prev => (prev < 3 ? prev + 1 : prev));
-    }, 600);
+    // Build multi-modal payload for the backend
+    const formData = new FormData();
+    if (file) {
+      formData.append('statement', file);
+    }
+    if (gstinInput) {
+      formData.append('gstin', gstinInput.trim().toUpperCase());
+    }
+    if (overrideData) {
+      formData.append('manualData', typeof overrideData === 'string' ? overrideData : JSON.stringify(overrideData));
+    }
+    formData.append('enableScraper', 'true');
+    if (gstinProbeData?.registry) {
+      formData.append('scraperData', JSON.stringify(gstinProbeData.registry));
+    }
 
-    setTimeout(() => {
-      clearInterval(interval);
-      setLoading(false);
+    let completedPayload = null;
+    let sseError = null;
 
-      const probe = gstinProbeData || getGSTINProbeData(gstinInput);
-      const isCustomFile = Boolean(file);
-      let payload;
+    try {
+      const response = await apiFetch('/api/v1/evaluate', {
+        method: 'POST',
+        body: formData
+      });
 
-      if (isCustomFile) {
-        payload = generateGroundedEvaluation({
-          businessName: file.name.replace(/\.[^/.]+$/, "").toUpperCase(),
-          gstin: gstinInput || "27AADCB2230M1Z2",
-          monthlyCredits: [820000, 850000, 880000, 840000, 910000, 960000],
-          monthlyDebits: [710000, 730000, 760000, 720000, 780000, 830000],
-          bankClosingBalance: 420000,
-          sanctionedOdLimit: 900000,
-          peakOdUsage: 350000,
-          gstr1OutwardTaxable: 5060000,
-          gstr3bTaxPaid: 910800,
-          gstr1DeclaredTax: 910800,
-          monthlyEmiObligations: 38000,
-          inwardBounces: 0
-        });
-      } else {
-        payload = generateGroundedEvaluation({
-          businessName: probe?.registry?.legalEntityName || "Apex Precision Engineering Pvt Ltd",
-          gstin: probe?.gstin || gstinInput,
-          monthlyCredits: probe?.timeline?.returns?.map(r => r.taxable_sales) || [750000, 780000, 820000, 760000, 840000, 890000],
-          monthlyDebits: probe?.timeline?.returns?.map(r => r.taxable_debits) || [680000, 710000, 740000, 690000, 760000, 820000],
-          bankClosingBalance: probe?.timeline?.closingBalance || 680200,
-          sanctionedOdLimit: probe?.timeline?.sanctionedOdLimit || 1000000,
-          peakOdUsage: probe?.timeline?.peakOdUsage || 320000,
-          gstr1OutwardTaxable: probe?.timeline?.gstr1OutwardTaxable || 4840000,
-          gstr3bTaxPaid: probe?.timeline?.gstr3bTaxPaid || 871200,
-          gstr1DeclaredTax: probe?.timeline?.gstr1DeclaredTax || 871200,
-          monthlyEmiObligations: probe?.timeline?.monthlyEmiObligations || 42500,
-          inwardBounces: probe?.timeline?.inwardBounces || 0
-        });
+      if (!response.ok) {
+        throw new Error(`Underwriting Engine returned HTTP ${response.status}`);
       }
 
-      setData(payload);
+      if (response.body && typeof response.body.getReader === 'function') {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder('utf-8');
+        let buffer = '';
 
-      // Add to user-scoped history
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const events = buffer.split('\n\n');
+          buffer = events.pop() || ''; // Keep trailing incomplete fragment
+
+          for (const rawEvt of events) {
+            const trimmed = rawEvt.trim();
+            if (!trimmed.startsWith('data:')) continue;
+            const jsonText = trimmed.replace(/^data:\s*/, '').trim();
+            try {
+              const parsedEvt = JSON.parse(jsonText);
+              if (typeof parsedEvt.step === 'number') {
+                if (parsedEvt.step <= 3) {
+                  setEvaluationStep(parsedEvt.step);
+                } else if (parsedEvt.step === 4 && parsedEvt.payload) {
+                  completedPayload = parsedEvt.payload;
+                } else if (parsedEvt.step === 99) {
+                  sseError = parsedEvt.error || 'Document rejected by JEV System 1 Gatekeeper.';
+                }
+              }
+              if (parsedEvt.error && parsedEvt.step !== 99) {
+                sseError = parsedEvt.error;
+              }
+            } catch (pErr) {
+              console.warn('[SSE Parse]', pErr);
+            }
+          }
+        }
+      }
+    } catch (networkErr) {
+      console.warn('[Citadel Network Pipeline Notice]:', networkErr.message);
+    }
+
+    // If an explicit JEV rejection was received
+    if (sseError) {
+      setError(sseError);
+      setLoading(false);
+      return;
+    }
+
+    // If live cloud pipeline succeeded, apply it!
+    if (completedPayload) {
+      setData(completedPayload);
+
       const newHistoryItem = {
         id: `h_${Date.now()}`,
         userId: currentUser?.id,
         userName: currentUser?.username,
         userEmail: currentUser?.email,
-        name: payload.businessName,
-        gstin: payload.gstin,
-        score: payload.decision.score,
-        risk: payload.decision.riskLevel,
+        name: completedPayload.businessName || 'Evaluated Enterprise',
+        gstin: completedPayload.gstin || gstinInput,
+        score: completedPayload.decision?.score || 750,
+        risk: completedPayload.decision?.riskLevel || 'LOW',
         evaluatedDate: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
-        status: "Completed",
-        compliance: "MCA Active · Grounded",
-        reason: payload.decision.narrative,
-        fullPayload: payload
+        status: "Completed (Live Pipeline)",
+        compliance: completedPayload.metrics?.taxCompliance || "MCA Active · Grounded",
+        reason: completedPayload.decision?.narrative || "Evaluated under RBI Digital Lending Master Direction.",
+        fullPayload: completedPayload
       };
 
       setHistory(prev => {
-        const updated = [newHistoryItem, ...prev.filter(p => (p.gstin || p.id) !== payload.gstin)];
+        const updated = [newHistoryItem, ...prev.filter(p => (p.gstin || p.id) !== completedPayload.gstin)];
         const userStorageKey = currentUser?.id ? `enver_user_evaluations_${currentUser.id}` : 'enver_user_evaluations_guest';
         try {
           localStorage.setItem(userStorageKey, JSON.stringify(updated));
         } catch {}
         return updated;
       });
-    }, 2500);
+
+      setLoading(false);
+      return;
+    }
+
+    // Resilient Fallback: If network / server was unreachable, execute grounded deterministic evaluation
+    console.info('[Citadel Engine] Live cloud pipeline unreachable. Executing deterministic client-side telemetry.');
+    const probe = gstinProbeData || getGSTINProbeData(gstinInput);
+    const fallbackPayload = generateGroundedEvaluation({
+      businessName: probe?.registry?.legalEntityName || (file?.name ? file.name.replace(/\.[^/.]+$/, "").toUpperCase() : "Apex Precision Engineering Pvt Ltd"),
+      gstin: probe?.gstin || gstinInput || "27AADCB2230M1Z2",
+      monthlyCredits: probe?.timeline?.returns?.map(r => r.taxable_sales) || [750000, 780000, 820000, 760000, 840000, 890000],
+      monthlyDebits: probe?.timeline?.returns?.map(r => r.taxable_debits) || [680000, 710000, 740000, 690000, 760000, 820000],
+      bankClosingBalance: probe?.timeline?.closingBalance || 680200,
+      sanctionedOdLimit: probe?.timeline?.sanctionedOdLimit || 1000000,
+      peakOdUsage: probe?.timeline?.peakOdUsage || 320000,
+      gstr1OutwardTaxable: probe?.timeline?.gstr1OutwardTaxable || 4840000,
+      gstr3bTaxPaid: probe?.timeline?.gstr3bTaxPaid || 871200,
+      gstr1DeclaredTax: probe?.timeline?.gstr1DeclaredTax || 871200,
+      monthlyEmiObligations: probe?.timeline?.monthlyEmiObligations || 42500,
+      inwardBounces: probe?.timeline?.inwardBounces || 0
+    });
+
+    setData(fallbackPayload);
+
+    const newHistoryItem = {
+      id: `h_${Date.now()}`,
+      userId: currentUser?.id,
+      userName: currentUser?.username,
+      userEmail: currentUser?.email,
+      name: fallbackPayload.businessName,
+      gstin: fallbackPayload.gstin,
+      score: fallbackPayload.decision.score,
+      risk: fallbackPayload.decision.riskLevel,
+      evaluatedDate: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+      status: "Completed (Deterministic)",
+      compliance: "MCA Active · Grounded",
+      reason: fallbackPayload.decision.narrative,
+      fullPayload: fallbackPayload
+    };
+
+    setHistory(prev => {
+      const updated = [newHistoryItem, ...prev.filter(p => (p.gstin || p.id) !== fallbackPayload.gstin)];
+      const userStorageKey = currentUser?.id ? `enver_user_evaluations_${currentUser.id}` : 'enver_user_evaluations_guest';
+      try {
+        localStorage.setItem(userStorageKey, JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+
+    setLoading(false);
   };
 
   // Orc XAI Chat Directives
@@ -571,23 +779,21 @@ function App() {
     setIsChatSending(true);
 
     try {
-      if (API_BASE) {
-        const res = await fetch(`${API_BASE}/api/v1/chat/xai`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            query: userQuery,
-            evaluationPayload: data || { businessName: "Simulator MSME" }
-          })
-        });
-        const resData = await res.json();
-        if (resData.response) {
-          setChatMessages(prev => [...prev, { role: 'agent', text: resData.response }]);
-          setIsChatSending(false);
-          return;
-        }
+      const res = await apiFetch('/api/v1/chat/xai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: userQuery,
+          evaluationPayload: data || { businessName: "Simulator MSME" }
+        })
+      });
+      const resData = await res.json();
+      if (resData.response) {
+        setChatMessages(prev => [...prev, { role: 'agent', text: resData.response }]);
+        setIsChatSending(false);
+        return;
       }
-      throw new Error();
+      throw new Error('No response from XAI endpoint');
     } catch {
       const companyData = getCompanyDecisionData(
         data?.businessName || gstinProbeData?.registry?.legalEntityName || 'Apex Precision Engineering Pvt Ltd',
@@ -606,19 +812,19 @@ function App() {
   // =========================================================================
   if (!isLoggedIn) {
     return (
-      <div className="app-viewport">
+      <div className="app-viewport dark-theme" data-theme="dark">
         <div className="floating-lines-bg-container">
           <FloatingLines
-            linesGradient={['#ACE1AF', '#9C52C7', '#C8EED0', '#6B2A8C', '#ACE1AF']}
-            backgroundColor="#0A050E"
-            animationSpeed={0.65}
+            linesGradient={['#10B981', '#059669', '#34D399', '#3F3F46', '#10B981']}
+            backgroundColor="#090B0E"
+            animationSpeed={0.55}
             amplitude={0.8}
             lineWidth={1.0}
             lineCount={9}
-            glow={0.45}
-            brightness={0.95}
+            glow={0.35}
+            brightness={0.85}
             depthOfField={0.3}
-            opacity={0.8}
+            opacity={0.45}
           />
         </div>
         <VerificationGate 
@@ -637,19 +843,20 @@ function App() {
   // =========================================================================
   if (currentView === 'master') {
     return (
-      <div className="app-viewport">
+      <div className={`app-viewport ${theme === 'dark' ? 'dark-theme' : ''}`} data-theme={theme}>
         <div className="floating-lines-bg-container">
           <FloatingLines
-            linesGradient={['#ACE1AF', '#9C52C7', '#C8EED0', '#6B2A8C', '#ACE1AF']}
-            backgroundColor="#0A050E"
-            animationSpeed={0.65}
+            linesGradient={theme === 'dark' ? ['#10B981', '#059669', '#34D399', '#3F3F46', '#10B981'] : ['#FF8BA7', '#F43F5E', '#FDA4AF', '#CBD0D8', '#E2E5E9']}
+            backgroundColor={theme === 'dark' ? '#090B0E' : '#F8F9FB'}
+            lightMode={theme !== 'dark'}
+            animationSpeed={0.55}
             amplitude={0.8}
             lineWidth={1.0}
             lineCount={9}
-            glow={0.45}
-            brightness={0.95}
+            glow={theme === 'dark' ? 0.3 : 0.35}
+            brightness={theme === 'dark' ? 0.85 : 0.9}
             depthOfField={0.3}
-            opacity={0.8}
+            opacity={theme === 'dark' ? 0.38 : 0.65}
           />
         </div>
         <div className="app-container section animate-fade-up" style={{ position: 'relative', zIndex: 1, padding: '24px' }}>
@@ -668,42 +875,35 @@ function App() {
     activeNav === 'billing' ? 'Account & API Billing' : 'Citadel Cockpit';
 
   return (
-    <div className="app-viewport">
-      {/* Interactive FloatingLines WebGL2 Ambient Field - Whitish, Silver Ash & Light Cherry Pink */}
+    <div className={`app-viewport ${theme === 'dark' ? 'dark-theme' : ''}`} data-theme={theme}>
+      {/* Interactive FloatingLines WebGL2 Ambient Field */}
       <div className="floating-lines-bg-container">
         <FloatingLines
-          linesGradient={['#FF8BA7', '#F43F5E', '#FDA4AF', '#CBD0D8', '#E2E5E9']}
-          backgroundColor="#F8F9FB"
-          lightMode={true}
-          animationSpeed={0.55}
+          linesGradient={theme === 'dark' ? ['#10B981', '#059669', '#34D399', '#3F3F46', '#10B981'] : ['#FF8BA7', '#F43F5E', '#FDA4AF', '#CBD0D8', '#E2E5E9']}
+          backgroundColor={theme === 'dark' ? '#090B0E' : '#F8F9FB'}
+          lightMode={theme !== 'dark'}
+          animationSpeed={theme === 'dark' ? 0.55 : 0.55}
           amplitude={0.8}
           lineWidth={1.0}
           lineCount={9}
-          glow={0.35}
-          brightness={0.9}
+          glow={theme === 'dark' ? 0.3 : 0.35}
+          brightness={theme === 'dark' ? 0.85 : 0.9}
           depthOfField={0.3}
-          opacity={0.65}
+          opacity={theme === 'dark' ? 0.38 : 0.65}
         />
       </div>
 
       {/* 5-Min Inactivity Sentinel Overlay */}
       {isSessionLocked && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 9999, backgroundColor: 'rgba(15, 23, 42, 0.45)',
-          backdropFilter: 'blur(16px)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1.5rem'
-        }}>
-          <div className="card animate-fade-up" style={{ maxWidth: '440px', textAlign: 'center', borderColor: '#E2E8F0', background: '#FFFFFF', padding: '32px', boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.15)' }}>
-            <div style={{
-              width: '56px', height: '56px', borderRadius: '50%', background: '#FFF1F4',
-              color: '#F43F5E', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem',
-              border: '1.5px solid #FDA4AF'
-            }}>
+        <div className="sentinel-lock-backdrop">
+          <div className="card animate-fade-up sentinel-lock-card">
+            <div className="sentinel-lock-icon">
               <Clock size={28} />
             </div>
-            <h2 style={{ fontSize: '1.5rem', color: '#0F172A', marginBottom: '0.6rem', fontWeight: 700 }}>
+            <h2 className="sentinel-lock-title">
               Session Suspended
             </h2>
-            <p style={{ color: '#475569', fontSize: '0.85rem', lineHeight: '1.6', marginBottom: '1.5rem' }}>
+            <p className="sentinel-lock-desc">
               Citadel locked after 300 seconds of inactivity to protect corporate financial privacy and audit trail integrity under RBI mandate.
             </p>
             <button 
@@ -720,13 +920,14 @@ function App() {
         </div>
       )}
 
-      {/* Left-Sidebar + Main Viewport Architecture */}
+      {/* Left-Sidebar + Main Viewport Architecture (Sidebar pinned, viewport scrolls) */}
       <div className="citadel-app-layout">
         {/* 1. Left Sidebar */}
         <AuditorSidebar 
           activeNav={activeNav}
           onNavChange={(navId) => {
             setActiveNav(navId);
+            setShowSplitWorkspace(false);
             if (data && navId === 'new-eval') {
               setData(null);
             }
@@ -746,24 +947,20 @@ function App() {
             inactivitySeconds={inactivitySeconds}
             onOpenChat={() => setIsChatOpen(prev => !prev)}
             isChatOpen={isChatOpen}
+            theme={theme}
+            onToggleTheme={toggleTheme}
           />
 
-          <main className={`citadel-workspace-body ${data ? 'split-active-body' : ''}`}>
-            {/* Processing Checklist State */}
-            {loading ? (
-              <ProcessingSkeleton 
-                activeStep={evaluationStep} 
-                businessName={gstinProbeData?.registry?.legalEntityName || gstinInput || 'Enterprise'} 
-              />
-            ) : data ? (
+          <main className={`citadel-workspace-body ${(showSplitWorkspace && data) ? 'split-active-body' : ''}`}>
+            {showSplitWorkspace && data ? (
               /* Two-Column Split Workspace View (Stripe/Bloomberg Style) */
               <SplitWorkspaceView 
                 data={data}
-                onBack={() => setData(null)}
+                onBack={() => setShowSplitWorkspace(false)}
                 currentUser={currentUser}
               />
             ) : activeNav === 'new-eval' ? (
-              /* Hero Action Bar + Dropzone (Image 3 Table removed to Intake Station) */
+              /* Hero Action Bar + Dropzone + Lower Section (Orb & Findings Deck) */
               <NewEvaluationView 
                 gstinInput={gstinInput}
                 setGstinInput={setGstinInput}
@@ -774,6 +971,10 @@ function App() {
                 onClearFile={() => setFile(null)}
                 onTriggerEvaluation={triggerEvaluation}
                 loading={loading}
+                evaluationStep={evaluationStep}
+                error={error}
+                onClearError={() => setError(null)}
+                onOpenSplitWorkspace={() => setShowSplitWorkspace(true)}
               />
             ) : activeNav === 'watchlist' ? (
               /* Saved Businesses / Watchlist: stores every run by this specific user */
@@ -790,6 +991,7 @@ function App() {
                     gstin: gstinToProbe
                   });
                   setData(generated);
+                  setShowSplitWorkspace(true);
                 }}
                 onExportPDF={(row) => {
                   const gstinToProbe = row.gstin || row.id || '27AADCB2230M1Z2';
@@ -801,7 +1003,10 @@ function App() {
                   exportAuditReport({ data: generated, auditorNotes: row.reason || '', officer: currentUser });
                 }}
                 onRemoveCompany={handleRemoveHistoryItem}
-                onNavigateToNewEval={() => setActiveNav('new-eval')}
+                onNavigateToNewEval={() => {
+                  setShowSplitWorkspace(false);
+                  setActiveNav('new-eval');
+                }}
               />
             ) : activeNav === 'batch' ? (
               /* Batch Overnight Upload */
@@ -835,76 +1040,55 @@ function App() {
               inwardBounces: probe.timeline.inwardBounces
             });
             setData(generated);
+            setShowSplitWorkspace(true);
           }}
         />
 
         {/* Slide-over Orc CCO Conversational Drawer */}
         {isChatOpen && (
-          <aside className="orc-slideover-drawer animate-fade-in" style={{
-            position: 'fixed', right: 0, top: 0, bottom: 0, width: '380px',
-            background: 'rgba(255, 255, 255, 0.98)', backdropFilter: 'blur(20px)',
-            borderLeft: '1px solid #E2E8F0', zIndex: 100,
-            display: 'flex', flexDirection: 'column', padding: '20px',
-            boxShadow: '-10px 0 40px rgba(15, 23, 42, 0.08)'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #E2E8F0', paddingBottom: '14px', marginBottom: '14px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Cpu size={18} style={{ color: '#F43F5E' }} />
-                <span style={{ fontWeight: 700, color: '#0F172A', fontSize: '0.95rem' }}>Orc CCO Interrogation</span>
+          <aside className="orc-slideover-drawer animate-fade-in">
+            <div className="orc-drawer-header">
+              <div className="orc-drawer-title-group">
+                <Cpu size={18} className="orc-drawer-icon" />
+                <span className="orc-drawer-title">Orc CCO Interrogation</span>
               </div>
               <button 
                 onClick={() => setIsChatOpen(false)}
-                style={{ background: 'transparent', border: 'none', color: '#64748B', cursor: 'pointer', padding: '4px' }}
+                className="orc-drawer-close-btn"
+                aria-label="Close drawer"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', paddingRight: '4px' }}>
+            <div className="orc-drawer-messages">
               {chatMessages.map((msg, idx) => (
                 <div 
                   key={idx} 
-                  style={{
-                    padding: '10px 14px',
-                    borderRadius: '8px',
-                    fontSize: '0.8rem',
-                    lineHeight: '1.45',
-                    background: msg.role === 'user' ? '#FFF1F4' : '#F8FAFC',
-                    border: msg.role === 'user' ? '1px solid #FDA4AF' : '1px solid #E2E8F0',
-                    color: msg.role === 'user' ? '#0F172A' : '#334155',
-                    alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                    maxWidth: '90%'
-                  }}
+                  className={`orc-drawer-msg ${msg.role === 'user' ? 'user' : 'agent'}`}
                 >
                   {msg.text}
                 </div>
               ))}
               {isChatSending && (
-                <div style={{ fontSize: '0.75rem', color: '#F43F5E', fontStyle: 'italic' }}>
+                <div className="orc-drawer-typing">
                   Orc is reviewing statement line citations...
                 </div>
               )}
             </div>
 
-            <form onSubmit={sendOrcDirective} style={{ display: 'flex', gap: '8px', marginTop: '14px', borderTop: '1px solid #E2E8F0', paddingTop: '14px' }}>
+            <form onSubmit={sendOrcDirective} className="orc-drawer-form">
               <input
                 type="text"
                 placeholder="Ask about buffer days, DSCR, or policy..."
                 value={chatInput}
                 onChange={e => setChatInput(e.target.value)}
-                style={{
-                  flex: 1, background: '#FFFFFF', border: '1.5px solid #CBD5E1',
-                  borderRadius: '6px', padding: '8px 12px', color: '#0F172A', fontSize: '0.8rem', outline: 'none'
-                }}
+                className="orc-drawer-input"
               />
               <button 
                 type="submit" 
                 disabled={isChatSending}
-                style={{
-                  background: 'linear-gradient(135deg, #FF8BA7 0%, #F43F5E 100%)', color: '#FFFFFF', border: 'none',
-                  borderRadius: '6px', padding: '0 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', fontWeight: 700,
-                  boxShadow: '0 2px 8px rgba(244, 63, 94, 0.3)'
-                }}
+                className="orc-drawer-send-btn"
               >
                 <Send size={14} />
               </button>

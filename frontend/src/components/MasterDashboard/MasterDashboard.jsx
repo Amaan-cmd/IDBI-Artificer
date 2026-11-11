@@ -3,6 +3,7 @@ import './MasterDashboard.css';
 import { ArrowLeft, Shield, Lock, Users, Database, Cpu, CheckCircle2, ShieldAlert, Sparkles, Terminal } from 'lucide-react';
 import CountUp from '../CountUp/CountUp';
 import SplitText from '../SplitText/SplitText';
+import { apiFetch } from '../../utils/apiClient';
 
 export default function MasterDashboard({ onBack }) {
   const [users, setUsers] = useState([]);
@@ -11,13 +12,11 @@ export default function MasterDashboard({ onBack }) {
   const [activeTab, setActiveTab] = useState('telemetry'); // 'telemetry' | 'audit' | 'security'
   const [logins, setLogins] = useState([]);
 
-  const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:4000');
-
   useEffect(() => {
     Promise.all([
-      fetch(`${API_BASE}/api/v1/users`).then(r => r.json()).catch(() => ({ status: 'fallback', users: [] })),
-      fetch(`${API_BASE}/api/v1/history`).then(r => r.json()).catch(() => ({ status: 'fallback', history: [] })),
-      fetch(`${API_BASE}/api/v1/telemetry/logins`).then(r => r.json()).catch(() => ({ status: 'fallback', logins: [] }))
+      apiFetch('/api/v1/users').then(r => r.json()).catch(() => ({ status: 'fallback', users: [] })),
+      apiFetch('/api/v1/history').then(r => r.json()).catch(() => ({ status: 'fallback', history: [] })),
+      apiFetch('/api/v1/telemetry/logins').then(r => r.json()).catch(() => ({ status: 'fallback', logins: [] }))
     ])
       .then(([userData, histData, loginData]) => {
         if (loginData.status === 'success' && loginData.logins?.length) {
@@ -50,7 +49,7 @@ export default function MasterDashboard({ onBack }) {
       .catch(() => {
         setLoading(false);
       });
-  }, [API_BASE]);
+  }, []);
 
   const totalCalls = users.reduce((acc, u) => acc + (u.calls || 0), 0) || 538;
   const rawCost = users.reduce((acc, u) => acc + (Number(u.cost) || 0), 0) || 10.76;
