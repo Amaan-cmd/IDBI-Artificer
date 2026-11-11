@@ -7,14 +7,28 @@ const jwt = require('jsonwebtoken');
 const CERTS_URL = 'https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com';
 let certCache = { certs: null, expiresAt: 0 };
 
-async function fetchGoogleCerts() {
+let inflight = null;
+
+// Cached per Google's Cache-Control max-age. Concurrent callers share one
+// in-flight request; failures are not cached so the next call retries.
+async function fetchGoogleCerts({ fetchImpl = fetch } = {}) {
   if (certCache.certs && Date.now() < certCache.expiresAt) return certCache.certs;
-  const res = await fetch(CERTS_URL, { signal: AbortSignal.timeout(10000) });
-  if (!res.ok) throw new Error(`Failed to fetch Firebase signing certs (HTTP ${res.status})`);
-  const certs = await res.json();
-  const maxAge = /max-age=(\d+)/.exec(res.headers.get('cache-control') || '');
-  certCache = { certs, expiresAt: Date.now() + (maxAge ? Number(maxAge[1]) * 1000 : 3600 * 1000) };
-  return certs;
+  if (!inflight) {
+    inflight = (async () => {
+      const res = await fetchImpl(CERTS_URL, { signal: AbortSignal.timeout(10000) });
+      if (!res.ok) throw new Error(`Failed to fetch Firebase signing certs (HTTP ${res.status})`);
+      const certs = await res.json();
+      const maxAge = /max-age=(\d+)/.exec(res.headers.get('cache-control') || '');
+      certCache = { certs, expiresAt: Date.now() + (maxAge ? Number(maxAge[1]) * 1000 : 3600 * 1000) };
+      return certs;
+    })().finally(() => { inflight = null; });
+  }
+  return inflight;
+}
+
+function resetCertCache() {
+  certCache = { certs: null, expiresAt: 0 };
+  inflight = null;
 }
 
 async function verifyFirebaseIdToken(idToken, {
@@ -45,4 +59,4 @@ async function verifyFirebaseIdToken(idToken, {
   };
 }
 
-module.exports = { verifyFirebaseIdToken };
+module.exports = { verifyFirebaseIdToken, fetchGoogleCerts, resetCertCache };

@@ -37,3 +37,22 @@ test('rejects unknown key id', async () => {
 test('rejects expired token', async () => {
   await assert.rejects(verifyFirebaseIdToken(token({}, { expiresIn: -10 }), { projectId: PROJECT, getCerts }));
 });
+
+test('fetchGoogleCerts shares one in-flight request, caches, and does not cache failures', async () => {
+  const { fetchGoogleCerts, resetCertCache } = require('../platform/firebaseVerify');
+  resetCertCache();
+  let calls = 0;
+  const ok = async () => { calls++; return { ok: true, status: 200, json: async () => ({ k: 'pem' }), headers: { get: () => 'public, max-age=600' } }; };
+  const [a, b] = await Promise.all([fetchGoogleCerts({ fetchImpl: ok }), fetchGoogleCerts({ fetchImpl: ok })]);
+  assert.equal(calls, 1);
+  assert.deepEqual(a, { k: 'pem' });
+  assert.equal(a, b);
+  await fetchGoogleCerts({ fetchImpl: ok });
+  assert.equal(calls, 1);
+
+  resetCertCache();
+  const bad = async () => ({ ok: false, status: 503 });
+  await assert.rejects(fetchGoogleCerts({ fetchImpl: bad }), /HTTP 503/);
+  assert.deepEqual(await fetchGoogleCerts({ fetchImpl: ok }), { k: 'pem' });
+  resetCertCache();
+});

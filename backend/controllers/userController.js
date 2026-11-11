@@ -1,6 +1,9 @@
 const fs = require('fs');
+const crypto = require('crypto');
 const path = require('path');
 const { sendSlackNotification } = require('../services/slackNotifier');
+const { normaliseEmail } = require('../platform/session');
+const { isAdminEmail } = require('../platform/admin');
 const { sanitizeText, sanitizePassword, sanitizeEmail, sanitizeOtpDigits, isSafeInput } = require('../utils/sanitize');
 
 const usersFilePath = path.join(__dirname, '../data/users.json');
@@ -408,26 +411,37 @@ const incrementUserUsage = async (userId) => {
   }
 };
 
+// Builds a new user record for a server-verified identity. Pure (no I/O).
+const buildNewUser = ({ email, name, provider = 'firebase' }) => {
+  const cleanEmail = normaliseEmail(email);
+  const parts = cleanEmail.split('@');
+  if (parts.length !== 2 || !parts[0] || !parts[1]) {
+    throw new Error('A valid email is required to create a user.');
+  }
+  const [handle, domain] = parts;
+  const formattedName = (name || handle).split(/[._-]/).map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+  const now = new Date().toISOString();
+  return {
+    id: `u_${handle.replace(/[^a-z0-9]/g, '')}_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`,
+    username: formattedName || 'Institutional Underwriter',
+    email: cleanEmail,
+    role: isAdminEmail(cleanEmail) ? 'Enterprise Principal Underwriter' : 'Institutional Underwriter',
+    org: domain.toUpperCase(),
+    provider,
+    status: `Active (${provider} verified)`,
+    calls: 0,
+    cost: 0,
+    createdAt: now,
+    lastLogin: now
+  };
+};
+
 const findOrCreateUser = ({ email, name, provider }) => {
-  const cleanEmail = String(email || '').trim().toLowerCase();
+  const cleanEmail = normaliseEmail(email);
   const users = getUsers();
   let user = users.find(u => u.email && u.email.toLowerCase() === cleanEmail);
   if (!user) {
-    const handle = cleanEmail.split('@')[0];
-    const formattedName = (name || handle).split(/[._-]/).map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
-    user = {
-      id: `u_${handle.replace(/[^a-z0-9]/g, '')}_${Date.now()}`,
-      username: formattedName || 'Institutional Underwriter',
-      email: cleanEmail,
-      role: cleanEmail.endsWith('@enveraitech.com') ? 'Enterprise Principal Underwriter' : 'Institutional Underwriter',
-      org: cleanEmail.split('@')[1].toUpperCase(),
-      provider,
-      status: `Active (${provider} verified)`,
-      calls: 0,
-      cost: 0,
-      createdAt: new Date().toISOString(),
-      lastLogin: new Date().toISOString()
-    };
+    user = buildNewUser({ email: cleanEmail, name, provider });
     users.push(user);
   } else {
     user.lastLogin = new Date().toISOString();
@@ -436,5 +450,5 @@ const findOrCreateUser = ({ email, name, provider }) => {
   return user;
 };
 
-module.exports = { loginUser, getAllUsers, getLoginTelemetry, incrementUserUsage, recordTelemetryLogin, sendOtp, verifyOtp, findOrCreateUser };
+module.exports = { loginUser, getAllUsers, getLoginTelemetry, incrementUserUsage, recordTelemetryLogin, sendOtp, verifyOtp, findOrCreateUser, buildNewUser };
 
