@@ -116,7 +116,7 @@ test('OTP still verifies after fewer than 5 wrong attempts', () => withServer(as
   });
 }));
 
-test('no hardcoded master passwords remain in source', { todo: 'frontend cleanup in Task 8b' }, () => {
+test('no hardcoded master passwords remain in source', () => {
   const roots = [path.join(__dirname, '..', 'controllers'), path.join(__dirname, '..', '..', 'frontend', 'src')];
   const offenders = [];
   const walk = (dir) => {

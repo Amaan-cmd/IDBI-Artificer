@@ -28,6 +28,7 @@ import { getGSTINProbeData } from './utils/gstinRegistry';
 import { exportAuditReport } from './utils/pdfExport';
 import { getCompanyDecisionData, generateOrcResponse } from './utils/orcIntelligence';
 
+import { isAdminUser } from './utils/admin';
 import { API_BASE, apiFetch, getSessionToken, setSessionToken, onUnauthorized } from './utils/apiClient';
 
 // Preloaded Realistic MSME Scenarios for Institutional Verification
@@ -159,37 +160,9 @@ function App() {
   ]);
   const [isChatSending, setIsChatSending] = useState(false);
 
-  // Check saved session or incoming signup redirect on mount
+  // Restore saved session on mount (requires a server-issued session token)
   useEffect(() => {
-    // 1. Check if user just arrived from enveraitech.com/signup
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('admitted') === 'true' || params.get('signup') === 'success') {
-      const email = (params.get('email') || localStorage.getItem('enver_user_email') || 'officer@enveraitech.com').toLowerCase().trim();
-      const rawName = params.get('name') || email.split('@')[0];
-      const token = params.get('token') || 'ENV-PRD-8421';
-      const cleanName = rawName.split('.').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
-
-      const admittedUser = {
-        id: `u_${email.split('@')[0]}_${Date.now().toString().slice(-4)}`,
-        username: cleanName,
-        email: email,
-        role: email.endsWith('@enveraitech.com') ? 'Enterprise Principal Underwriter' : 'Institutional Underwriter',
-        org: 'Enver AI Tech',
-        token: token,
-        calls: 1,
-        cost: 0.02,
-        lastLogin: new Date().toISOString()
-      };
-
-      localStorage.setItem('enverai_user_session', JSON.stringify(admittedUser));
-      localStorage.setItem('enver_user_email', email);
-      window.history.replaceState({}, document.title, window.location.pathname);
-      setCurrentUser(admittedUser);
-      setIsLoggedIn(true);
-      return;
-    }
-
-    // 2. Check saved session
+    // Check saved session
     const saved = localStorage.getItem('enverai_user_session');
     if (saved) {
       try {
@@ -841,7 +814,7 @@ function App() {
   // =========================================================================
   // VIEW: MASTER CITADEL DASHBOARD
   // =========================================================================
-  if (currentView === 'master') {
+  if (currentView === 'master' && isAdminUser(currentUser)) {
     return (
       <div className={`app-viewport ${theme === 'dark' ? 'dark-theme' : ''}`} data-theme={theme}>
         <div className="floating-lines-bg-container">
@@ -936,7 +909,7 @@ function App() {
           onToggleCollapse={() => setIsSidebarCollapsed(prev => !prev)}
           currentUser={currentUser}
           onLogout={handleLogout}
-          onOpenMasterDashboard={() => setCurrentView('master')}
+          onOpenMasterDashboard={isAdminUser(currentUser) ? () => setCurrentView('master') : undefined}
         />
 
         {/* 2. Main Viewport */}
