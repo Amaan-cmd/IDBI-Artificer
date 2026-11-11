@@ -6,7 +6,7 @@
  * 3. Autonomous Tool-Calling Execution (GSTN Scraper & MCA Registry Lookup)
  */
 
-const { scrapeBusinessIntelligence } = require('../services/scraperService');
+const { getRegistryReport } = require('../services/registry/registryService');
 
 // Available tools for Grok 4.6
 const GROK_TOOLS = [
@@ -91,9 +91,9 @@ async function callGrok(systemPrompt, userPrompt, options = {}) {
           try {
             const args = JSON.parse(toolCall.function.arguments || '{}');
             if (toolCall.function.name === 'scrape_gstin_registry') {
-              toolResult = await scrapeBusinessIntelligence(args.gstin);
+              toolResult = await getRegistryReport(args.gstin);
             } else if (toolCall.function.name === 'query_mca_master_data') {
-              toolResult = await scrapeBusinessIntelligence(args.identifier);
+              toolResult = { status: 'unavailable', reason: 'Use the GSTIN registry report; MCA is resolved from it.' };
             }
           } catch (tErr) {
             console.warn('[Fetcha: Grok Tool Call Notice]:', tErr.message);

@@ -3,7 +3,9 @@ const { PDFParse } = require('pdf-parse');
 const { callGemini } = require('../utils/googleGemini');
 const { callGrok } = require('../utils/grokClient');
 const { applyGuardrails } = require('../utils/nemoGuardrails');
-const { scrapeBusinessIntelligence, generateGSTTimeline } = require('../services/scraperService');
+const { getRegistryReport } = require('../services/registry/registryService');
+const { isDemoMode } = require('../platform/demoMode');
+const { demoFinancials, demoRegistryReport } = require('../demo/demoEntities');
 
 // Heuristic extractor for deterministic grounding when Gemini is offline or processing local files
 function extractHeuristicFinancials(rawText, originalFileName = '') {
@@ -39,7 +41,7 @@ function extractHeuristicFinancials(rawText, originalFileName = '') {
   // Extract GSTIN or CIN
   const gstinMatch = rawText.match(/[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}/i);
   const cinMatch = rawText.match(/[LU][0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}/i);
-  const gstin = gstinMatch ? gstinMatch[0].toUpperCase() : (cinMatch ? `CIN: ${cinMatch[0]}` : "27AAHCE5539J1ZA");
+  const gstin = gstinMatch ? gstinMatch[0].toUpperCase() : (cinMatch ? `CIN: ${cinMatch[0]}` : null);
 
   // Extract Directors / Key Persons
   const directorMatches = [];
@@ -112,69 +114,103 @@ async function ingestAlternateData(inputData) {
   const { file, manualData, gstin, enableScraper = true } = inputData;
   console.log('[Agent 1: Fetcha Engine - Grok 4.6 Brain] Ingesting multi-modal alternate data...');
 
-  // 1. Direct GSTIN Radar Ingestion Route
-  const targetGstin = gstin || (typeof manualData === 'object' && manualData?.gstin) || (typeof manualData === 'string' && manualData.match(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/i)?.[0]);
-  
-  if (targetGstin) {
-    console.log(`[Fetcha: Grok 4.6 Tools] Probing live GSTN & MCA21 statutory registries for: ${targetGstin}...`);
-    const timeline = generateGSTTimeline(targetGstin);
-    const registryData = await scrapeBusinessIntelligence(targetGstin);
+  let rawContentToParse = "";
+  let originalFileName = "";
+  let registryReport = null;
 
-    const monthlyCredits = timeline.returns.map(r => r.taxable_sales);
-    const monthlyDebits = timeline.returns.map(r => r.taxable_debits || Math.round(r.taxable_sales * 0.80));
-    const totalRevenue = timeline.summary.total_gstr1_sales;
-    const totalTax = timeline.summary.total_gstr1_tax_declared;
-    const closingBalance = timeline.closingBalance || Math.round(monthlyCredits[monthlyCredits.length - 1] * 0.55);
-    const dailyBalances = timeline.dailyClosingBalances || [
-      Math.round(closingBalance * 0.86),
-      Math.round(closingBalance * 0.94),
-      closingBalance,
-      Math.round(closingBalance * 1.08)
-    ];
-    const sanctionedOd = timeline.sanctionedOdLimit || Math.round(closingBalance * 1.8);
-    const peakOd = timeline.peakOdUsage || Math.round(sanctionedOd * 0.35);
-    const gstr1Sales = timeline.gstr1OutwardTaxable || totalRevenue;
-    const gstr3bTax = timeline.summary.total_gstr3b_tax_paid || totalTax;
-    const emi = timeline.monthlyEmiObligations || Math.round(monthlyCredits[0] * 0.035);
-    const bounces = timeline.inwardBounces || 0;
+  // Route A: Uploaded Statement File (PDF / CSV / JSON)
+  if (file && file.path && fs.existsSync(file.path)) {
+    originalFileName = file.originalname || file.name || "statement.pdf";
+    console.log(`[Fetcha: Ingestion Agent] Reading uploaded file: ${originalFileName}...`);
 
-    // Ensure exact ledger balance continuity (Opening + Credits - Debits == Closing)
-    const openingBalance = Math.max(35000, Math.round(closingBalance * 0.88));
-    const targetTotalDebits = openingBalance + totalRevenue - closingBalance;
-    const rawDebitsSum = monthlyDebits.reduce((a, b) => a + b, 0) || 1;
-    const debitRatioAdj = targetTotalDebits / rawDebitsSum;
-    const adjustedDebits = monthlyDebits.map(d => Math.round(d * debitRatioAdj));
-    const finalDebitVol = adjustedDebits.reduce((a, b) => a + b, 0);
+    const isPdf = (file.mimetype && file.mimetype.includes('pdf')) || originalFileName.toLowerCase().endsWith('.pdf');
+    if (isPdf) {
+      try {
+        const fileBuffer = fs.readFileSync(file.path);
+        const { PDFParse } = require('pdf-parse');
+        const parser = new PDFParse({ data: fileBuffer });
+        await parser.load();
+        const parsedDoc = await parser.getText();
+        rawContentToParse = (parsedDoc?.text || parsedDoc || '').toString();
+        console.log(`[Fetcha: PDF Ingestion] Extracted ${rawContentToParse.length} characters from ${originalFileName}`);
+      } catch (pdfErr) {
+        console.warn(`[Fetcha: PDF Parser Notice]: ${pdfErr.message}. Falling back to text decode.`);
+        rawContentToParse = fs.readFileSync(file.path, 'utf8');
+      }
+    } else {
+      rawContentToParse = fs.readFileSync(file.path, 'utf8');
+    }
 
-    return {
-      businessName: registryData.legalEntityName || timeline.businessName,
-      gstin: targetGstin.toUpperCase(),
-      taxpayerType: timeline.taxpayerType || 'Regular',
-      monthsAnalyzed: timeline.returns.length,
-      totalRevenue: totalRevenue,
-      totalTaxPaid: gstr3bTax,
-      gstComplianceScore: 100,
-      bankOpeningBalance: openingBalance,
-      bankClosingBalance: closingBalance,
-      totalCreditVolume: totalRevenue,
-      totalDebitVolume: finalDebitVol,
-      monthlyCredits,
-      monthlyDebits: adjustedDebits,
-      dailyClosingBalances: dailyBalances,
-      sanctionedOdLimit: sanctionedOd,
-      peakOdUsage: peakOd,
-      gstr1OutwardTaxable: gstr1Sales,
-      gstr3bTaxPaid: gstr3bTax,
-      gstr1DeclaredTax: totalTax,
-      inwardBounces: bounces,
-      totalDebitAttempts: 140,
-      outwardBounces: 0,
-      totalOutwardAttempts: 95,
-      monthlyEmiObligations: emi,
-      newBorrowingCount6M: 0,
-      transactions: [],
-      scrapedRegistryData: registryData
-    };
+    // Attempt to discover GSTIN from file text if not provided
+    let resolvedGstin = gstin;
+    if (!resolvedGstin && rawContentToParse) {
+      const gstinMatch = rawContentToParse.match(/[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}/i);
+      if (gstinMatch) resolvedGstin = gstinMatch[0].toUpperCase();
+    }
+
+    // Scrape live statutory registry if enabled and GSTIN is known
+    if (enableScraper && resolvedGstin) {
+      try {
+        registryReport = isDemoMode() && demoRegistryReport(resolvedGstin)
+          ? demoRegistryReport(resolvedGstin)
+          : await getRegistryReport(resolvedGstin);
+      } catch (regErr) {
+        console.warn(`[Fetcha: Registry Notice]: ${regErr.message}`);
+      }
+    }
+  }
+  // Route B: Manual scenario payload (Pre-parsed object or raw text)
+  else if (manualData) {
+    if (typeof manualData === 'object') {
+      if (Array.isArray(manualData.monthlyCredits) && manualData.monthlyCredits.length > 0) {
+        console.log(`[Fetcha: Scenario Intake] Using pre-structured scenario payload for: ${manualData.businessName || 'MSME'}`);
+        return {
+          businessName: manualData.businessName || 'Evaluated Enterprise',
+          gstin: (manualData.gstin || gstin || '').toUpperCase() || null,
+          taxpayerType: manualData.taxpayerType || 'Regular',
+          monthsAnalyzed: manualData.monthsAnalyzed || manualData.monthlyCredits.length,
+          totalRevenue: manualData.totalRevenue || manualData.monthlyCredits.reduce((a, b) => a + b, 0),
+          totalTaxPaid: manualData.totalTaxPaid || manualData.gstr3bTaxPaid || Math.round(manualData.monthlyCredits.reduce((a, b) => a + b, 0) * 0.18),
+          gstComplianceScore: manualData.gstComplianceScore || 100,
+          bankOpeningBalance: manualData.bankOpeningBalance || 50000,
+          bankClosingBalance: manualData.bankClosingBalance || 150000,
+          totalCreditVolume: manualData.totalCreditVolume || manualData.monthlyCredits.reduce((a, b) => a + b, 0),
+          totalDebitVolume: manualData.totalDebitVolume || (manualData.monthlyDebits ? manualData.monthlyDebits.reduce((a, b) => a + b, 0) : Math.round(manualData.monthlyCredits.reduce((a, b) => a + b, 0) * 0.88)),
+          monthlyCredits: manualData.monthlyCredits,
+          monthlyDebits: manualData.monthlyDebits || manualData.monthlyCredits.map(c => Math.round(c * 0.88)),
+          dailyClosingBalances: manualData.dailyClosingBalances || [120000, 140000, 150000, 160000],
+          sanctionedOdLimit: manualData.sanctionedOdLimit || 0,
+          peakOdUsage: manualData.peakOdUsage || 0,
+          gstr1OutwardTaxable: manualData.gstr1OutwardTaxable || manualData.totalRevenue || manualData.monthlyCredits.reduce((a, b) => a + b, 0),
+          gstr3bTaxPaid: manualData.gstr3bTaxPaid || manualData.totalTaxPaid || 0,
+          gstr1DeclaredTax: manualData.gstr1DeclaredTax || 0,
+          inwardBounces: manualData.inwardBounces || 0,
+          totalDebitAttempts: manualData.totalDebitAttempts || 100,
+          outwardBounces: manualData.outwardBounces || 0,
+          totalOutwardAttempts: manualData.totalOutwardAttempts || 80,
+          monthlyEmiObligations: manualData.monthlyEmiObligations || 0,
+          newBorrowingCount6M: manualData.newBorrowingCount6M || 0,
+          transactions: manualData.transactions || [],
+          scrapedRegistryData: manualData.scrapedRegistryData || null
+        };
+      }
+      rawContentToParse = JSON.stringify(manualData);
+    } else {
+      rawContentToParse = String(manualData);
+    }
+  }
+  // Route C: GSTIN only (no file, no manualData) -> registry screening, no financials
+  else if (gstin || (typeof manualData === 'string' && manualData.match(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/i))) {
+    const targetGstin = (gstin || manualData).trim().toUpperCase();
+    if (isDemoMode() && demoFinancials(targetGstin)) {
+      const sample = demoFinancials(targetGstin);
+      const report = demoRegistryReport(targetGstin);
+      return { ...sample, totalCreditVolume: sample.totalRevenue, monthsAnalyzed: sample.monthlyCredits.length, transactions: [], registryReport: report, scrapedRegistryData: report };
+    }
+    console.log(`[Fetcha] Registry screening for ${targetGstin} (no statement uploaded)`);
+    return { reportType: 'REGISTRY_SCREENING', gstin: targetGstin, registryReport: await getRegistryReport(targetGstin) };
+  } else {
+    throw new Error("No file, manual data, or GSTIN provided to Ingestion Agent");
   }
 
   const systemPrompt = `You are Agent 1 (Fetcha: Multi-Modal Alternate Data Ingestion & Registry Intelligence Agent) powered by Grok 4.6.
@@ -185,7 +221,7 @@ CRITICAL RULE: Do not hallucinate numbers. Extract the exact legal entity name a
   const userPrompt = `Raw Input Data (${originalFileName}):
 ${rawContentToParse.slice(0, 15000)}
 
-${liveScraperData ? `Live Scraped Web Intelligence (GSTN, MCA21, Litigation Trails):\n${JSON.stringify(liveScraperData, null, 2)}` : ''}
+${registryReport ? `Verified registry facts (GSTN / MCA21, with provenance). Use for entity identity only; do not derive financial figures from them:\n${JSON.stringify({ gst: registryReport.gst, mca: registryReport.mca, filingMetrics: registryReport.filingMetrics }, null, 2)}` : ''}
 
 Output strictly in valid JSON format matching this schema:
 {
@@ -214,7 +250,7 @@ Output strictly in valid JSON format matching this schema:
   "monthlyEmiObligations": (number, estimated monthly loan/EMI debits),
   "newBorrowingCount6M": (number, count of new loan disbursements in last 6M),
   "transactions": [],
-  "scrapedRegistryData": ${liveScraperData ? JSON.stringify(liveScraperData) : 'null'}
+  "registryReport": null
 }`;
 
   // 2. Primary Cognitive Engine: Grok 4.6 with Autonomous Tools
@@ -225,7 +261,7 @@ Output strictly in valid JSON format matching this schema:
       if (jsonMatch) {
         const structuredFinancials = JSON.parse(jsonMatch[0]);
         console.log('[Agent 1: Fetcha] Successfully synthesized financial payload via Grok 4.6 Engine.');
-        return structuredFinancials;
+        return { ...structuredFinancials, registryReport, scrapedRegistryData: registryReport };
       }
     }
   } catch (grokErr) {
@@ -248,14 +284,14 @@ Output strictly in valid JSON format matching this schema:
     if (jsonMatch) {
       const structuredFinancials = JSON.parse(jsonMatch[0]);
       console.log('[Agent 1] Ingestion & Live Scraping successfully completed via Gemini.');
-      return structuredFinancials;
+      return { ...structuredFinancials, registryReport, scrapedRegistryData: registryReport };
     }
   } catch (geminiErr) {
     console.warn(`[Agent 1 Gemini Notice]: ${geminiErr.message}. Executing deterministic heuristic grounding...`);
   }
 
   // Guaranteed Grounded Heuristic Extraction directly from the uploaded file text
-  return extractHeuristicFinancials(rawContentToParse, originalFileName);
+  return { ...extractHeuristicFinancials(rawContentToParse, originalFileName), registryReport, scrapedRegistryData: registryReport };
 }
 
 module.exports = { ingestAlternateData };
