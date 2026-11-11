@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Clock, X, Send, MessageSquare, ShieldCheck, Cpu
 } from 'lucide-react';
@@ -25,6 +25,7 @@ import MasterDashboard from './components/MasterDashboard/MasterDashboard';
 
 // Utilities
 import { getGSTINProbeData } from './utils/gstinRegistry';
+import { isDemoMode } from './utils/demoMode';
 import { exportAuditReport } from './utils/pdfExport';
 import { getCompanyDecisionData, generateOrcResponse } from './utils/orcIntelligence';
 
@@ -139,8 +140,10 @@ function App() {
   const [showSplitWorkspace, setShowSplitWorkspace] = useState(false);
 
   // Input & Evaluation Data State
-  const [gstinInput, setGstinInput] = useState('27AADCB2230M1Z2');
-  const [gstinProbeData, setGstinProbeData] = useState(getGSTINProbeData('27AADCB2230M1Z2'));
+  const [gstinInput, setGstinInput] = useState('');
+  const [gstinProbeData, setGstinProbeData] = useState(null);
+  const [probeState, setProbeState] = useState({ loading: false, error: null });
+  const probeTimerRef = useRef(null);
   const [file, setFile] = useState(null);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -231,6 +234,10 @@ function App() {
     try {
       userRuns = JSON.parse(localStorage.getItem(userStorageKey) || '[]');
     } catch {}
+    if (!isDemoMode) {
+      // Drop sample presets and locally fabricated runs persisted by earlier builds.
+      userRuns = userRuns.filter(r => !r.sampleData && !DEMO_HISTORY_IDS.has(r.id) && r.status !== 'Completed (Deterministic)');
+    }
 
     if (userId) {
       try {
@@ -251,11 +258,8 @@ function App() {
       return;
     }
 
-    const defaultH = getDefaultHistory();
-    setHistory(defaultH);
-    try {
-      localStorage.setItem(userStorageKey, JSON.stringify(defaultH));
-    } catch {}
+    // Preset sample history is shown only in demo mode and is never persisted.
+    setHistory(isDemoMode ? getDefaultHistory() : []);
   };
 
   const handleRemoveHistoryItem = (itemId) => {
@@ -269,6 +273,8 @@ function App() {
     });
   };
 
+  const DEMO_HISTORY_IDS = new Set(['h_1789854683417', 'h_1789854683418', 'h_1789854683419', 'h_1790190889824']);
+
   const getDefaultHistory = () => [
     {
       id: "h_1789854683417",
@@ -281,6 +287,7 @@ function App() {
       compliance: "Excellent · MCA Active",
       evaluatedDate: "Oct 13, 2026",
       status: "Completed",
+      sampleData: true,
       reason: "Stable operating cash flows and strong short-term liquidity reserves (Cash Buffer: 0.71x, 18 buffer days). Timely GST compliance and zero bounce friction support a prime underwriting recommendation."
     },
     {
@@ -294,6 +301,7 @@ function App() {
       compliance: "Sound · MCA Active",
       evaluatedDate: "Oct 12, 2026",
       status: "Completed",
+      sampleData: true,
       reason: "High annualized revenue momentum with clean bank credit to GSTR-1 turnover reconciliation."
     },
     {
@@ -307,6 +315,7 @@ function App() {
       compliance: "Tax Gap Flag",
       evaluatedDate: "Oct 10, 2026",
       status: "Completed",
+      sampleData: true,
       reason: "GSTR-1 declared tax vs GSTR-3B paid tax exhibits 3.2% variance with elevated OD utilization (77%)."
     },
     {
@@ -320,6 +329,7 @@ function App() {
       compliance: "Audited Sound",
       evaluatedDate: "Oct 08, 2026",
       status: "Completed",
+      sampleData: true,
       reason: "Entity assessed with a LOW risk profile (Score: 870). Strong liquidity cushion with a Cash Buffer Ratio of 0.90x and 25 days minimum runway provide resilient NTC shock absorption."
     }
   ];
@@ -348,27 +358,41 @@ function App() {
     }
   };
 
-  // Instant Statutory Registry Probe
-  const probeGSTIN = async (gstin) => {
+  // Statutory registry probe: only a full, valid GSTIN goes to the backend registry route (debounced).
+  const GSTIN_RE = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
+
+  const probeGSTIN = (gstin, { cin } = {}) => {
     const clean = (gstin || '').trim().toUpperCase();
     setGstinInput(clean);
-    if (!clean || clean.length < 10) {
+    clearTimeout(probeTimerRef.current);
+    if (!GSTIN_RE.test(clean)) {
       setGstinProbeData(null);
+      setProbeState({ loading: false, error: null });
       return;
     }
-    const localResolved = getGSTINProbeData(clean);
-    setGstinProbeData(localResolved);
-
-    try {
-      const res = await fetch(`${API_BASE}/api/v1/alternate-data/gstin-probe/${clean}`);
-      const resData = await res.json();
-      if (resData.status === 'success') {
-        setGstinProbeData(resData);
+    setProbeState({ loading: true, error: null });
+    probeTimerRef.current = setTimeout(async () => {
+      try {
+        const qs = cin ? `?cin=${encodeURIComponent(cin)}` : '';
+        const res = await apiFetch(`/api/v1/registry/gstin/${clean}${qs}`);
+        const body = await res.json().catch(() => ({}));
+        if (res.ok && body.registryReport) {
+          setGstinProbeData({ gstin: clean, registryReport: body.registryReport });
+          setProbeState({ loading: false, error: null });
+        } else {
+          setGstinProbeData(null);
+          setProbeState({ loading: false, error: body.error || `Registry lookup failed (HTTP ${res.status})` });
+        }
+      } catch {
+        setGstinProbeData(null);
+        setProbeState({ loading: false, error: 'Registry lookup failed. Check your connection.' });
       }
-    } catch {}
+    }, 600);
   };
 
-  // Deterministic Zero-Hallucination Evaluation Calculation
+  useEffect(() => () => clearTimeout(probeTimerRef.current), []);
+
+  // Demo-mode only: deterministic sample evaluation from preset figures (always flagged sampleData).
   const generateGroundedEvaluation = (rawPayload, rawScraper) => {
     let parsed;
     try {
@@ -507,6 +531,7 @@ function App() {
 
     return {
       status: "success",
+      sampleData: true,
       businessName: parsed.businessName || "Apex Precision Engineering Pvt Ltd",
       gstin: parsed.gstin || (gstinInput || "27AADCB2230M1Z2"),
       metrics: {
@@ -597,9 +622,6 @@ function App() {
       formData.append('manualData', typeof overrideData === 'string' ? overrideData : JSON.stringify(overrideData));
     }
     formData.append('enableScraper', 'true');
-    if (gstinProbeData?.registry) {
-      formData.append('scraperData', JSON.stringify(gstinProbeData.registry));
-    }
 
     let completedPayload = null;
     let sseError = null;
@@ -617,10 +639,11 @@ function App() {
       }
 
       if (!response.ok) {
-        throw new Error(`Underwriting Engine returned HTTP ${response.status}`);
+        const body = await response.json().catch(() => ({}));
+        sseError = body.error || `Underwriting Engine returned HTTP ${response.status}`;
       }
 
-      if (response.body && typeof response.body.getReader === 'function') {
+      if (response.ok && response.body && typeof response.body.getReader === 'function') {
         const reader = response.body.getReader();
         const decoder = new TextDecoder('utf-8');
         let buffer = '';
@@ -659,6 +682,7 @@ function App() {
       }
     } catch (networkErr) {
       console.warn('[Citadel Network Pipeline Notice]:', networkErr.message);
+      if (!isDemoMode) sseError = 'The underwriting engine could not be reached. Please retry.';
     }
 
     // If an explicit JEV rejection was received
@@ -679,10 +703,10 @@ function App() {
         userEmail: currentUser?.email,
         name: completedPayload.businessName || 'Evaluated Enterprise',
         gstin: completedPayload.gstin || gstinInput,
-        score: completedPayload.decision?.score || 750,
-        risk: completedPayload.decision?.riskLevel || 'LOW',
+        score: completedPayload.decision?.score ?? null,
+        risk: completedPayload.decision?.riskLevel ?? null,
         evaluatedDate: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
-        status: "Completed (Live Pipeline)",
+        status: completedPayload.reportType === 'REGISTRY_SCREENING' ? 'Registry Screening' : 'Completed (Live Pipeline)',
         compliance: completedPayload.metrics?.taxCompliance || "MCA Active · Grounded",
         reason: completedPayload.decision?.narrative || "Evaluated under RBI Digital Lending Master Direction.",
         fullPayload: completedPayload
@@ -701,52 +725,61 @@ function App() {
       return;
     }
 
-    // Resilient Fallback: If network / server was unreachable, execute grounded deterministic evaluation
-    console.info('[Citadel Engine] Live cloud pipeline unreachable. Executing deterministic client-side telemetry.');
-    const probe = gstinProbeData || getGSTINProbeData(gstinInput);
-    const fallbackPayload = generateGroundedEvaluation({
-      businessName: probe?.registry?.legalEntityName || (file?.name ? file.name.replace(/\.[^/.]+$/, "").toUpperCase() : "Apex Precision Engineering Pvt Ltd"),
-      gstin: probe?.gstin || gstinInput || "27AADCB2230M1Z2",
-      monthlyCredits: probe?.timeline?.returns?.map(r => r.taxable_sales) || [750000, 780000, 820000, 760000, 840000, 890000],
-      monthlyDebits: probe?.timeline?.returns?.map(r => r.taxable_debits) || [680000, 710000, 740000, 690000, 760000, 820000],
-      bankClosingBalance: probe?.timeline?.closingBalance || 680200,
-      sanctionedOdLimit: probe?.timeline?.sanctionedOdLimit || 1000000,
-      peakOdUsage: probe?.timeline?.peakOdUsage || 320000,
-      gstr1OutwardTaxable: probe?.timeline?.gstr1OutwardTaxable || 4840000,
-      gstr3bTaxPaid: probe?.timeline?.gstr3bTaxPaid || 871200,
-      gstr1DeclaredTax: probe?.timeline?.gstr1DeclaredTax || 871200,
-      monthlyEmiObligations: probe?.timeline?.monthlyEmiObligations || 42500,
-      inwardBounces: probe?.timeline?.inwardBounces || 0
-    });
+    if (!isDemoMode) {
+      setError('No evaluation result was returned. Please retry.');
+      setLoading(false);
+      return;
+    }
 
-    setData(fallbackPayload);
+    if (isDemoMode) {
+      // Demo-mode fallback only: sample evaluation from preset figures, flagged sampleData.
+      console.info('[Citadel Engine] Live cloud pipeline unreachable. Executing deterministic client-side telemetry.');
+      const probe = getGSTINProbeData(gstinInput); // demo preset figures
+      const fallbackPayload = generateGroundedEvaluation({
+        businessName: probe?.registry?.legalEntityName || (file?.name ? file.name.replace(/\.[^/.]+$/, "").toUpperCase() : "Apex Precision Engineering Pvt Ltd"),
+        gstin: probe?.gstin || gstinInput || "27AADCB2230M1Z2",
+        monthlyCredits: probe?.timeline?.returns?.map(r => r.taxable_sales) || [750000, 780000, 820000, 760000, 840000, 890000],
+        monthlyDebits: probe?.timeline?.returns?.map(r => r.taxable_debits) || [680000, 710000, 740000, 690000, 760000, 820000],
+        bankClosingBalance: probe?.timeline?.closingBalance || 680200,
+        sanctionedOdLimit: probe?.timeline?.sanctionedOdLimit || 1000000,
+        peakOdUsage: probe?.timeline?.peakOdUsage || 320000,
+        gstr1OutwardTaxable: probe?.timeline?.gstr1OutwardTaxable || 4840000,
+        gstr3bTaxPaid: probe?.timeline?.gstr3bTaxPaid || 871200,
+        gstr1DeclaredTax: probe?.timeline?.gstr1DeclaredTax || 871200,
+        monthlyEmiObligations: probe?.timeline?.monthlyEmiObligations || 42500,
+        inwardBounces: probe?.timeline?.inwardBounces || 0
+      });
 
-    const newHistoryItem = {
-      id: `h_${Date.now()}`,
-      userId: currentUser?.id,
-      userName: currentUser?.username,
-      userEmail: currentUser?.email,
-      name: fallbackPayload.businessName,
-      gstin: fallbackPayload.gstin,
-      score: fallbackPayload.decision.score,
-      risk: fallbackPayload.decision.riskLevel,
-      evaluatedDate: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
-      status: "Completed (Deterministic)",
-      compliance: "MCA Active · Grounded",
-      reason: fallbackPayload.decision.narrative,
-      fullPayload: fallbackPayload
-    };
+      setData(fallbackPayload);
 
-    setHistory(prev => {
-      const updated = [newHistoryItem, ...prev.filter(p => (p.gstin || p.id) !== fallbackPayload.gstin)];
-      const userStorageKey = currentUser?.id ? `enver_user_evaluations_${currentUser.id}` : 'enver_user_evaluations_guest';
-      try {
-        localStorage.setItem(userStorageKey, JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
+      const newHistoryItem = {
+        id: `h_${Date.now()}`,
+        userId: currentUser?.id,
+        userName: currentUser?.username,
+        userEmail: currentUser?.email,
+        name: fallbackPayload.businessName,
+        gstin: fallbackPayload.gstin,
+        score: fallbackPayload.decision.score,
+        risk: fallbackPayload.decision.riskLevel,
+        evaluatedDate: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+        status: "Completed (Deterministic)",
+        sampleData: true,
+        compliance: "MCA Active · Grounded",
+        reason: fallbackPayload.decision.narrative,
+        fullPayload: fallbackPayload
+      };
 
-    setLoading(false);
+      setHistory(prev => {
+        const updated = [newHistoryItem, ...prev.filter(p => (p.gstin || p.id) !== fallbackPayload.gstin)];
+        const userStorageKey = currentUser?.id ? `enver_user_evaluations_${currentUser.id}` : 'enver_user_evaluations_guest';
+        try {
+          localStorage.setItem(userStorageKey, JSON.stringify(updated));
+        } catch {}
+        return updated;
+      });
+
+      setLoading(false);
+    }
   };
 
   // Orc XAI Chat Directives
@@ -777,11 +810,14 @@ function App() {
       throw new Error('No response from XAI endpoint');
     } catch {
       const companyData = getCompanyDecisionData(
-        data?.businessName || gstinProbeData?.registry?.legalEntityName || 'Apex Precision Engineering Pvt Ltd',
+        data?.businessName || gstinProbeData?.registryReport?.gst?.data?.legalName,
         data?.gstin || gstinProbeData?.gstin || gstinInput,
-        gstinProbeData
+        gstinProbeData,
+        data
       );
-      const resp = generateOrcResponse(userQuery, companyData);
+      const resp = companyData
+        ? generateOrcResponse(userQuery, companyData)
+        : 'Orc is unavailable right now, and there is no completed evaluation to explain yet. Run an evaluation, then ask again.';
       setChatMessages(prev => [...prev, { role: 'agent', text: resp }]);
     } finally {
       setIsChatSending(false);
@@ -946,6 +982,8 @@ function App() {
                 gstinInput={gstinInput}
                 setGstinInput={setGstinInput}
                 gstinProbeData={gstinProbeData}
+                probeState={probeState}
+                evaluationData={data}
                 onProbeGSTIN={probeGSTIN}
                 file={file}
                 onFileChange={handleFileChange}
@@ -963,25 +1001,39 @@ function App() {
                 history={history}
                 currentUser={currentUser}
                 onSelectCompany={(item) => {
-                  const gstinToProbe = item.gstin || item.id || '27AADCB2230M1Z2';
-                  setGstinInput(gstinToProbe);
-                  const probe = getGSTINProbeData(gstinToProbe);
-                  setGstinProbeData(probe);
-                  const generated = item.fullPayload || generateGroundedEvaluation({
-                    businessName: item.name || item.businessName || probe?.registry?.legalEntityName,
-                    gstin: gstinToProbe
-                  });
-                  setData(generated);
-                  setShowSplitWorkspace(true);
+                  const gstinToProbe = item.gstin || '';
+                  probeGSTIN(gstinToProbe);
+                  const sample = !item.fullPayload && isDemoMode && item.sampleData
+                    ? generateGroundedEvaluation({
+                        businessName: item.name || item.businessName || getGSTINProbeData(gstinToProbe)?.registry?.legalEntityName,
+                        gstin: gstinToProbe
+                      })
+                    : null;
+                  const stored = item.fullPayload || sample;
+                  if (stored) {
+                    setData(stored);
+                    setShowSplitWorkspace(true);
+                  } else {
+                    // No stored result for this entry: open intake with the registry probe instead of inventing one.
+                    setData(null);
+                    setShowSplitWorkspace(false);
+                    setActiveNav('new-eval');
+                    setError('No stored evaluation for this entry. Run a new evaluation to view its report.');
+                  }
                 }}
                 onExportPDF={(row) => {
-                  const gstinToProbe = row.gstin || row.id || '27AADCB2230M1Z2';
-                  const probe = getGSTINProbeData(gstinToProbe);
-                  const generated = row.fullPayload || generateGroundedEvaluation({
-                    businessName: row.name || row.businessName || probe?.registry?.legalEntityName,
-                    gstin: gstinToProbe
-                  });
-                  exportAuditReport({ data: generated, auditorNotes: row.reason || '', officer: currentUser });
+                  const sample = !row.fullPayload && isDemoMode && row.sampleData
+                    ? generateGroundedEvaluation({
+                        businessName: row.name || row.businessName || getGSTINProbeData(row.gstin)?.registry?.legalEntityName,
+                        gstin: row.gstin
+                      })
+                    : null;
+                  const stored = row.fullPayload || sample;
+                  if (!stored) {
+                    console.warn('[Export] No stored evaluation for this entry; nothing to export.');
+                    return;
+                  }
+                  exportAuditReport({ data: stored, auditorNotes: row.reason || '', officer: currentUser });
                 }}
                 onRemoveCompany={handleRemoveHistoryItem}
                 onNavigateToNewEval={() => {
@@ -1005,7 +1057,14 @@ function App() {
           onClose={() => setIsCmdPaletteOpen(false)}
           onSelectCompany={(companyId) => {
             probeGSTIN(companyId);
-            const probe = getGSTINProbeData(companyId);
+            const probe = getGSTINProbeData(companyId); // demo presets only; null outside demo mode
+            if (!probe?.timeline) {
+              // Real entity: show the registry probe on the intake view; no evaluation until one is run.
+              setData(null);
+              setShowSplitWorkspace(false);
+              setActiveNav('new-eval');
+              return;
+            }
             const generated = generateGroundedEvaluation({
               businessName: probe.registry.legalEntityName,
               gstin: companyId,
