@@ -23,3 +23,13 @@ dist
 frontend/dist
 uploads
 dataset
+# Local credentials and artefacts (never ship to the build context)
+claude.bat
+claude.ps1
+.playwright-mcp
+smoke-*.png
+# Local runtime data: user records, history, telemetry, dev table store
+backend/data/users.json
+backend/data/history.json
+backend/data/telemetry_logins.json
+backend/data/local-store
