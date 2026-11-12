@@ -10,6 +10,8 @@ const { addHistoryRecord } = require('./historyController');
 const { sendSlackNotification } = require('../services/slackNotifier');
 const { applyRegistryAdjustments } = require('../services/registry/registryAdjustments');
 const { isAcceptedGstin } = require('../utils/gstin');
+const { isDemoMode } = require('../platform/demoMode');
+const { demoFinancials } = require('../demo/demoEntities');
 
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 
@@ -33,6 +35,38 @@ function verifiedStatementName(structured) {
   return structured && RELIABLE_NAME_SOURCES.has(structured.businessNameSource) ? structured.businessName : null;
 }
 
+// Input check shared by the pre-billing middleware and the handler.
+function evaluateInputError(req) {
+  const { manualData, gstin } = req.body || {};
+  if (!req.file && !manualData && !gstin) {
+    return { error: 'No input provided. Please enter a GSTIN, upload a file, or enter manual data.' };
+  }
+  if (!req.file && !manualData && !isAcceptedGstin(String(gstin).trim().toUpperCase())) {
+    return { code: 'INVALID_GSTIN', error: 'Enter a valid 15-character GSTIN.' };
+  }
+  return null;
+}
+
+// Runs before billing so empty or malformed requests are never charged.
+function validateEvaluateInput(req, res, next) {
+  const problem = evaluateInputError(req);
+  if (problem) return res.status(400).json(problem);
+  return next();
+}
+
+// GSTIN-only demo presets are free.
+function isDemoEvaluation(req) {
+  const gstin = String(req.body?.gstin || '').trim().toUpperCase();
+  return isDemoMode() && !req.file && !req.body?.manualData && Boolean(demoFinancials(gstin));
+}
+
+// step 99 is the client's terminal-error signal; a failed run is refunded.
+// The refund is started before the write so a closed stream cannot skip it.
+function streamFailure(req, res, payload) {
+  req.billing?.refund(payload.error);
+  res.write(`data: ${JSON.stringify({ step: 99, ...payload })}\n\n`);
+}
+
 async function evaluateMSMECredit(req, res) {
   // Declared here so the outer catch can always stop the SSE heartbeat.
   let cleanup = () => {};
@@ -43,12 +77,8 @@ async function evaluateMSMECredit(req, res) {
     const { uid: userId, email: userEmail, name: userName, role: userRole } = req.session;
     const enableScraper = req.body.enableScraper === 'true' || req.body.enableScraper === true;
 
-    if (!file && !manualData && !gstin) {
-      return res.status(400).json({ error: 'No input provided. Please enter a GSTIN, upload a file, or enter manual data.' });
-    }
-    if (!file && !manualData && !isAcceptedGstin(String(gstin).trim().toUpperCase())) {
-      return res.status(400).json({ code: 'INVALID_GSTIN', error: 'Enter a valid 15-character GSTIN.' });
-    }
+    const problem = evaluateInputError(req);
+    if (problem) return res.status(400).json(problem);
 
     // Set SSE headers
     res.setHeader('Content-Type', 'text/event-stream');
@@ -115,15 +145,14 @@ async function evaluateMSMECredit(req, res) {
       if (!jevReport.isAppropriate) {
         console.warn('[Credit Engine] JEV System 1 rejected extraction:', jevReport.rationale);
         if (file && fs.existsSync(file.path)) fs.unlinkSync(file.path);
-        res.write(`data: ${JSON.stringify({
-          step: 99,
+        streamFailure(req, res, {
           error: `JEV System 1 Gatekeeper: Document rejected as inappropriate/fraudulent. ${jevReport.rationale}`,
           jevReport
-        })}\n\n`);
+        });
         cleanup();
         return res.end();
       }
-      
+
       // Enrich structuredData with JEV System 1 verified balance continuity & bounce exclusions
       if (jevReport.solvencyBouncesVerified !== undefined) {
         structuredData.solvencyBouncesVerified = jevReport.solvencyBouncesVerified;
@@ -182,7 +211,7 @@ async function evaluateMSMECredit(req, res) {
       };
 
       addHistoryRecord(recordToSave);
-      incrementUserUsage(userId);
+      incrementUserUsage(userId, (req.billing?.priceCents || 0) / 100);
 
       // Dispatch Slack notification for evaluation completed
       sendSlackNotification({
@@ -213,12 +242,12 @@ async function evaluateMSMECredit(req, res) {
       } catch (ingErr) {
         console.warn('[Credit Engine] Fallback extraction failed:', ingErr.message);
         if (file && fs.existsSync(file.path)) fs.unlinkSync(file.path);
-        res.write(`data: ${JSON.stringify({ step: 99, error: 'Could not extract financials from the uploaded statement. Please upload a clearer statement (PDF or CSV).' })}\n\n`);
+        streamFailure(req, res, { error: 'Could not extract financials from the uploaded statement. Please upload a clearer statement (PDF or CSV).' });
         cleanup();
         return res.end();
       }
       if (fallbackStructured.reportType === 'REGISTRY_SCREENING') {
-        res.write(`data: ${JSON.stringify({ step: 99, error: 'Registry screening could not be completed. Please retry.' })}\n\n`);
+        streamFailure(req, res, { error: 'Registry screening could not be completed. Please retry.' });
         cleanup();
         return res.end();
       }
@@ -228,11 +257,10 @@ async function evaluateMSMECredit(req, res) {
       if (!jevReport.isAppropriate) {
         console.warn('[Credit Engine] JEV deterministic check rejected fallback extraction:', jevReport.rationale);
         if (file && fs.existsSync(file.path)) fs.unlinkSync(file.path);
-        res.write(`data: ${JSON.stringify({
-          step: 99,
+        streamFailure(req, res, {
           error: `JEV System 1 Gatekeeper: Document rejected as inappropriate/fraudulent. ${jevReport.rationale}`,
           jevReport
-        })}\n\n`);
+        });
         cleanup();
         return res.end();
       }
@@ -280,7 +308,7 @@ async function evaluateMSMECredit(req, res) {
       };
 
       addHistoryRecord(recordToSave);
-      incrementUserUsage(userId);
+      incrementUserUsage(userId, (req.billing?.priceCents || 0) / 100);
 
       res.write(`data: ${JSON.stringify({ step: 4, payload: responsePayload })}\n\n`);
       cleanup();
@@ -292,9 +320,8 @@ async function evaluateMSMECredit(req, res) {
     if (!res.headersSent) {
       res.status(500).json({ error: error.message || 'Failed to evaluate credit profile' });
     } else {
-      // step 99 is the client's terminal-error signal.
       try {
-        res.write(`data: ${JSON.stringify({ step: 99, error: error.message || 'Failed to evaluate credit profile' })}\n\n`);
+        streamFailure(req, res, { error: error.message || 'Failed to evaluate credit profile' });
       } catch { /* stream already closed */ }
       cleanup();
       res.end();
@@ -302,4 +329,4 @@ async function evaluateMSMECredit(req, res) {
   }
 }
 
-module.exports = { evaluateMSMECredit, verifiedStatementName };
+module.exports = { evaluateMSMECredit, verifiedStatementName, validateEvaluateInput, isDemoEvaluation };

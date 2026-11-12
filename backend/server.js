@@ -7,7 +7,7 @@ const os = require('os');
 const multer = require('multer');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const { evaluateMSMECredit } = require('./controllers/creditController');
+const { evaluateMSMECredit, validateEvaluateInput, isDemoEvaluation } = require('./controllers/creditController');
 const { getAllUsers, getLoginTelemetry, sendOtp, verifyOtp } = require('./controllers/userController');
 const { getHistory } = require('./controllers/historyController');
 const { trainAgamiPipeline } = require('./controllers/agamiController');
@@ -101,10 +101,12 @@ app.get('/api/v1/registry/gstin/:gstin', requireSession, requireValidGstin, mete
 app.get('/api/v1/alternate-data/gstin-probe/:gstin', requireSession, requireValidGstin, meterRegistry, getRegistry);
 
 // Evaluate MSME Credit Score (Live Agentic Pipeline with Multi-Modal Input)
-app.post('/api/v1/evaluate', requireSession, upload.single('statement'), evaluateMSMECredit);
+app.post('/api/v1/evaluate', requireSession, upload.single('statement'), validateEvaluateInput,
+  withCharge('evaluate', { skip: isDemoEvaluation, reference: (req) => req.body.gstin || req.file?.originalname || 'manual data' }),
+  evaluateMSMECredit);
 
 // Agent 3 Conversational Forensic Interrogation
-app.post('/api/v1/chat/xai', requireSession, handleXAIChat);
+app.post('/api/v1/chat/xai', requireSession, withCharge('chat', { reference: (req) => req.body?.evaluationPayload?.gstin || '' }), handleXAIChat);
 
 // --- User & Profile Endpoints ---
 app.post('/api/v1/auth/send-code', sendOtp);

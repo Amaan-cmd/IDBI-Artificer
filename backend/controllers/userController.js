@@ -180,12 +180,13 @@ const getLoginTelemetry = async (req, res) => {
   res.json({ status: 'success', logins });
 };
 
-const incrementUserUsage = async (userId) => {
+// costDollars is the price actually charged for the action (0 for admins and demo presets).
+const incrementUserUsage = async (userId, costDollars = 0) => {
   const users = getUsers();
   const user = users.find(u => u.id === userId);
   if (user) {
     user.calls = (user.calls || 0) + 1;
-    user.cost = Math.round(((user.cost || 0) + 0.02) * 100) / 100;
+    user.cost = Math.round(((user.cost || 0) + costDollars) * 100) / 100;
     saveUsers(users);
   }
 };

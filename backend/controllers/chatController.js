@@ -28,6 +28,7 @@ async function handleXAIChat(req, res) {
     // decision, or the terminal's flattened { score, riskTier } shape.
     const decision = decisionFrom(evaluationPayload);
     if (!decision) {
+      await req.billing?.refund('no completed evaluation to explain');
       return res.json({
         status: 'success',
         engine: 'Grounded Forensic Underwriting Matrix',

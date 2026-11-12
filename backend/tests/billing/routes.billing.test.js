@@ -72,3 +72,39 @@ test('registry route returns 402 when out of credit', async () => {
     assert.equal((await res.json()).action, 'registryLookup');
   });
 });
+
+test('evaluate with no input is a 400 and is not charged', async () => {
+  const store = await useTempStore();
+  await withServer(async (base) => {
+    const res = await fetch(`${base}/api/v1/evaluate`, { method: 'POST', headers: auth('e@x.com'), body: new FormData() });
+    assert.equal(res.status, 400);
+  });
+  const { accountIdFor } = require('../../billing/ledgerService');
+  assert.equal(await store.getEntity('accounts', 'acct', accountIdFor('e@x.com')), null);
+});
+
+test('evaluate returns 402 when out of credit', async () => {
+  await useTempStore();
+  const ledger = require('../../billing/ledgerService');
+  for (let i = 0; i < 10; i++) await ledger.charge('broke2@x.com', 'evaluate');
+  await withServer(async (base) => {
+    const fd = new FormData();
+    fd.append('manualData', JSON.stringify({ businessName: 'X' }));
+    const res = await fetch(`${base}/api/v1/evaluate`, { method: 'POST', headers: auth('broke2@x.com'), body: fd });
+    assert.equal(res.status, 402);
+  });
+});
+
+test('chat with nothing to explain is refunded', async () => {
+  await useTempStore();
+  const { waitFor } = require('./helpers');
+  const ledger = require('../../billing/ledgerService');
+  await withServer(async (base) => {
+    const res = await fetch(`${base}/api/v1/chat/xai`, {
+      method: 'POST', headers: { ...auth('c@x.com'), 'content-type': 'application/json' },
+      body: JSON.stringify({ query: 'why?', evaluationPayload: null })
+    });
+    assert.equal(res.status, 200);
+  });
+  await waitFor(async () => (await ledger.ensureAccount('c@x.com')).balanceCents === 500);
+});
