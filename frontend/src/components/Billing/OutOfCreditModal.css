@@ -1,0 +1,10 @@
+.ooc-backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.ooc-card { position: relative; width: min(420px, 92vw); background: #111113; border: 1px solid #27272a; border-radius: 12px; padding: 24px; color: #e4e4e7; text-align: center; }
+.ooc-card h3 { margin: 8px 0; font-size: 18px; }
+.ooc-card p { color: #a1a1aa; font-size: 14px; margin: 0 0 16px; }
+.ooc-icon { color: #10b981; display: flex; justify-content: center; }
+.ooc-close { position: absolute; top: 12px; right: 12px; background: none; border: 0; color: #a1a1aa; cursor: pointer; }
+.ooc-packs { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 12px; }
+.ooc-pack { background: #10b981; color: #052e1f; border: 0; border-radius: 8px; padding: 8px 14px; font-weight: 600; cursor: pointer; }
+.ooc-pack:disabled { background: #27272a; color: #71717a; cursor: not-allowed; }
+.ooc-link { background: none; border: 0; color: #10b981; cursor: pointer; text-decoration: underline; font-size: 13px; }

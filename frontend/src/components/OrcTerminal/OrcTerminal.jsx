@@ -131,6 +131,14 @@ You may interrogate why this specific decision was taken, the 300–900 points b
                 : null
           })
         });
+        if (res.status === 402) {
+          setMessages(prev => [
+            ...prev,
+            { id: `orc_${Date.now()}`, sender: 'orc', text: 'Out of credit. Top up on the Account & Billing page to keep asking Orc.' }
+          ]);
+          setLoading(false);
+          return;
+        }
         const data = await res.json();
         if (data.response) {
           setMessages(prev => [

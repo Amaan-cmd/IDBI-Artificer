@@ -30,7 +30,9 @@ import { exportAuditReport } from './utils/pdfExport';
 import { getCompanyDecisionData, generateOrcResponse } from './utils/orcIntelligence';
 
 import { isAdminUser } from './utils/admin';
-import { API_BASE, apiFetch, getSessionToken, setSessionToken, onUnauthorized } from './utils/apiClient';
+import { API_BASE, apiFetch, getSessionToken, setSessionToken, onUnauthorized, onPaymentRequired } from './utils/apiClient';
+import OutOfCreditModal from './components/Billing/OutOfCreditModal';
+import { useBillingAccount } from './hooks/useBillingAccount';
 
 // Preloaded Realistic MSME Scenarios for Institutional Verification
 const PRELOADED_SCENARIOS = {
@@ -183,6 +185,15 @@ function App() {
   useEffect(() => onUnauthorized(() => {
     handleLogout();
   }), []);
+
+  const billing = useBillingAccount(isLoggedIn);
+  const [creditPrompt, setCreditPrompt] = useState(null);
+  useEffect(() => onPaymentRequired(setCreditPrompt), []);
+
+  // Stripe Payment Links return to /#billing after a top-up.
+  useEffect(() => {
+    if (window.location.hash === '#billing') setActiveNav('billing');
+  }, []);
 
   // Keyboard shortcut listener for Cmd/Ctrl + K
   useEffect(() => {
@@ -652,6 +663,13 @@ function App() {
         return;
       }
 
+      if (response.status === 402) {
+        // OutOfCreditModal is already shown by the apiFetch listener.
+        setLoading(false);
+        return;
+      }
+
+      // Other failures (503 BILLING_UNAVAILABLE, 413 FILE_TOO_LARGE, ...) surface body.error below.
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
         sseError = body.error || `Underwriting Engine returned HTTP ${response.status}`;
@@ -698,6 +716,9 @@ function App() {
       console.warn('[Citadel Network Pipeline Notice]:', networkErr.message);
       if (!isDemoMode) sseError = 'The underwriting engine could not be reached. Please retry.';
     }
+
+    // Pick up the charge (or its refund after a failed run).
+    billing.refresh();
 
     // If an explicit JEV rejection was received
     if (sseError) {
@@ -816,6 +837,11 @@ function App() {
           evaluationPayload: data || null
         })
       });
+      if (res.status === 402) {
+        setChatMessages(prev => [...prev, { role: 'agent', text: 'Out of credit. Top up on the Account & Billing page to keep asking Orc.' }]);
+        setIsChatSending(false);
+        return;
+      }
       const resData = await res.json();
       if (resData.response) {
         setChatMessages(prev => [...prev, { role: 'agent', text: resData.response }]);
@@ -969,6 +995,7 @@ function App() {
           currentUser={currentUser}
           onLogout={handleLogout}
           onOpenMasterDashboard={isAdminUser(currentUser) ? () => setCurrentView('master') : undefined}
+          balanceCents={billing.account?.balanceCents}
         />
 
         {/* 2. Main Viewport */}
@@ -1009,6 +1036,7 @@ function App() {
                 error={error}
                 onClearError={() => setError(null)}
                 onOpenSplitWorkspace={() => setShowSplitWorkspace(true)}
+                prices={billing.account?.prices}
               />
             ) : activeNav === 'watchlist' ? (
               /* Saved Businesses / Watchlist: stores every run by this specific user */
@@ -1061,7 +1089,7 @@ function App() {
               <BatchUploadView />
             ) : activeNav === 'billing' ? (
               /* Account & API Billing */
-              <AccountBillingView currentUser={currentUser} />
+              <AccountBillingView currentUser={currentUser} billing={billing} />
             ) : null}
           </main>
         </div>
@@ -1150,6 +1178,13 @@ function App() {
             </form>
           </aside>
         )}
+
+        <OutOfCreditModal
+          info={creditPrompt}
+          account={billing.account}
+          onClose={() => setCreditPrompt(null)}
+          onOpenBilling={() => { setActiveNav('billing'); setShowSplitWorkspace(false); }}
+        />
       </div>
     </div>
   );
