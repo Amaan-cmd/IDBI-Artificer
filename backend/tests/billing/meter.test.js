@@ -90,3 +90,62 @@ test('billing store failure fails closed with 503', async () => {
   });
   assert.equal(ran, false);
 });
+
+test('missing session email returns 401 before charging', async () => {
+  await useTempStore();
+  let ran = false;
+  const app = appWith(undefined, withCharge('evaluate'), (_req, res) => { ran = true; res.json({}); });
+  await serve(app, async (base) => {
+    const res = await fetch(`${base}/x`);
+    assert.equal(res.status, 401);
+    assert.deepEqual(await res.json(), { code: 'SESSION_REQUIRED', error: 'Sign in required.' });
+  });
+  assert.equal(ran, false);
+});
+
+test('unknown action throws when the middleware is built', () => {
+  assert.throws(() => withCharge('teleport'), /Unknown billable action: teleport/);
+});
+
+test('reference(req) is recorded on the ledger charge row', async () => {
+  const store = await useTempStore();
+  const app = appWith('u@x.com', withCharge('registryLookup', { reference: () => '27AAPFU0939F1ZV' }), (_req, res) => res.json({}));
+  await serve(app, async (base) => assert.equal((await fetch(`${base}/x`)).status, 200));
+  const rows = await store.listEntities('ledger', ledger.accountIdFor('u@x.com'));
+  const row = rows.find(r => r.type === 'charge');
+  assert.equal(row.reference, '27AAPFU0939F1ZV');
+});
+
+test('response closed without finishing after an error status refunds', async () => {
+  await useTempStore();
+  const app = appWith('u@x.com', withCharge('chat'), (req, res) => {
+    res.status(500);
+    res.write('partial');
+    setTimeout(() => req.socket.destroy(), 20);
+  });
+  await serve(app, async (base) => {
+    try { const r = await fetch(`${base}/x`); await r.text(); } catch { /* socket destroyed */ }
+  });
+  await waitFor(async () => (await balance('u@x.com')) === 500);
+});
+
+test('a failed refund can be retried', async () => {
+  const { setTableStoreForTests } = require('../../platform/tableStore');
+  const store = await useTempStore();
+  let failNext = false;
+  setTableStoreForTests({
+    ...store,
+    updateEntity: async (...args) => {
+      if (failNext) { failNext = false; throw new Error('transient'); }
+      return store.updateEntity(...args);
+    }
+  });
+  const app = appWith('u@x.com', withCharge('evaluate'), async (req, res) => {
+    failNext = true;
+    await req.billing.refund('first');
+    await req.billing.refund('retry');
+    res.json({});
+  });
+  await serve(app, async (base) => assert.equal((await fetch(`${base}/x`)).status, 200));
+  assert.equal(await balance('u@x.com'), 500);
+});

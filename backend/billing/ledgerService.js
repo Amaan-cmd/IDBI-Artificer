@@ -12,6 +12,14 @@ const { PRICES_CENTS, FREE_GRANT_CENTS } = require('./pricing');
 const ACCOUNT_PK = 'acct';
 const MAX_ATTEMPTS = 5;
 
+class AccountNotFoundError extends Error {
+  constructor(accountId) {
+    super(`Billing account ${accountId} not found`);
+    this.name = 'AccountNotFoundError';
+    this.accountId = accountId;
+  }
+}
+
 function accountIdFor(email) {
   return 'acct_' + crypto.createHash('sha256').update(normaliseEmail(email)).digest('hex').slice(0, 32);
 }
@@ -48,7 +56,7 @@ async function updateAccount(accountId, mutate) {
   const store = getTableStore();
   for (let attempt = 1; ; attempt++) {
     const account = await store.getEntity('accounts', ACCOUNT_PK, accountId);
-    if (!account) throw new Error(`Billing account ${accountId} not found`);
+    if (!account) throw new AccountNotFoundError(accountId);
     const changes = mutate(account);
     const { etag, ...current } = account;
     if (!changes) return { applied: false, account: current };
@@ -197,6 +205,6 @@ async function getAccountSummary(email, { ledgerLimit = 20 } = {}) {
 }
 
 module.exports = {
-  accountIdFor, ensureAccount, charge, refund, credit, getAccountSummary, ACCOUNT_PK,
+  accountIdFor, ensureAccount, charge, refund, credit, getAccountSummary, ACCOUNT_PK, AccountNotFoundError,
   _internal: { appendLedger, updateAccount, withAccountLock }
 };
