@@ -439,6 +439,7 @@ export default function NewEvaluationView({
               }}
               evaluationPayload={evaluationData}
               onQuickInspect={() => setActiveBottomTab('findings')}
+              prices={prices}
             />
           </div>
         )}

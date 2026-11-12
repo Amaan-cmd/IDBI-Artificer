@@ -4,12 +4,14 @@ import './OrcTerminal.css';
 import { getCompanyDecisionData, generateOrcResponse } from '../../utils/orcIntelligence';
 
 import { apiFetch } from '../../utils/apiClient';
+import { formatCents } from '../../utils/money';
 
 const NO_EVALUATION = 'No evaluation yet. Run an evaluation, then interrogate Orc about the decision.';
 
 const describeTarget = (c) => `${c.name} (GSTIN: ${c.gstin || 'Not available'} · Score: ${c.score}/900 · ${c.riskTier}${c.sampleData ? ' · SAMPLE DATA' : ''})`;
 
-export default function OrcTerminal({ currentBusiness, evaluationPayload = null, onQuickInspect }) {
+export default function OrcTerminal({ currentBusiness, evaluationPayload = null, onQuickInspect, prices }) {
+  const chatPrice = prices?.chat != null ? formatCents(prices.chat) : null;
   // Decision data derived from the real evaluation payload (or demo presets in demo mode); null otherwise.
   const companyData = useMemo(() => getCompanyDecisionData(
     currentBusiness?.name, currentBusiness?.gstin, currentBusiness?.probeData, evaluationPayload
@@ -105,62 +107,62 @@ You may interrogate why this specific decision was taken, the 300–900 points b
       return;
     }
 
-    try {
-      {
-        const res = await apiFetch('/api/v1/chat/xai', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            query: textToSend,
-            // Real evaluation payload when present; demo presets send the flattened sample;
-            // otherwise null so the backend reports that there is nothing to explain yet.
-            evaluationPayload: evaluationPayload?.decision
-              ? evaluationPayload
-              : companyData
-                ? {
-                    businessName: companyData.name,
-                    gstin: companyData.gstin,
-                    score: companyData.score,
-                    riskTier: companyData.riskTier,
-                    sanctionVerdict: companyData.sanctionVerdict,
-                    recommendedLimit: companyData.recommendedLimit,
-                    metrics: companyData.metrics,
-                    mathDrivers: companyData.mathDrivers,
-                    sampleData: companyData.sampleData
-                  }
-                : null
-          })
-        });
-        if (res.status === 402) {
-          setMessages(prev => [
-            ...prev,
-            { id: `orc_${Date.now()}`, sender: 'orc', text: 'Out of credit. Top up on the Account & Billing page to keep asking Orc.' }
-          ]);
-          setLoading(false);
-          return;
-        }
-        const data = await res.json();
-        if (data.response) {
-          setMessages(prev => [
-            ...prev,
-            { id: `orc_${Date.now()}`, sender: 'orc', text: data.response }
-          ]);
-          setLoading(false);
-          return;
-        }
-      }
-      throw new Error();
-    } catch {
-      // High-precision grounded intelligence engine
-      const response = companyData ? generateOrcResponse(textToSend, companyData) : NO_EVALUATION;
+    const appendOrc = (text) => setMessages(prev => [
+      ...prev,
+      { id: `orc_${Date.now()}`, sender: 'orc', text }
+    ]);
 
+    let res;
+    try {
+      res = await apiFetch('/api/v1/chat/xai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: textToSend,
+          // Real evaluation payload when present; demo presets send the flattened sample;
+          // otherwise null so the backend reports that there is nothing to explain yet.
+          evaluationPayload: evaluationPayload?.decision
+            ? evaluationPayload
+            : companyData
+              ? {
+                  businessName: companyData.name,
+                  gstin: companyData.gstin,
+                  score: companyData.score,
+                  riskTier: companyData.riskTier,
+                  sanctionVerdict: companyData.sanctionVerdict,
+                  recommendedLimit: companyData.recommendedLimit,
+                  metrics: companyData.metrics,
+                  mathDrivers: companyData.mathDrivers,
+                  sampleData: companyData.sampleData
+                }
+              : null
+        })
+      });
+    } catch {
+      // Network failure only: answer from the grounded local engine.
+      const response = companyData ? generateOrcResponse(textToSend, companyData) : NO_EVALUATION;
       setTimeout(() => {
-        setMessages(prev => [
-          ...prev,
-          { id: `orc_${Date.now()}`, sender: 'orc', text: response }
-        ]);
+        appendOrc(response);
         setLoading(false);
       }, 350);
+      return;
+    }
+
+    try {
+      if (res.status === 402) {
+        appendOrc('Out of credit. Top up on the Account & Billing page to keep asking Orc.');
+        return;
+      }
+      // Session expired: onUnauthorized is logging the user out.
+      if (res.status === 401) return;
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.response) {
+        appendOrc(data.response);
+        return;
+      }
+      appendOrc(data.error || `Orc is unavailable (HTTP ${res.status}).`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -225,6 +227,7 @@ You may interrogate why this specific decision was taken, the 300–900 points b
             className="terminal-preset-chip"
             onClick={() => handleSend(p.query)}
             disabled={loading}
+            title={chatPrice ? `Costs ${chatPrice}` : undefined}
           >
             {p.label}
           </button>
@@ -284,7 +287,7 @@ You may interrogate why this specific decision was taken, the 300–900 points b
           title="Send Directive"
         >
           <Send size={14} />
-          <span>EXEC</span>
+          <span>EXEC{chatPrice ? ` · ${chatPrice}` : ''}</span>
         </button>
         <button
           type="button"

@@ -1,7 +1,8 @@
+/* Theme tokens from index.css; fallbacks keep the dark look if a token is missing. */
 .billing-pack-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
-.billing-pack-btn { display: inline-flex; align-items: center; gap: 6px; background: #10b981; color: #052e1f; border: 0; border-radius: 8px; padding: 8px 14px; font-weight: 600; cursor: pointer; }
-.billing-pack-btn:disabled { background: #27272a; color: #71717a; cursor: not-allowed; }
-.billing-ledger { width: 100%; margin-top: 16px; border-collapse: collapse; font-size: 12px; }
-.billing-ledger th, .billing-ledger td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #27272a; }
-.billing-ledger th { color: #71717a; font-weight: 500; }
+.billing-pack-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--accent, #10b981); color: var(--accent-btn-text, #052e1f); border: 0; border-radius: 8px; padding: 8px 14px; font-weight: 600; cursor: pointer; }
+.billing-pack-btn:disabled { background: var(--surface-hover, #27272a); color: var(--text-faint, #71717a); cursor: not-allowed; }
+.billing-ledger { width: 100%; margin-top: 16px; border-collapse: collapse; font-size: 12px; color: var(--text-primary, #e4e4e7); }
+.billing-ledger th, .billing-ledger td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border, #27272a); }
+.billing-ledger th { color: var(--text-subtle, #71717a); font-weight: 500; }
 .billing-ledger .mono { font-family: ui-monospace, monospace; }

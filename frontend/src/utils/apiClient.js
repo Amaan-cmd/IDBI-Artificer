@@ -28,7 +28,7 @@ export function onPaymentRequired(listener) {
   return () => paymentRequiredListeners.delete(listener);
 }
 
-// Fired after any response from a billable endpoint, so balances can refresh.
+// Fired with { ok, status } after any response from a billable endpoint, so balances can refresh.
 export function onBillingChange(listener) {
   billingChangeListeners.add(listener);
   return () => billingChangeListeners.delete(listener);
@@ -42,10 +42,15 @@ export async function apiFetch(path, options = {}) {
   if (token) headers.set('Authorization', `Bearer ${token}`);
   const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
   if (res.status === 401) unauthorizedListeners.forEach(fn => fn());
+  // A caller that aborted has moved on; don't pop modals or refresh for it.
+  if (options.signal?.aborted) return res;
   if (res.status === 402) {
     const info = await res.clone().json().catch(() => ({}));
-    paymentRequiredListeners.forEach(fn => fn(info));
+    if (typeof info.priceCents === 'number') paymentRequiredListeners.forEach(fn => fn(info));
   }
-  if (BILLABLE_PATHS.some(p => path.startsWith(p))) billingChangeListeners.forEach(fn => fn());
+  if (BILLABLE_PATHS.some(p => path.startsWith(p))) {
+    const outcome = { ok: res.ok, status: res.status };
+    billingChangeListeners.forEach(fn => fn(outcome));
+  }
   return res;
 }

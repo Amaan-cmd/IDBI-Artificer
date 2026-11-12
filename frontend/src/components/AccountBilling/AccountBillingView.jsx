@@ -4,7 +4,7 @@ import {
   Clock, Download, ExternalLink, Terminal, ChevronRight, Eye, EyeOff, 
   Building2, UserCheck, Shield, Sparkles, CheckCircle2, Code2, Wallet
 } from 'lucide-react';
-import { formatCents } from '../../utils/money';
+import { formatCents, creditBarPercent } from '../../utils/money';
 import './AccountBillingView.css';
 import './BillingCredit.css';
 
@@ -14,6 +14,19 @@ const PRICE_ROWS = [
   { key: 'registryLookup', label: 'Registry lookup' }
 ];
 const LEDGER_LABELS = { free_grant: 'Welcome credit', evaluate: 'Evaluation', chat: 'Orc message', registryLookup: 'Registry lookup', top_up: 'Top-up' };
+
+function formatLedgerDate(createdAt) {
+  const d = createdAt ? new Date(createdAt) : null;
+  return d && !Number.isNaN(d.getTime())
+    ? d.toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+    : '—';
+}
+
+function formatLedgerAmount(cents) {
+  if (cents === 0) return 'No charge';
+  if (typeof cents !== 'number') return '—';
+  return `${cents > 0 ? '+' : '−'}${formatCents(Math.abs(cents))}`;
+}
 
 const SEATS = [
   { name: 'Amaan Khan', email: 'amaan@enveraitech.com', role: 'Chief Underwriting Officer', status: 'Active (MFA)' },
@@ -127,12 +140,7 @@ export default function AccountBillingView({ currentUser, billing }) {
               <div className="quota-bar-track">
                 <div
                   className="quota-bar-fill"
-                  style={{ width: `${(() => {
-                    const a = billing?.account;
-                    if (!a) return 0;
-                    const max = Math.max(a.freeGrantCents || 500, (a.freeGrantCents || 0) + (a.lifetimePurchasedCents || 0));
-                    return Math.min(100, (a.balanceCents / max) * 100);
-                  })()}%` }}
+                  style={{ width: `${creditBarPercent(billing?.account)}%` }}
                 />
               </div>
               {billing?.account && billing.account.lifetimeSpentCents < billing.account.freeGrantCents && (
@@ -170,10 +178,10 @@ export default function AccountBillingView({ currentUser, billing }) {
                   <tbody>
                     {billing.account.ledger.map((row, i) => (
                       <tr key={`${row.createdAt}_${i}`}>
-                        <td>{new Date(row.createdAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</td>
+                        <td>{formatLedgerDate(row.createdAt)}</td>
                         <td>{row.type === 'refund' ? `Refund · ${LEDGER_LABELS[row.action] || row.action}` : (LEDGER_LABELS[row.action] || row.action)}</td>
                         <td className="mono">{row.reference || '—'}</td>
-                        <td className={row.amountCents >= 0 ? 'text-emerald' : ''}>{row.amountCents >= 0 ? '+' : '−'}{formatCents(Math.abs(row.amountCents))}</td>
+                        <td className={row.amountCents > 0 ? 'text-emerald' : ''}>{formatLedgerAmount(row.amountCents)}</td>
                         <td>{formatCents(row.balanceAfterCents)}</td>
                       </tr>
                     ))}

@@ -1,10 +1,12 @@
-.ooc-backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-.ooc-card { position: relative; width: min(420px, 92vw); background: #111113; border: 1px solid #27272a; border-radius: 12px; padding: 24px; color: #e4e4e7; text-align: center; }
-.ooc-card h3 { margin: 8px 0; font-size: 18px; }
-.ooc-card p { color: #a1a1aa; font-size: 14px; margin: 0 0 16px; }
-.ooc-icon { color: #10b981; display: flex; justify-content: center; }
-.ooc-close { position: absolute; top: 12px; right: 12px; background: none; border: 0; color: #a1a1aa; cursor: pointer; }
+/* Theme tokens from index.css; fallbacks keep the dark look if a token is missing. */
+.ooc-backdrop { position: fixed; inset: 0; background: var(--backdrop-modal, rgba(0, 0, 0, 0.6)); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.ooc-card { position: relative; width: min(420px, 92vw); background: var(--surface-elevated, #111113); border: 1px solid var(--border, #27272a); border-radius: 12px; padding: 24px; color: var(--text-primary, #e4e4e7); text-align: center; }
+.ooc-card h3 { margin: 8px 0; font-size: 18px; color: var(--text-primary, #e4e4e7); }
+.ooc-card p { color: var(--text-muted, #a1a1aa); font-size: 14px; margin: 0 0 16px; }
+.ooc-icon { color: var(--accent, #10b981); display: flex; justify-content: center; }
+.ooc-close { position: absolute; top: 12px; right: 12px; background: none; border: 0; color: var(--text-subtle, #a1a1aa); cursor: pointer; }
 .ooc-packs { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 12px; }
-.ooc-pack { background: #10b981; color: #052e1f; border: 0; border-radius: 8px; padding: 8px 14px; font-weight: 600; cursor: pointer; }
-.ooc-pack:disabled { background: #27272a; color: #71717a; cursor: not-allowed; }
-.ooc-link { background: none; border: 0; color: #10b981; cursor: pointer; text-decoration: underline; font-size: 13px; }
+.ooc-pack { background: var(--accent, #10b981); color: var(--accent-btn-text, #052e1f); border: 0; border-radius: 8px; padding: 8px 14px; font-weight: 600; cursor: pointer; }
+.ooc-pack:disabled { background: var(--surface-hover, #27272a); color: var(--text-faint, #71717a); cursor: not-allowed; }
+.ooc-link { background: none; border: 0; color: var(--accent, #10b981); cursor: pointer; text-decoration: underline; font-size: 13px; }
+.ooc-close:focus-visible, .ooc-pack:focus-visible, .ooc-link:focus-visible { outline: 2px solid var(--accent, #10b981); outline-offset: 2px; }

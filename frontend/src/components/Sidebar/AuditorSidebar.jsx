@@ -21,7 +21,8 @@ export default function AuditorSidebar({
   currentUser, 
   onLogout,
   onOpenMasterDashboard,
-  balanceCents
+  balanceCents,
+  creditPercent = 0
 }) {
   return (
     <aside className={`auditor-sidebar ${isCollapsed ? 'collapsed' : ''}`}>
@@ -101,7 +102,7 @@ export default function AuditorSidebar({
               <span className="quota-val">{formatCents(balanceCents)}</span>
             </div>
             <div className="quota-bar-track">
-              <div className="quota-bar-fill" style={{ width: `${Math.min(100, Math.max(0, ((balanceCents || 0) / 500) * 100))}%` }} />
+              <div className="quota-bar-fill" style={{ width: `${creditPercent}%` }} />
             </div>
             <span className="quota-meta">Prepaid usage credit</span>
           </div>

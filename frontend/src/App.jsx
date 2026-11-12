@@ -33,6 +33,7 @@ import { isAdminUser } from './utils/admin';
 import { API_BASE, apiFetch, getSessionToken, setSessionToken, onUnauthorized, onPaymentRequired } from './utils/apiClient';
 import OutOfCreditModal from './components/Billing/OutOfCreditModal';
 import { useBillingAccount } from './hooks/useBillingAccount';
+import { formatCents, creditBarPercent } from './utils/money';
 
 // Preloaded Realistic MSME Scenarios for Institutional Verification
 const PRELOADED_SCENARIOS = {
@@ -192,7 +193,10 @@ function App() {
 
   // Stripe Payment Links return to /#billing after a top-up.
   useEffect(() => {
-    if (window.location.hash === '#billing') setActiveNav('billing');
+    if (window.location.hash === '#billing') {
+      setActiveNav('billing');
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
   }, []);
 
   // Keyboard shortcut listener for Cmd/Ctrl + K
@@ -362,6 +366,7 @@ function App() {
     setInactivitySeconds(300);
     setCurrentView('evaluator');
     setLoading(false);
+    setCreditPrompt(null);
   };
 
   const handleFileChange = (e) => {
@@ -633,6 +638,8 @@ function App() {
     setLoading(true);
     setEvaluationStep(0);
     setError(null);
+    // Kept so a refused (402) run leaves the previous result on screen.
+    const previousData = data;
     setData(null);
 
     // Build multi-modal payload for the backend
@@ -665,6 +672,7 @@ function App() {
 
       if (response.status === 402) {
         // OutOfCreditModal is already shown by the apiFetch listener.
+        setData(previousData);
         setLoading(false);
         return;
       }
@@ -828,8 +836,11 @@ function App() {
     setChatMessages(prev => [...prev, { role: 'user', text: userQuery }]);
     setIsChatSending(true);
 
+    const appendAgent = (text) => setChatMessages(prev => [...prev, { role: 'agent', text }]);
+
+    let res;
     try {
-      const res = await apiFetch('/api/v1/chat/xai', {
+      res = await apiFetch('/api/v1/chat/xai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -837,19 +848,8 @@ function App() {
           evaluationPayload: data || null
         })
       });
-      if (res.status === 402) {
-        setChatMessages(prev => [...prev, { role: 'agent', text: 'Out of credit. Top up on the Account & Billing page to keep asking Orc.' }]);
-        setIsChatSending(false);
-        return;
-      }
-      const resData = await res.json();
-      if (resData.response) {
-        setChatMessages(prev => [...prev, { role: 'agent', text: resData.response }]);
-        setIsChatSending(false);
-        return;
-      }
-      throw new Error('No response from XAI endpoint');
     } catch {
+      // Network failure only: answer from the grounded local engine.
       const companyData = getCompanyDecisionData(
         data?.businessName || gstinProbeData?.registryReport?.gst?.data?.legalName,
         data?.gstin || gstinProbeData?.gstin || gstinInput,
@@ -859,7 +859,24 @@ function App() {
       const resp = companyData
         ? generateOrcResponse(userQuery, companyData)
         : 'Orc is unavailable right now, and there is no completed evaluation to explain yet. Run an evaluation, then ask again.';
-      setChatMessages(prev => [...prev, { role: 'agent', text: resp }]);
+      appendAgent(resp);
+      setIsChatSending(false);
+      return;
+    }
+
+    try {
+      if (res.status === 402) {
+        appendAgent('Out of credit. Top up on the Account & Billing page to keep asking Orc.');
+        return;
+      }
+      // Session expired: onUnauthorized is logging the user out.
+      if (res.status === 401) return;
+      const resData = await res.json().catch(() => ({}));
+      if (res.ok && resData.response) {
+        appendAgent(resData.response);
+        return;
+      }
+      appendAgent(resData.error || `Orc is unavailable (HTTP ${res.status}).`);
     } finally {
       setIsChatSending(false);
     }
@@ -996,6 +1013,7 @@ function App() {
           onLogout={handleLogout}
           onOpenMasterDashboard={isAdminUser(currentUser) ? () => setCurrentView('master') : undefined}
           balanceCents={billing.account?.balanceCents}
+          creditPercent={creditBarPercent(billing.account)}
         />
 
         {/* 2. Main Viewport */}
@@ -1174,6 +1192,9 @@ function App() {
                 className="orc-drawer-send-btn"
               >
                 <Send size={14} />
+                {billing.account?.prices?.chat != null && (
+                  <span style={{ marginLeft: 4, fontSize: 11 }}>· {formatCents(billing.account.prices.chat)}</span>
+                )}
               </button>
             </form>
           </aside>
