@@ -1,19 +1,20 @@
-/* AuditorTopBar.css - Whitish, Silver Ash & Light Cherry Pink Theme */
+/* AuditorTopBar.css - Tokenized Light (Alabaster & Cherry) & Dark (Obsidian & Emerald) Theme */
 .auditor-top-bar {
   height: 56px;
   min-height: 56px;
   position: sticky;
   top: 0;
   z-index: 40;
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--surface-translucent);
   backdrop-filter: blur(16px);
-  border-bottom: 1px solid #E2E8F0;
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 24px;
   gap: 16px;
-  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.03);
+  box-shadow: var(--shadow-sm);
 }
 
 /* Breadcrumbs */
@@ -27,19 +28,19 @@
 
 .crumb-root {
   font-family: var(--font-mono);
-  color: #64748B;
+  color: var(--text-subtle);
   font-size: 0.72rem;
   letter-spacing: 0.04em;
 }
 
 .crumb-sep {
-  color: #94A3B8;
+  color: var(--text-faint);
   font-size: 0.75rem;
 }
 
 .crumb-current {
   font-weight: 600;
-  color: #0F172A;
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -54,27 +55,27 @@
   width: 100%;
   max-width: 440px;
   padding: 7px 14px;
-  background: #F8FAFC;
-  border: 1px solid #E2E8F0;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .top-bar-center-search:hover {
-  background: #FFF1F4;
-  border-color: #FDA4AF;
+  background: var(--accent-soft);
+  border-color: var(--accent-border);
 }
 
 .search-bar-icon {
-  color: #64748B;
+  color: var(--text-subtle);
   flex-shrink: 0;
 }
 
 .search-bar-placeholder {
   flex: 1;
   font-size: 0.78rem;
-  color: #64748B;
+  color: var(--text-subtle);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -88,11 +89,11 @@
 .search-shortcut-badge kbd {
   font-family: var(--font-mono);
   font-size: 0.65rem;
-  background: #FFFFFF;
-  border: 1px solid #CBD5E1;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
   padding: 1px 5px;
   border-radius: 4px;
-  color: #475569;
+  color: var(--text-muted);
 }
 
 /* Right Controls */
@@ -106,19 +107,19 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  background: #ECFDF5;
-  border: 1px solid #A7F3D0;
+  background: var(--status-green-bg);
+  border: 1px solid var(--status-green-border);
   border-radius: 6px;
   padding: 5px 9px;
   font-family: var(--font-mono);
   font-size: 0.65rem;
-  color: #059669;
+  color: var(--status-green-text);
   font-weight: 700;
   letter-spacing: 0.04em;
 }
 
 .ledger-icon {
-  color: #059669;
+  color: var(--status-green-text);
 }
 
 .ledger-dot {
@@ -139,17 +140,17 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  background: #F8FAFC;
-  border: 1px solid #E2E8F0;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
   border-radius: 6px;
   padding: 5px 9px;
-  color: #475569;
+  color: var(--text-muted);
   font-family: var(--font-mono);
   font-size: 0.72rem;
 }
 
 .sentinel-time {
-  color: #0F172A;
+  color: var(--text-primary);
   font-weight: 600;
 }
 
@@ -157,11 +158,11 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  background: #FFF1F4;
-  border: 1px solid #FDA4AF;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
   border-radius: 6px;
   padding: 5px 11px;
-  color: #E11D48;
+  color: var(--accent-strong);
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
@@ -170,7 +171,30 @@
 
 .top-bar-chat-btn:hover,
 .top-bar-chat-btn.active {
-  background: #FFE4E8;
-  border-color: #F43F5E;
-  box-shadow: 0 0 10px rgba(244, 63, 94, 0.2);
+  background: var(--accent-soft-hover);
+  border-color: var(--accent);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+/* Theme Toggle Button */
+.top-bar-theme-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 10px;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.top-bar-theme-btn:hover {
+  background: var(--surface-hover);
+  border-color: var(--accent-border);
+  color: var(--text-primary);
+  transform: translateY(-1px);
 }

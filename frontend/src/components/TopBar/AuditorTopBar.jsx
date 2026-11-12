@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, ShieldCheck, Clock, Terminal, MessageSquare, ExternalLink } from 'lucide-react';
+import { Search, ShieldCheck, Clock, Terminal, MessageSquare, ExternalLink, Sun, Moon } from 'lucide-react';
 import './AuditorTopBar.css';
 
 export const formatSeconds = (sec) => {
@@ -13,7 +13,9 @@ export default function AuditorTopBar({
   onOpenCmdPalette,
   inactivitySeconds = 300,
   onOpenChat,
-  isChatOpen
+  isChatOpen,
+  theme = 'light',
+  onToggleTheme
 }) {
   const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
 
@@ -21,7 +23,7 @@ export default function AuditorTopBar({
     <header className="auditor-top-bar">
       {/* Breadcrumb Area */}
       <div className="top-bar-breadcrumb-area">
-        <span className="crumb-root">Citadel Citadel</span>
+        <span className="crumb-root">Citadel</span>
         <span className="crumb-sep">/</span>
         <span className="crumb-current">{currentBreadcrumb}</span>
       </div>
@@ -40,6 +42,17 @@ export default function AuditorTopBar({
 
       {/* Right Utility Badges */}
       <div className="top-bar-right-controls">
+        {/* Dark / Light Mode Toggle */}
+        <button 
+          className="top-bar-theme-btn" 
+          onClick={onToggleTheme}
+          title={theme === 'dark' ? "Switch to Light Mode" : "Switch to Dark Mode"}
+          aria-label="Toggle Theme"
+        >
+          {theme === 'dark' ? <Sun size={14} style={{ color: '#FBBF24' }} /> : <Moon size={14} />}
+          <span>{theme === 'dark' ? 'Light' : 'Dark'}</span>
+        </button>
+
         {/* Ledger Badge */}
         <div className="top-bar-ledger-badge">
           <ShieldCheck size={13} className="ledger-icon" />

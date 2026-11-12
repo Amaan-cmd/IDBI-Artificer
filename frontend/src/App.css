@@ -168,12 +168,12 @@
   align-items: center;
   padding: 0.85rem 1.4rem;
   margin-bottom: 1.75rem;
-  background: rgba(26, 13, 37, 0.78);
+  background: var(--surface-translucent);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-soft);
   gap: 1.25rem;
   flex-wrap: wrap;
 }
@@ -190,20 +190,20 @@
   width: 44px;
   height: 44px;
   border-radius: 10px;
-  background: #120919;
-  border: 1px solid var(--brand-gold-border);
+  background: var(--surface-alt);
+  border: 1px solid var(--accent-border);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  box-shadow: 0 0 15px rgba(172, 225, 175, 0.18);
+  box-shadow: 0 0 15px var(--accent-glow);
   flex-shrink: 0;
   transition: all 0.3s ease;
 }
 
 .citadel-brand:hover .citadel-logo-frame {
-  border-color: var(--brand-gold);
-  box-shadow: 0 0 20px rgba(200, 168, 107, 0.3);
+  border-color: var(--accent);
+  box-shadow: 0 0 20px var(--accent-glow);
 }
 
 .citadel-logo-img {
@@ -261,12 +261,12 @@
 .executive-nav-pill-group {
   display: inline-flex;
   align-items: center;
-  background: rgba(8, 14, 11, 0.85);
+  background: var(--surface-inset);
   border: 1px solid var(--border);
   border-radius: var(--radius-full);
   padding: 4px;
   gap: 4px;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-sm);
 }
 
 .exec-nav-tab {
@@ -399,7 +399,7 @@
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: #080E0B;
+  background: var(--surface-inset);
   border: 1.5px solid var(--border);
   display: flex;
   align-items: center;
@@ -475,9 +475,9 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: #080E0B;
-  border: 1.5px solid var(--brand-gold);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.7), 0 0 16px rgba(200, 168, 107, 0.3);
+  background: var(--surface-inset);
+  border: 1.5px solid var(--accent);
+  box-shadow: var(--shadow-soft), 0 0 16px var(--accent-glow);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -489,8 +489,8 @@
 
 .orc-favicon-orb:hover {
   transform: scale(1.12);
-  border-color: var(--brand-gold-light);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8), 0 0 24px rgba(200, 168, 107, 0.5);
+  border-color: var(--accent-strong);
+  box-shadow: var(--shadow-hover), 0 0 24px var(--accent-shadow);
 }
 
 .orc-favicon-img {
@@ -507,7 +507,7 @@
   width: 10px;
   height: 10px;
   background: var(--brand-green);
-  border: 2px solid #FFFFFF;
+  border: 2px solid var(--surface);
   border-radius: 50%;
 }
 
@@ -576,11 +576,13 @@
 }
 
 /* =========================================================================
-   LEFT-SIDEBAR + SPLIT-WORKSPACE ROOT ARCHITECTURE
+   LEFT-SIDEBAR + SPLIT-WORKSPACE ROOT ARCHITECTURE (PINNED STATIC SIDEBAR)
    ========================================================================= */
 .citadel-app-layout {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
   width: 100%;
   position: relative;
   z-index: 10;
@@ -592,8 +594,11 @@
   flex-direction: column;
   min-width: 0;
   position: relative;
-  min-height: 100vh;
-  background: var(--bg-primary, #F8F9FB);
+  height: 100vh;
+  max-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: transparent;
 }
 
 .citadel-workspace-body {
@@ -603,6 +608,7 @@
   width: 100%;
   margin: 0 auto;
   box-sizing: border-box;
+  min-height: min-content;
 }
 
 @media (min-width: 1025px) {
@@ -625,6 +631,210 @@
   .citadel-workspace-body {
     padding: 16px;
   }
+}
+
+/* =========================================================================
+   5-MIN INACTIVITY SENTINEL MODAL OVERLAY
+   ========================================================================= */
+.sentinel-lock-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background-color: var(--backdrop-modal);
+  backdrop-filter: blur(16px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1.5rem;
+}
+
+.sentinel-lock-card {
+  max-width: 440px;
+  width: 100%;
+  text-align: center;
+  border-color: var(--border);
+  background: var(--surface);
+  padding: 32px;
+  box-shadow: var(--shadow-hover);
+}
+
+.sentinel-lock-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.25rem;
+  border: 1.5px solid var(--accent-border);
+}
+
+.sentinel-lock-title {
+  font-size: 1.5rem;
+  color: var(--text-primary);
+  margin-bottom: 0.6rem;
+  font-weight: 700;
+}
+
+.sentinel-lock-desc {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+/* =========================================================================
+   SLIDE-OVER ORC CCO CONVERSATIONAL DRAWER
+   ========================================================================= */
+.orc-slideover-drawer {
+  position: fixed;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 380px;
+  max-width: 100vw;
+  background: var(--surface-translucent);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  border-left: 1px solid var(--border);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  box-shadow: -12px 0 40px rgba(0, 0, 0, 0.35);
+}
+
+.orc-drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 14px;
+  margin-bottom: 14px;
+}
+
+.orc-drawer-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.orc-drawer-icon {
+  color: var(--accent-strong);
+}
+
+.orc-drawer-title {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.orc-drawer-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-subtle);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.orc-drawer-close-btn:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.orc-drawer-messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-right: 4px;
+}
+
+.orc-drawer-msg {
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  line-height: 1.48;
+  max-width: 90%;
+}
+
+.orc-drawer-msg.user {
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+  color: var(--text-primary);
+  align-self: flex-end;
+}
+
+.orc-drawer-msg.agent {
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  align-self: flex-start;
+}
+
+.orc-drawer-typing {
+  font-size: 0.75rem;
+  color: var(--accent-strong);
+  font-style: italic;
+}
+
+.orc-drawer-form {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+
+.orc-drawer-input {
+  flex: 1;
+  background: var(--surface-inset);
+  border: 1.5px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.orc-drawer-input:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.orc-drawer-send-btn {
+  background: var(--accent-gradient);
+  color: var(--accent-btn-text);
+  border: none;
+  border-radius: 8px;
+  padding: 0 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  box-shadow: 0 2px 10px var(--accent-shadow);
+  transition: all 0.2s ease;
+}
+
+.orc-drawer-send-btn:hover:not(:disabled) {
+  background: var(--accent-gradient-hover);
+  color: var(--accent-btn-hover-text);
+  transform: translateY(-1px);
+}
+
+.orc-drawer-send-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 

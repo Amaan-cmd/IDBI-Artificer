@@ -1,4 +1,4 @@
-/* ---- ScrollStack.css - Whitish, Silver Ash & Light Cherry Pink Theme ---- */
+/* ScrollStack.css - Tokenized Light (Silver Ash & Cherry) & Dark (Obsidian & Emerald) Theme */
 .scroll-stack {
   position: relative;
   width: 100%;
@@ -10,7 +10,7 @@
   overflow-x: hidden;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: #FDA4AF #F1F3F6;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }
 
 .scroll-stack__inner {
@@ -30,13 +30,10 @@
   min-height: 16rem;
   padding: 1.85rem 2.2rem;
   border-radius: 20px;
-  background: #FFFFFF;
-  color: #0F172A;
-  border: 1.5px solid #E2E8F0;
-  box-shadow:
-    0 4px 16px rgba(15, 23, 42, 0.04),
-    0 16px 36px rgba(15, 23, 42, 0.06),
-    0 0 20px rgba(255, 139, 167, 0.08);
+  background: var(--surface);
+  color: var(--text-primary);
+  border: 1.5px solid var(--border);
+  box-shadow: var(--shadow-soft);
   backdrop-filter: blur(20px);
   transform-origin: 50% 0;
   will-change: transform;
@@ -44,15 +41,15 @@
 }
 
 .scroll-stack-card:hover {
-  border-color: #FDA4AF;
-  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08), 0 0 25px rgba(244, 63, 94, 0.15);
+  border-color: var(--accent-border);
+  box-shadow: var(--shadow-hover);
 }
 
 .scroll-stack-card__shade {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: #F1F3F6;
+  background: var(--backdrop-shade);
   opacity: calc(var(--scroll-stack-dim, 0) * 0.7);
   pointer-events: none;
   transition: opacity 0.2s ease;
@@ -64,7 +61,7 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.25rem;
-  border-bottom: 1px solid #E2E8F0;
+  border-bottom: 1px solid var(--border);
   padding-bottom: 0.85rem;
 }
 
@@ -77,7 +74,7 @@
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #E11D48;
+  color: var(--accent-strong);
 }
 
 .finding-card-badge {
@@ -91,27 +88,27 @@
 }
 
 .badge-comfortable, .badge-prime, .badge-consistent, .badge-clean, .badge-low {
-  background: #ECFDF5;
-  color: #059669;
-  border: 1px solid #A7F3D0;
+  background: var(--status-green-bg);
+  color: var(--status-green-text);
+  border: 1px solid var(--status-green-border);
 }
 
 .badge-adequate, .badge-stable, .badge-acceptable, .badge-moderate {
-  background: #FFFBEB;
-  color: #D97706;
-  border: 1px solid #FDE68A;
+  background: var(--status-amber-bg);
+  color: var(--status-amber-text);
+  border: 1px solid var(--status-amber-border);
 }
 
 .badge-stressed, .badge-contracting, .badge-leveraged, .badge-friction, .badge-high {
-  background: #FFF1F2;
-  color: #E11D48;
-  border: 1px solid #FECDD3;
+  background: var(--status-red-bg);
+  color: var(--status-red-text);
+  border: 1px solid var(--status-red-border);
 }
 
 .finding-card-title {
   font-size: 1.35rem;
   font-weight: 700;
-  color: #0F172A;
+  color: var(--text-primary);
   margin-bottom: 1rem;
 }
 
@@ -129,8 +126,8 @@
 }
 
 .finding-metric-box {
-  background: #F8FAFC;
-  border: 1px solid #E2E8F0;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 12px 16px;
 }
@@ -138,22 +135,22 @@
 .finding-metric-label {
   font-family: var(--font-mono, monospace);
   font-size: 0.68rem;
-  color: #64748B;
+  color: var(--text-subtle);
   margin-bottom: 4px;
 }
 
 .finding-metric-value {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #0F172A;
+  color: var(--text-primary);
 }
 
 .finding-citation-box {
-  background: #FFF1F4;
-  border-left: 3px solid #F43F5E;
+  background: var(--accent-soft);
+  border-left: 3px solid var(--accent);
   padding: 10px 14px;
   border-radius: 0 8px 8px 0;
   font-size: 0.82rem;
-  color: #334155;
+  color: var(--text-secondary);
   line-height: 1.5;
 }
