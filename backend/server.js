@@ -7,7 +7,7 @@ const os = require('os');
 const multer = require('multer');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const { evaluateMSMECredit, validateEvaluateInput, isDemoEvaluation } = require('./controllers/creditController');
+const { evaluateMSMECredit, validateEvaluateInput, isDemoEvaluation, isScreeningRequest } = require('./controllers/creditController');
 const { getAllUsers, getLoginTelemetry, sendOtp, verifyOtp } = require('./controllers/userController');
 const { getHistory } = require('./controllers/historyController');
 const { trainAgamiPipeline } = require('./controllers/agamiController');
@@ -128,8 +128,11 @@ app.get('/api/v1/registry/gstin/:gstin', requireSession, requireValidGstin, mete
 app.get('/api/v1/alternate-data/gstin-probe/:gstin', requireSession, requireValidGstin, meterRegistry, getRegistry);
 
 // Evaluate MSME Credit Score (Live Agentic Pipeline with Multi-Modal Input)
+// Exactly one of the two meters charges: GSTIN-only screenings at the registry
+// lookup price, statement / manual-data evaluations at the evaluation price.
 app.post('/api/v1/evaluate', requireSession, uploadStatement, cleanupUpload, validateEvaluateInput,
-  withCharge('evaluate', { skip: isDemoEvaluation, reference: evaluateReference }),
+  withCharge('evaluate', { skip: (req) => isScreeningRequest(req) || isDemoEvaluation(req), reference: evaluateReference }),
+  withCharge('registryLookup', { skip: (req) => !isScreeningRequest(req) || isDemoEvaluation(req), reference: evaluateReference }),
   evaluateMSMECredit);
 
 // Agent 3 Conversational Forensic Interrogation

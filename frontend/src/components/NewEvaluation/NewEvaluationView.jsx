@@ -354,7 +354,11 @@ export default function NewEvaluationView({
                       : file
                         ? (evaluationData && !isScreening ? '⚡ RE-RUN CREDIT SCORE' : '⚡ INGEST & GENERATE CREDIT SCORE')
                         : (isScreening ? '⚡ RE-RUN REGISTRY SCREENING' : '⚡ RUN REGISTRY SCREENING (NO STATEMENT)')}
-                    {!loading && prices?.evaluate != null ? ` · ${formatCents(prices.evaluate)}` : ''}
+                    {(() => {
+                      // GSTIN-only screenings are billed as a registry lookup.
+                      const price = file ? prices?.evaluate : prices?.registryLookup;
+                      return !loading && price != null ? ` · ${formatCents(price)}` : '';
+                    })()}
                   </span>
                 </button>
                 <button

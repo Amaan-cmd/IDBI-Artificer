@@ -19,7 +19,8 @@ function withCharge(action, { skip, reference } = {}) {
   }
   return async function meter(req, res, next) {
     if (skip && skip(req)) {
-      req.billing = NO_CHARGE;
+      // Keep a charge made by an earlier meter on the same route.
+      req.billing = req.billing || NO_CHARGE;
       return next();
     }
 

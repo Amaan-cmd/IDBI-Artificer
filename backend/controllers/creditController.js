@@ -10,7 +10,7 @@ const { addHistoryRecord } = require('./historyController');
 const { sendSlackNotification } = require('../services/slackNotifier');
 const { applyRegistryAdjustments } = require('../services/registry/registryAdjustments');
 const { isAcceptedGstin } = require('../utils/gstin');
-const { hasRegistryData } = require('./registryController');
+const { hasRegistryData, freshRegistryData } = require('./registryController');
 const { isDemoMode } = require('../platform/demoMode');
 const { demoFinancials } = require('../demo/demoEntities');
 
@@ -55,10 +55,15 @@ function validateEvaluateInput(req, res, next) {
   return next();
 }
 
+// GSTIN only (no statement, no manual data): a registry screening, billed as a registry lookup.
+function isScreeningRequest(req) {
+  return !req.file && !req.body?.manualData;
+}
+
 // GSTIN-only demo presets are free.
 function isDemoEvaluation(req) {
   const gstin = String(req.body?.gstin || '').trim().toUpperCase();
-  return isDemoMode() && !req.file && !req.body?.manualData && Boolean(demoFinancials(gstin));
+  return isDemoMode() && isScreeningRequest(req) && Boolean(demoFinancials(gstin));
 }
 
 // step 99 is the client's terminal-error signal; a failed run is refunded.
@@ -137,10 +142,11 @@ async function evaluateMSMECredit(req, res) {
           name: screeningPayload.businessName, gstin: screeningPayload.gstin, score: null, risk: null,
           reason: 'Registry screening (no statement uploaded)', fullPayload: screeningPayload
         });
-        // A screening with no registry data is still delivered, but not charged.
+        // Priced like /registry: charged only when fresh data was fetched upstream.
+        // A screening without it is still delivered, but not charged.
         let screeningCost = (req.billing?.priceCents || 0) / 100;
-        if (!hasRegistryData(report)) {
-          await req.billing?.refund('registry unavailable');
+        if (!freshRegistryData(report)) {
+          await req.billing?.refund(hasRegistryData(report) ? 'cached registry result' : 'registry unavailable');
           screeningCost = 0;
         }
         incrementUserUsage(userId, screeningCost);
@@ -340,4 +346,4 @@ async function evaluateMSMECredit(req, res) {
   }
 }
 
-module.exports = { evaluateMSMECredit, verifiedStatementName, validateEvaluateInput, isDemoEvaluation };
+module.exports = { evaluateMSMECredit, verifiedStatementName, validateEvaluateInput, isDemoEvaluation, isScreeningRequest };

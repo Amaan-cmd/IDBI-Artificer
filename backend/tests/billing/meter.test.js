@@ -71,6 +71,17 @@ test('explicit refund plus error status refunds only once', async () => {
   assert.equal(await balance('u@x.com'), 500);
 });
 
+test('a skipped meter after a charging meter keeps the charge (and its refund)', async () => {
+  await useTempStore();
+  const chained = [withCharge('evaluate'), withCharge('registryLookup', { skip: () => true })];
+  const app = appWith('u@x.com', chained, async (req, res) => {
+    await req.billing.refund('failed');
+    res.json({ priceCents: req.billing.priceCents });
+  });
+  await serve(app, async (base) => assert.deepEqual(await (await fetch(`${base}/x`)).json(), { priceCents: 50 }));
+  assert.equal(await balance('u@x.com'), 500);
+});
+
 test('skip() bypasses charging', async () => {
   await useTempStore();
   const app = appWith('u@x.com', withCharge('evaluate', { skip: () => true }), (req, res) => res.json({ id: req.billing.chargeId }));
