@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test --test-concurrency=1 tests/*.test.js tests/registry/*.test.js"
+    "test": "node --test --test-concurrency=1 tests/*.test.js tests/registry/*.test.js tests/billing/*.test.js"
   },
   "keywords": [],
   "author": "",
@@ -28,6 +28,7 @@
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.2.0",
     "openai": "^6.45.0",
-    "pdf-parse": "^2.4.5"
+    "pdf-parse": "^2.4.5",
+    "stripe": "^23.1.0"
   }
 }
