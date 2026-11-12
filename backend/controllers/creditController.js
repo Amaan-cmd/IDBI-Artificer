@@ -62,9 +62,12 @@ function isDemoEvaluation(req) {
 }
 
 // step 99 is the client's terminal-error signal; a failed run is refunded.
-// The refund is started before the write so a closed stream cannot skip it.
-function streamFailure(req, res, payload) {
-  req.billing?.refund(payload.error);
+// The refund completes before the write, so the client's follow-up balance
+// read sees it; a refund rejection cannot skip the write.
+async function streamFailure(req, res, payload) {
+  try {
+    await req.billing?.refund(payload.error);
+  } catch { /* refund logs its own errors */ }
   res.write(`data: ${JSON.stringify({ step: 99, ...payload })}\n\n`);
 }
 
@@ -153,7 +156,7 @@ async function evaluateMSMECredit(req, res) {
       if (!jevReport.isAppropriate) {
         console.warn('[Credit Engine] JEV System 1 rejected extraction:', jevReport.rationale);
         if (file && fs.existsSync(file.path)) fs.unlinkSync(file.path);
-        streamFailure(req, res, {
+        await streamFailure(req, res, {
           error: `JEV System 1 Gatekeeper: Document rejected as inappropriate/fraudulent. ${jevReport.rationale}`,
           jevReport
         });
@@ -250,12 +253,12 @@ async function evaluateMSMECredit(req, res) {
       } catch (ingErr) {
         console.warn('[Credit Engine] Fallback extraction failed:', ingErr.message);
         if (file && fs.existsSync(file.path)) fs.unlinkSync(file.path);
-        streamFailure(req, res, { error: 'Could not extract financials from the uploaded statement. Please upload a clearer statement (PDF or CSV).' });
+        await streamFailure(req, res, { error: 'Could not extract financials from the uploaded statement. Please upload a clearer statement (PDF or CSV).' });
         cleanup();
         return res.end();
       }
       if (fallbackStructured.reportType === 'REGISTRY_SCREENING') {
-        streamFailure(req, res, { error: 'Registry screening could not be completed. Please retry.' });
+        await streamFailure(req, res, { error: 'Registry screening could not be completed. Please retry.' });
         cleanup();
         return res.end();
       }
@@ -265,7 +268,7 @@ async function evaluateMSMECredit(req, res) {
       if (!jevReport.isAppropriate) {
         console.warn('[Credit Engine] JEV deterministic check rejected fallback extraction:', jevReport.rationale);
         if (file && fs.existsSync(file.path)) fs.unlinkSync(file.path);
-        streamFailure(req, res, {
+        await streamFailure(req, res, {
           error: `JEV System 1 Gatekeeper: Document rejected as inappropriate/fraudulent. ${jevReport.rationale}`,
           jevReport
         });
@@ -329,7 +332,7 @@ async function evaluateMSMECredit(req, res) {
       res.status(500).json({ error: error.message || 'Failed to evaluate credit profile' });
     } else {
       try {
-        streamFailure(req, res, { error: error.message || 'Failed to evaluate credit profile' });
+        await streamFailure(req, res, { error: error.message || 'Failed to evaluate credit profile' });
       } catch { /* stream already closed */ }
       cleanup();
       res.end();
