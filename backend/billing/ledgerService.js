@@ -114,4 +114,74 @@ async function charge(email, action, reference = '') {
   });
 }
 
-module.exports = { accountIdFor, ensureAccount, charge, ACCOUNT_PK, _internal: { appendLedger, updateAccount, withAccountLock } };
+// Adds a charge back. Callers refund a given charge at most once (meter.js
+// guards this). Admin $0 charges need no refund.
+async function refund(email, { chargeId, priceCents }, action, reason = '') {
+  if (!priceCents) return { ok: true, balanceCents: null };
+  const accountId = accountIdFor(email);
+  return withAccountLock(accountId, async () => {
+    const { account } = await updateAccount(accountId, (a) => ({
+      balanceCents: a.balanceCents + priceCents,
+      lifetimeSpentCents: Math.max(0, (a.lifetimeSpentCents || 0) - priceCents)
+    }));
+    await appendLedger(accountId, {
+      type: 'refund', amountCents: priceCents, balanceAfterCents: account.balanceCents, action, reference: chargeId, reason: String(reason).slice(0, 200)
+    });
+    return { ok: true, balanceCents: account.balanceCents };
+  });
+}
+
+const RECENT_STRIPE_SESSIONS = 50;
+
+// Credits a paid Stripe Checkout Session exactly once. The session id is
+// recorded on the account inside the same ETag update as the balance change,
+// so a retry after a partial failure can never credit twice or lose a payment.
+async function credit(accountId, cents, stripeSessionId) {
+  const store = getTableStore();
+  if (await store.getEntity('stripeevents', 'checkout', stripeSessionId)) return { duplicate: true };
+
+  const { applied, account } = await withAccountLock(accountId, () => updateAccount(accountId, (a) => {
+    const recent = JSON.parse(a.recentStripeSessions || '[]');
+    if (recent.includes(stripeSessionId)) return null;
+    return {
+      balanceCents: a.balanceCents + cents,
+      lifetimePurchasedCents: (a.lifetimePurchasedCents || 0) + cents,
+      recentStripeSessions: JSON.stringify([...recent, stripeSessionId].slice(-RECENT_STRIPE_SESSIONS))
+    };
+  }));
+
+  try {
+    await store.createEntity('stripeevents', {
+      partitionKey: 'checkout', rowKey: stripeSessionId, accountId, amountCents: cents, processedAt: new Date().toISOString()
+    });
+  } catch (err) {
+    if (!(err instanceof ConflictError)) console.error(`[Billing] stripeevents write failed for ${stripeSessionId}:`, err.message);
+  }
+  if (!applied) return { duplicate: true };
+
+  await appendLedger(accountId, {
+    type: 'purchase', amountCents: cents, balanceAfterCents: account.balanceCents, action: 'top_up', reference: stripeSessionId
+  });
+  return { duplicate: false, balanceCents: account.balanceCents };
+}
+
+async function getAccountSummary(email, { ledgerLimit = 20 } = {}) {
+  const account = await ensureAccount(email);
+  const rows = await getTableStore().listEntities('ledger', account.rowKey, { limit: ledgerLimit });
+  return {
+    accountId: account.rowKey,
+    email: account.email,
+    balanceCents: account.balanceCents,
+    freeGrantCents: account.freeGrantCents,
+    lifetimePurchasedCents: account.lifetimePurchasedCents || 0,
+    lifetimeSpentCents: account.lifetimeSpentCents || 0,
+    ledger: rows.map(({ type, amountCents, balanceAfterCents, action, reference, createdAt }) => ({
+      type, amountCents, balanceAfterCents, action, reference, createdAt
+    }))
+  };
+}
+
+module.exports = {
+  accountIdFor, ensureAccount, charge, refund, credit, getAccountSummary, ACCOUNT_PK,
+  _internal: { appendLedger, updateAccount, withAccountLock }
+};
