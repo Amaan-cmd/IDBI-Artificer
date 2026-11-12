@@ -25,7 +25,7 @@ function ledgerRowKey(now) {
 // updateAccount covers writers in other instances.
 const locks = new Map();
 function withAccountLock(accountId, fn) {
-  const run = (locks.get(accountId) || Promise.resolve()).then(fn);
+  const run = (locks.get(accountId) || Promise.resolve()).then(() => fn());
   const tail = run.catch(() => {});
   locks.set(accountId, tail);
   tail.then(() => { if (locks.get(accountId) === tail) locks.delete(accountId); });
@@ -58,6 +58,7 @@ async function updateAccount(accountId, mutate) {
       return { applied: true, account: next };
     } catch (err) {
       if (!(err instanceof ConflictError) || attempt >= MAX_ATTEMPTS) throw err;
+      await new Promise(r => setTimeout(r, 10 * 2 ** attempt + Math.floor(Math.random() * 10)));
     }
   }
 }
@@ -74,7 +75,7 @@ async function ensureAccount(email) {
     await store.createEntity('accounts', {
       partitionKey: ACCOUNT_PK, rowKey: accountId, email: clean,
       balanceCents: FREE_GRANT_CENTS, freeGrantCents: FREE_GRANT_CENTS, freeGrantedAt: now, createdAt: now,
-      lifetimePurchasedCents: 0, lifetimeSpentCents: 0, recentStripeSessions: '[]'
+      lifetimePurchasedCents: 0, lifetimeSpentCents: 0, recentStripeSessions: '[]', recentRefunds: '[]'
     });
   } catch (err) {
     if (err instanceof ConflictError) return store.getEntity('accounts', ACCOUNT_PK, accountId);
@@ -114,16 +115,26 @@ async function charge(email, action, reference = '') {
   });
 }
 
-// Adds a charge back. Callers refund a given charge at most once (meter.js
-// guards this). Admin $0 charges need no refund.
+const RECENT_REFUNDS = 100;
+
+// Adds a charge back, at most once per chargeId (the last RECENT_REFUNDS
+// refunded charge ids are kept on the account). Admin $0 charges need no refund.
 async function refund(email, { chargeId, priceCents }, action, reason = '') {
   if (!priceCents) return { ok: true, balanceCents: null };
+  if (!Number.isInteger(priceCents) || priceCents <= 0) throw new Error(`Invalid refund price: ${priceCents}`);
+  if (typeof chargeId !== 'string' || !chargeId) throw new Error('A charge id is required to refund.');
   const accountId = accountIdFor(email);
   return withAccountLock(accountId, async () => {
-    const { account } = await updateAccount(accountId, (a) => ({
-      balanceCents: a.balanceCents + priceCents,
-      lifetimeSpentCents: Math.max(0, (a.lifetimeSpentCents || 0) - priceCents)
-    }));
+    const { applied, account } = await updateAccount(accountId, (a) => {
+      const recent = JSON.parse(a.recentRefunds || '[]');
+      if (recent.includes(chargeId)) return null;
+      return {
+        balanceCents: a.balanceCents + priceCents,
+        lifetimeSpentCents: Math.max(0, (a.lifetimeSpentCents || 0) - priceCents),
+        recentRefunds: JSON.stringify([...recent, chargeId].slice(-RECENT_REFUNDS))
+      };
+    });
+    if (!applied) return { ok: true, duplicate: true, balanceCents: account.balanceCents };
     await appendLedger(accountId, {
       type: 'refund', amountCents: priceCents, balanceAfterCents: account.balanceCents, action, reference: chargeId, reason: String(reason).slice(0, 200)
     });
@@ -131,12 +142,16 @@ async function refund(email, { chargeId, priceCents }, action, reason = '') {
   });
 }
 
+// stripeevents is the primary dedupe; this in-entity window only covers a failed stripeevents write followed by >50 purchases before Stripe redelivers, which is accepted.
 const RECENT_STRIPE_SESSIONS = 50;
 
 // Credits a paid Stripe Checkout Session exactly once. The session id is
 // recorded on the account inside the same ETag update as the balance change,
 // so a retry after a partial failure can never credit twice or lose a payment.
 async function credit(accountId, cents, stripeSessionId) {
+  if (typeof accountId !== 'string' || !/^acct_[0-9a-f]{32}$/.test(accountId)) throw new Error(`Invalid billing account id: ${accountId}`);
+  if (!Number.isInteger(cents) || cents <= 0) throw new Error(`Invalid credit amount: ${cents}`);
+  if (typeof stripeSessionId !== 'string' || !stripeSessionId) throw new Error('A Stripe session id is required to credit.');
   const store = getTableStore();
   if (await store.getEntity('stripeevents', 'checkout', stripeSessionId)) return { duplicate: true };
 

@@ -151,3 +151,102 @@ test('credit is exactly-once even if the stripeevents row was never written', as
   assert.deepEqual(await ledger.credit(acct.rowKey, 1000, 'cs_test_2'), { duplicate: true });
   assert.equal((await store.getEntity('accounts', 'acct', acct.rowKey)).balanceCents, 1500);
 });
+
+test('credit rejects invalid input without writing', async () => {
+  const store = await useTempStore();
+  const acct = await ledger.ensureAccount('u@x.com');
+  await assert.rejects(ledger.credit(acct.rowKey, '1000', 'cs_bad_1'), /amount/);
+  await assert.rejects(ledger.credit(acct.rowKey, -1000, 'cs_bad_2'), /amount/);
+  await assert.rejects(ledger.credit(acct.rowKey, NaN, 'cs_bad_3'), /amount/);
+  await assert.rejects(ledger.credit(acct.rowKey, 0, 'cs_bad_4'), /amount/);
+  await assert.rejects(ledger.credit('not-an-account', 1000, 'cs_bad_5'), /account id/);
+  await assert.rejects(ledger.credit(acct.rowKey, 1000, ''), /session id/);
+  await assert.rejects(ledger.credit(acct.rowKey, 1000, 42), /session id/);
+  assert.equal((await ledger.ensureAccount('u@x.com')).balanceCents, 500);
+  for (const id of ['cs_bad_1', 'cs_bad_2', 'cs_bad_3', 'cs_bad_4', 'cs_bad_5']) {
+    assert.equal(await store.getEntity('stripeevents', 'checkout', id), null);
+  }
+});
+
+test('refund rejects invalid charge input without writing', async () => {
+  const store = await useTempStore();
+  const c = await ledger.charge('u@x.com', 'evaluate');
+  await assert.rejects(ledger.refund('u@x.com', { chargeId: c.chargeId, priceCents: '50' }, 'evaluate'), /price/);
+  await assert.rejects(ledger.refund('u@x.com', { chargeId: c.chargeId, priceCents: -50 }, 'evaluate'), /price/);
+  await assert.rejects(ledger.refund('u@x.com', { chargeId: '', priceCents: 50 }, 'evaluate'), /charge id/);
+  assert.equal((await ledger.ensureAccount('u@x.com')).balanceCents, 450);
+  const rows = await store.listEntities('ledger', ledger.accountIdFor('u@x.com'), { limit: 50 });
+  assert.equal(rows.filter(r => r.type === 'refund').length, 0);
+});
+
+test('refunding the same charge twice restores the price once', async () => {
+  const store = await useTempStore();
+  const c = await ledger.charge('u@x.com', 'evaluate');
+  const first = await ledger.refund('u@x.com', c, 'evaluate', 'err');
+  assert.equal(first.balanceCents, 500);
+  const second = await ledger.refund('u@x.com', c, 'evaluate', 'err');
+  assert.deepEqual(second, { ok: true, duplicate: true, balanceCents: 500 });
+  assert.equal((await ledger.ensureAccount('u@x.com')).balanceCents, 500);
+  const rows = await store.listEntities('ledger', ledger.accountIdFor('u@x.com'), { limit: 50 });
+  assert.equal(rows.filter(r => r.type === 'refund').length, 1);
+});
+
+test('concurrent refunds of the same charge restore the price once', async () => {
+  const store = await useTempStore();
+  const c = await ledger.charge('u@x.com', 'evaluate');
+  const results = await Promise.all([ledger.refund('u@x.com', c, 'evaluate'), ledger.refund('u@x.com', c, 'evaluate')]);
+  assert.equal(results.filter(r => r.duplicate).length, 1);
+  assert.equal((await ledger.ensureAccount('u@x.com')).balanceCents, 500);
+  const rows = await store.listEntities('ledger', ledger.accountIdFor('u@x.com'), { limit: 50 });
+  assert.equal(rows.filter(r => r.type === 'refund').length, 1);
+});
+
+test('refund works on an older account row without recentRefunds', async () => {
+  const store = await useTempStore();
+  const c = await ledger.charge('u@x.com', 'chat');
+  const { etag, recentRefunds, ...rest } = await store.getEntity('accounts', 'acct', ledger.accountIdFor('u@x.com'));
+  await store.updateEntity('accounts', rest, etag);
+  assert.equal((await ledger.refund('u@x.com', c, 'chat')).balanceCents, 500);
+});
+
+function conflictingStore(store, failures) {
+  const { setTableStoreForTests, ConflictError } = require('../../platform/tableStore');
+  let calls = 0;
+  setTableStoreForTests({
+    ...store,
+    updateEntity: (t, e, etag) => {
+      if (t === 'accounts' && calls++ < failures) return Promise.reject(new ConflictError('simulated other instance'));
+      return store.updateEntity(t, e, etag);
+    }
+  });
+  return () => calls;
+}
+
+test('charge retries through ETag conflicts from another instance', async () => {
+  const store = await useTempStore();
+  await ledger.ensureAccount('u@x.com');
+  const calls = conflictingStore(store, 2);
+  const r = await ledger.charge('u@x.com', 'evaluate');
+  assert.equal(r.ok, true);
+  assert.equal(r.balanceCents, 450);
+  assert.equal(calls(), 3);
+  assert.equal((await store.getEntity('accounts', 'acct', ledger.accountIdFor('u@x.com'))).balanceCents, 450);
+});
+
+test('charge gives up with ConflictError when conflicts persist', async () => {
+  const { ConflictError } = require('../../platform/tableStore');
+  const store = await useTempStore();
+  await ledger.ensureAccount('u@x.com');
+  conflictingStore(store, Infinity);
+  await assert.rejects(ledger.charge('u@x.com', 'evaluate'), (err) => err instanceof ConflictError);
+  assert.equal((await store.getEntity('accounts', 'acct', ledger.accountIdFor('u@x.com'))).balanceCents, 500);
+});
+
+test('parallel credits for the same Stripe session credit once', async () => {
+  await useTempStore();
+  const acct = await ledger.ensureAccount('u@x.com');
+  const results = await Promise.all([ledger.credit(acct.rowKey, 1000, 'cs_par'), ledger.credit(acct.rowKey, 1000, 'cs_par')]);
+  assert.equal(results.filter(r => r.duplicate === true).length, 1);
+  assert.equal(results.filter(r => r.duplicate === false).length, 1);
+  assert.equal((await ledger.ensureAccount('u@x.com')).balanceCents, 1500);
+});
