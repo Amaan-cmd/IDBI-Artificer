@@ -140,7 +140,7 @@ async function evaluateMSMECredit(req, res) {
         // A screening with no registry data is still delivered, but not charged.
         let screeningCost = (req.billing?.priceCents || 0) / 100;
         if (!hasRegistryData(report)) {
-          req.billing?.refund('registry unavailable');
+          await req.billing?.refund('registry unavailable');
           screeningCost = 0;
         }
         incrementUserUsage(userId, screeningCost);
