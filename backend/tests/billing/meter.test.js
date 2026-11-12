@@ -149,3 +149,12 @@ test('a failed refund can be retried', async () => {
   await serve(app, async (base) => assert.equal((await fetch(`${base}/x`)).status, 200));
   assert.equal(await balance('u@x.com'), 500);
 });
+
+test('ledger references are bounded to 64 characters', async () => {
+  const store = await useTempStore();
+  const app = appWith('u@x.com', withCharge('evaluate', { reference: () => 'G'.repeat(1000) }), (_req, res) => res.json({}));
+  await serve(app, async (base) => assert.equal((await fetch(`${base}/x`)).status, 200));
+  const rows = await store.listEntities('ledger', ledger.accountIdFor('u@x.com'));
+  const chargeRow = rows.find((r) => r.type === 'charge');
+  assert.equal(chargeRow.reference, 'G'.repeat(64));
+});

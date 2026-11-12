@@ -17,8 +17,35 @@ const { createSession } = require('./controllers/sessionController');
 const { getBillingAccount } = require('./controllers/billingController');
 const { stripeWebhook } = require('./billing/stripeWebhook');
 const { withCharge } = require('./billing/meter');
+const { isAcceptedGstin } = require('./utils/gstin');
 
-const upload = multer({ dest: path.join(os.tmpdir(), 'uploads') });
+const upload = multer({ dest: path.join(os.tmpdir(), 'uploads'), limits: { fileSize: 20 * 1024 * 1024 } });
+
+// Parses the statement upload; upload errors become JSON instead of an HTML stack.
+function uploadStatement(req, res, next) {
+  upload.single('statement')(req, res, (err) => {
+    if (!err) return next();
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(413).json({ code: 'FILE_TOO_LARGE', error: 'Statement files must be 20 MB or smaller.' });
+    }
+    if (err instanceof multer.MulterError) return res.status(400).json({ code: 'INVALID_UPLOAD', error: err.message });
+    return next(err);
+  });
+}
+
+// Removes the uploaded temp file however the request ends (400, 402, 503, success).
+function cleanupUpload(req, res, next) {
+  if (req.file) res.on('close', () => fs.rm(req.file.path, { force: true }, () => {}));
+  next();
+}
+
+// Ledger references: a checksum-valid GSTIN only, never free text from the request.
+const acceptedGstin = (value) => {
+  const g = typeof value === 'string' ? value.trim().toUpperCase() : '';
+  return g && isAcceptedGstin(g) ? g : '';
+};
+const evaluateReference = (req) => acceptedGstin(req.body?.gstin) || (req.file ? 'statement upload' : 'manual data');
+const chatReference = (req) => acceptedGstin(req.body?.evaluationPayload?.gstin);
 
 const app = express();
 
@@ -101,12 +128,12 @@ app.get('/api/v1/registry/gstin/:gstin', requireSession, requireValidGstin, mete
 app.get('/api/v1/alternate-data/gstin-probe/:gstin', requireSession, requireValidGstin, meterRegistry, getRegistry);
 
 // Evaluate MSME Credit Score (Live Agentic Pipeline with Multi-Modal Input)
-app.post('/api/v1/evaluate', requireSession, upload.single('statement'), validateEvaluateInput,
-  withCharge('evaluate', { skip: isDemoEvaluation, reference: (req) => req.body.gstin || req.file?.originalname || 'manual data' }),
+app.post('/api/v1/evaluate', requireSession, uploadStatement, cleanupUpload, validateEvaluateInput,
+  withCharge('evaluate', { skip: isDemoEvaluation, reference: evaluateReference }),
   evaluateMSMECredit);
 
 // Agent 3 Conversational Forensic Interrogation
-app.post('/api/v1/chat/xai', requireSession, withCharge('chat', { reference: (req) => req.body?.evaluationPayload?.gstin || '' }), handleXAIChat);
+app.post('/api/v1/chat/xai', requireSession, withCharge('chat', { reference: chatReference }), handleXAIChat);
 
 // --- User & Profile Endpoints ---
 app.post('/api/v1/auth/send-code', sendOtp);

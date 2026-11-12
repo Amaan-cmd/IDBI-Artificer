@@ -30,7 +30,8 @@ function withCharge(action, { skip, reference } = {}) {
 
     let result;
     try {
-      result = await charge(email, action, reference ? String(reference(req) || '') : '');
+      // Bounded so request-derived text cannot bloat ledger rows.
+      result = await charge(email, action, reference ? String(reference(req) ?? '').slice(0, 64) : '');
     } catch (err) {
       console.error(`[Billing] Charge failed (${action}):`, err.message);
       return res.status(503).json({ code: 'BILLING_UNAVAILABLE', error: 'Billing is temporarily unavailable. Please retry shortly.' });

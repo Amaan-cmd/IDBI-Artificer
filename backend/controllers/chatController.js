@@ -88,7 +88,9 @@ Provide your direct forensic response:`;
       });
     }
 
-    // 3. Grounded fallback: restate only what the payload contains.
+    // 3. Grounded fallback: restate only what the payload contains. No model
+    // answered, so the message is not charged.
+    await req.billing?.refund('AI engines unavailable');
     const m = evaluationPayload.metrics || {};
     const p1 = m.pillar1_liquidity || {};
     const p2 = m.pillar2_revenue || {};

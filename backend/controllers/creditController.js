@@ -10,6 +10,7 @@ const { addHistoryRecord } = require('./historyController');
 const { sendSlackNotification } = require('../services/slackNotifier');
 const { applyRegistryAdjustments } = require('../services/registry/registryAdjustments');
 const { isAcceptedGstin } = require('../utils/gstin');
+const { hasRegistryData } = require('./registryController');
 const { isDemoMode } = require('../platform/demoMode');
 const { demoFinancials } = require('../demo/demoEntities');
 
@@ -133,6 +134,13 @@ async function evaluateMSMECredit(req, res) {
           name: screeningPayload.businessName, gstin: screeningPayload.gstin, score: null, risk: null,
           reason: 'Registry screening (no statement uploaded)', fullPayload: screeningPayload
         });
+        // A screening with no registry data is still delivered, but not charged.
+        let screeningCost = (req.billing?.priceCents || 0) / 100;
+        if (!hasRegistryData(report)) {
+          req.billing?.refund('registry unavailable');
+          screeningCost = 0;
+        }
+        incrementUserUsage(userId, screeningCost);
         res.write(`data: ${JSON.stringify({ step: 4, payload: screeningPayload })}\n\n`);
         cleanup();
         return res.end();

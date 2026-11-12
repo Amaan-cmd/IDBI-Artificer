@@ -21,8 +21,13 @@ function requireValidGstin(req, res, next) {
 
 const isDemoRegistryRequest = (req) => isDemoMode() && Boolean(demoRegistryReport(paramGstin(req)));
 
-// Sections served from the registry cache cost us nothing upstream.
-const fullyCached = (report) => ['gst', 'filings', 'mca'].every((k) => !report[k] || report[k].cached !== false);
+const REGISTRY_SECTIONS = ['gst', 'filings', 'mca'];
+const okSections = (report) => REGISTRY_SECTIONS.map((k) => report?.[k]).filter((s) => s && s.status === 'ok');
+
+// At least one section returned registry data.
+const hasRegistryData = (report) => okSections(report).length > 0;
+// At least one section was fetched upstream now (cache hits cost us nothing).
+const freshRegistryData = (report) => okSections(report).some((s) => s.cached === false);
 
 async function getRegistry(req, res) {
   const gstin = paramGstin(req);
@@ -35,7 +40,9 @@ async function getRegistry(req, res) {
   try {
     const cin = typeof req.query.cin === 'string' && req.query.cin.trim() ? req.query.cin.trim().toUpperCase() : null;
     const registryReport = await getRegistryReport(gstin, { cin });
-    if (fullyCached(registryReport)) await req.billing?.refund('cached registry result');
+    if (!freshRegistryData(registryReport)) {
+      await req.billing?.refund(hasRegistryData(registryReport) ? 'cached registry result' : 'registry unavailable');
+    }
     return res.json({ status: 'success', registryReport });
   } catch (err) {
     console.error('[Registry] Report failed:', err.message);
@@ -43,4 +50,6 @@ async function getRegistry(req, res) {
   }
 }
 
-module.exports = { getRegistry, requireValidGstin, isDemoRegistryRequest, paramGstin, GSTIN_RE };
+module.exports = {
+  getRegistry, requireValidGstin, isDemoRegistryRequest, paramGstin, hasRegistryData, freshRegistryData, GSTIN_RE
+};
