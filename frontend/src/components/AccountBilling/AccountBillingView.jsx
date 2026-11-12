@@ -2,9 +2,18 @@ import React, { useState } from 'react';
 import { 
   CreditCard, Users, Key, ShieldCheck, Copy, Check, RefreshCw, 
   Clock, Download, ExternalLink, Terminal, ChevronRight, Eye, EyeOff, 
-  Building2, UserCheck, Shield, Sparkles, CheckCircle2, Code2
+  Building2, UserCheck, Shield, Sparkles, CheckCircle2, Code2, Wallet
 } from 'lucide-react';
+import { formatCents } from '../../utils/money';
 import './AccountBillingView.css';
+import './BillingCredit.css';
+
+const PRICE_ROWS = [
+  { key: 'evaluate', label: 'Credit evaluation' },
+  { key: 'chat', label: 'Orc message' },
+  { key: 'registryLookup', label: 'Registry lookup' }
+];
+const LEDGER_LABELS = { free_grant: 'Welcome credit', evaluate: 'Evaluation', chat: 'Orc message', registryLookup: 'Registry lookup', top_up: 'Top-up' };
 
 const SEATS = [
   { name: 'Amaan Khan', email: 'amaan@enveraitech.com', role: 'Chief Underwriting Officer', status: 'Active (MFA)' },
@@ -20,7 +29,7 @@ const AUDIT_LOGS = [
   { id: 'LOG-9398', officer: 'pooja.i@enveraitech.com', action: 'AUDITOR_NOTE_ATTACHED', target: 'Kalyan Agro Supply & Logistics', time: 'Yesterday' }
 ];
 
-export default function AccountBillingView({ currentUser }) {
+export default function AccountBillingView({ currentUser, billing }) {
   const [copiedKey, setCopiedKey] = useState(null);
   const [showLiveKey, setShowLiveKey] = useState(false);
   const [showTestKey, setShowTestKey] = useState(false);
@@ -100,36 +109,79 @@ export default function AccountBillingView({ currentUser }) {
 
       {/* Grid: Quotas & Team Seats */}
       <div className="billing-top-grid">
-        {/* Credit Quota Card */}
+        {/* Credit Balance Card */}
         <div className="billing-card quota-card">
           <div className="card-top-row">
-            <span className="card-tag">EVALUATION QUOTA ALLOCATION</span>
-            <span className="quota-cycle">Monthly Cycle: Renews Nov 1, 2026</span>
+            <span className="card-tag">PREPAID USAGE CREDIT</span>
+            <span className="quota-cycle">Credit never expires</span>
           </div>
 
-          <div className="quota-big-num">
-            <span className="num-val">842</span>
-            <span className="num-denom">/ 1,000 Evaluations Remaining</span>
-          </div>
+          {billing?.error && !billing?.account ? (
+            <div className="quota-big-num"><span className="num-denom">{billing.error}</span></div>
+          ) : (
+            <>
+              <div className="quota-big-num">
+                <span className="num-val">{formatCents(billing?.account?.balanceCents)}</span>
+                <span className="num-denom">credit remaining</span>
+              </div>
+              <div className="quota-bar-track">
+                <div
+                  className="quota-bar-fill"
+                  style={{ width: `${(() => {
+                    const a = billing?.account;
+                    if (!a) return 0;
+                    const max = Math.max(a.freeGrantCents || 500, (a.freeGrantCents || 0) + (a.lifetimePurchasedCents || 0));
+                    return Math.min(100, (a.balanceCents / max) * 100);
+                  })()}%` }}
+                />
+              </div>
+              {billing?.account && billing.account.lifetimeSpentCents < billing.account.freeGrantCents && (
+                <span className="quota-cycle">Includes {formatCents(billing.account.freeGrantCents)} free credit</span>
+              )}
 
-          <div className="quota-bar-track">
-            <div className="quota-bar-fill" style={{ width: '84.2%' }} />
-          </div>
+              <div className="quota-footer-details">
+                {PRICE_ROWS.map(({ key, label }) => (
+                  <div className="detail-col" key={key}>
+                    <span className="dt-lbl">{label.toUpperCase()}</span>
+                    <span className="dt-val">{formatCents(billing?.account?.prices?.[key])}</span>
+                  </div>
+                ))}
+              </div>
 
-          <div className="quota-footer-details">
-            <div className="detail-col">
-              <span className="dt-lbl">TOTAL RUNS CONSUMED</span>
-              <span className="dt-val">158 Runs</span>
-            </div>
-            <div className="detail-col">
-              <span className="dt-lbl">AVERAGE AUDIT LATENCY</span>
-              <span className="dt-val text-emerald">1.10s / Run</span>
-            </div>
-            <div className="detail-col">
-              <span className="dt-lbl">DEDICATED INSTANCE</span>
-              <span className="dt-val text-gold">Azure ACA (Zero Cold-Start)</span>
-            </div>
-          </div>
+              <div className="billing-pack-row">
+                {(billing?.account?.packs || []).map((p) => (
+                  <button
+                    key={p.id}
+                    className="billing-pack-btn"
+                    disabled={!p.url}
+                    title={p.url ? undefined : 'Coming soon'}
+                    onClick={() => p.url && window.open(p.url, '_blank', 'noopener,noreferrer')}
+                  >
+                    <Wallet size={14} /> {p.url ? `Add ${formatCents(p.cents)}` : `${formatCents(p.cents)} · Coming soon`}
+                  </button>
+                ))}
+              </div>
+
+              {billing?.account?.ledger?.length > 0 && (
+                <table className="billing-ledger">
+                  <thead>
+                    <tr><th>Date</th><th>Action</th><th>Reference</th><th>Amount</th><th>Balance</th></tr>
+                  </thead>
+                  <tbody>
+                    {billing.account.ledger.map((row, i) => (
+                      <tr key={`${row.createdAt}_${i}`}>
+                        <td>{new Date(row.createdAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</td>
+                        <td>{row.type === 'refund' ? `Refund · ${LEDGER_LABELS[row.action] || row.action}` : (LEDGER_LABELS[row.action] || row.action)}</td>
+                        <td className="mono">{row.reference || '—'}</td>
+                        <td className={row.amountCents >= 0 ? 'text-emerald' : ''}>{row.amountCents >= 0 ? '+' : '−'}{formatCents(Math.abs(row.amountCents))}</td>
+                        <td>{formatCents(row.balanceAfterCents)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </>
+          )}
         </div>
 
         {/* Team Seats Allocation */}

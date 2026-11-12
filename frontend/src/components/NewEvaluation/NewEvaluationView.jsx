@@ -15,6 +15,7 @@ import { sanitizeText } from '../../utils/sanitize';
 import OrcTerminal from '../OrcTerminal/OrcTerminal';
 import ScrollStack, { ScrollStackItem } from '../ScrollStack/ScrollStack';
 import ThinkingOrb from '../ThinkingOrb/ThinkingOrb';
+import { formatCents } from '../../utils/money';
 
 const NA = 'Not available';
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
@@ -74,7 +75,8 @@ export default function NewEvaluationView({
   onClearError,
   onOpenSplitWorkspace,
   evaluationData = null,
-  probeState = { loading: false, error: null }
+  probeState = { loading: false, error: null },
+  prices
 }) {
   const [dragActive, setDragActive] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
@@ -352,6 +354,7 @@ export default function NewEvaluationView({
                       : file
                         ? (evaluationData && !isScreening ? '⚡ RE-RUN CREDIT SCORE' : '⚡ INGEST & GENERATE CREDIT SCORE')
                         : (isScreening ? '⚡ RE-RUN REGISTRY SCREENING' : '⚡ RUN REGISTRY SCREENING (NO STATEMENT)')}
+                    {!loading && prices?.evaluate != null ? ` · ${formatCents(prices.evaluate)}` : ''}
                   </span>
                 </button>
                 <button

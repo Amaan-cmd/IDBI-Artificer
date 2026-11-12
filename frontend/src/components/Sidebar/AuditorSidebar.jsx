@@ -3,6 +3,7 @@ import {
   PlusCircle, Bookmark, Layers, CreditCard, ChevronLeft, ChevronRight, 
   LogOut, Shield, ShieldCheck, Activity, Terminal
 } from 'lucide-react';
+import { formatCents } from '../../utils/money';
 import './AuditorSidebar.css';
 
 export const NAV_ITEMS = [
@@ -19,7 +20,8 @@ export default function AuditorSidebar({
   onToggleCollapse, 
   currentUser, 
   onLogout,
-  onOpenMasterDashboard
+  onOpenMasterDashboard,
+  balanceCents
 }) {
   return (
     <aside className={`auditor-sidebar ${isCollapsed ? 'collapsed' : ''}`}>
@@ -95,13 +97,13 @@ export default function AuditorSidebar({
         {!isCollapsed && (
           <div className="sidebar-quota-card">
             <div className="quota-header">
-              <span className="quota-label">EVALUATION QUOTA</span>
-              <span className="quota-val">842 / 1,000</span>
+              <span className="quota-label">CREDIT BALANCE</span>
+              <span className="quota-val">{formatCents(balanceCents)}</span>
             </div>
             <div className="quota-bar-track">
-              <div className="quota-bar-fill" style={{ width: '84.2%' }} />
+              <div className="quota-bar-fill" style={{ width: `${Math.min(100, Math.max(0, ((balanceCents || 0) / 500) * 100))}%` }} />
             </div>
-            <span className="quota-meta">Tier: Institutional Enterprise</span>
+            <span className="quota-meta">Prepaid usage credit</span>
           </div>
         )}
 
