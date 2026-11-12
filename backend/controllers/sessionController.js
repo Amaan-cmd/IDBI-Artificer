@@ -1,12 +1,14 @@
 const firebaseVerify = require('../platform/firebaseVerify');
 const { issueSessionToken } = require('../platform/session');
 const userController = require('./userController');
+const { ensureAccount } = require('../billing/ledgerService');
 
 // Dependencies are injectable for tests; production uses the real modules.
 function buildCreateSession({
   verify = firebaseVerify.verifyFirebaseIdToken,
   findOrCreateUser = userController.findOrCreateUser,
-  recordTelemetryLogin = userController.recordTelemetryLogin
+  recordTelemetryLogin = userController.recordTelemetryLogin,
+  ensureBillingAccount = ensureAccount
 } = {}) {
   return async function createSession(req, res) {
     const idToken = typeof req.body?.idToken === 'string' ? req.body.idToken : '';
@@ -29,6 +31,9 @@ function buildCreateSession({
       type: `firebase_${identity.provider}`,
       status: 'AUTHORIZED'
     });
+
+    // Eager $5 grant; charge() also creates the account, so failure only delays it.
+    ensureBillingAccount(identity.email).catch((err) => console.error('[Billing] ensureAccount at sign-in failed:', err.message));
 
     return res.json({ status: 'success', user, sessionToken: issueSessionToken({ ...user, email: identity.email }) });
   };

@@ -4,6 +4,12 @@ const fs = require('fs');
 const path = require('path');
 process.env.SESSION_JWT_SECRET = 'test-secret';
 const app = require('../server');
+const { useTempStore, waitFor } = require('./billing/helpers');
+const { accountIdFor, ACCOUNT_PK } = require('../billing/ledgerService');
+
+// Sign-in creates a billing account; keep it off the real local store.
+let store;
+test.beforeEach(async () => { store = await useTempStore(); });
 
 // The OTP flow writes users.json and telemetry_logins.json; restore them afterwards.
 const dataFiles = ['users.json', 'telemetry_logins.json'].map(f => path.join(__dirname, '..', 'data', f));
@@ -47,6 +53,8 @@ test('valid OTP returns a session token', () => withServer(async (base) => {
     const body = await res.json();
     assert.equal(res.status, 200);
     assert.ok(body.sessionToken);
+    // Sign-in grants the free credit eagerly.
+    await waitFor(async () => (await store.getEntity('accounts', ACCOUNT_PK, accountIdFor('otp-user@x.com')))?.balanceCents === 500);
   } finally {
     if (prev === undefined) delete process.env.ENABLE_DEMO_OTP; else process.env.ENABLE_DEMO_OTP = prev;
     if (prevEnv === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = prevEnv;

@@ -4,6 +4,7 @@ const path = require('path');
 const { normaliseEmail, issueSessionToken } = require('../platform/session');
 const { isAdminEmail } = require('../platform/admin');
 const { sanitizeEmail, sanitizeOtpDigits, isSafeInput } = require('../utils/sanitize');
+const { ensureAccount } = require('../billing/ledgerService');
 
 const usersFilePath = path.join(__dirname, '../data/users.json');
 const telemetryLoginsPath = path.join(__dirname, '../data/telemetry_logins.json');
@@ -165,6 +166,7 @@ const verifyOtp = async (req, res) => {
     status: 'SUCCESS'
   });
 
+  ensureAccount(cleanEmail).catch((err) => console.error('[Billing] ensureAccount at sign-in failed:', err.message));
   return res.json({ status: 'success', user, sessionToken: issueSessionToken(user) });
 };
 

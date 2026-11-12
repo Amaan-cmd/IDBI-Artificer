@@ -60,6 +60,7 @@ function deps(overrides = {}) {
     verify: async () => ({ email: 'officer@bank.in', name: 'Officer', uid: 'fb1', provider: 'google.com' }),
     findOrCreateUser: (id) => ({ id: 'u_officer_1', email: id.email, username: 'Officer', role: 'Institutional Underwriter', provider: id.provider }),
     recordTelemetryLogin: async () => {},
+    ensureBillingAccount: async () => {},
     ...overrides
   };
 }
@@ -91,4 +92,19 @@ test('createSession: success issues a session token for the verified lowercased 
   assert.equal(res.statusCode, 200);
   assert.equal(verifySessionToken(res.body.sessionToken).email, 'officer@bank.in');
   assert.equal(telemetry.type, 'firebase_google.com');
+});
+
+test('createSession: ensures the billing account for the verified email; failure does not block sign-in', async () => {
+  const seen = [];
+  const ok = mockRes();
+  await buildCreateSession(deps({ ensureBillingAccount: async (email) => { seen.push(email); } }))(
+    { body: { idToken: 'tok' }, headers: {}, socket: {} }, ok);
+  assert.equal(ok.statusCode, 200);
+  assert.deepEqual(seen, ['officer@bank.in']);
+
+  const failing = mockRes();
+  await buildCreateSession(deps({ ensureBillingAccount: async () => { throw new Error('table down'); } }))(
+    { body: { idToken: 'tok' }, headers: {}, socket: {} }, failing);
+  assert.equal(failing.statusCode, 200);
+  assert.ok(failing.body.sessionToken);
 });
