@@ -16,6 +16,7 @@ const { requireSession, requireAdmin } = require('./middleware/requireSession');
 const { createSession } = require('./controllers/sessionController');
 const { getBillingAccount } = require('./controllers/billingController');
 const { stripeWebhook } = require('./billing/stripeWebhook');
+const { withCharge } = require('./billing/meter');
 
 const upload = multer({ dest: path.join(os.tmpdir(), 'uploads') });
 
@@ -75,7 +76,7 @@ const aaDataPath = path.join(__dirname, 'mockData', 'aa_bank_statement.json');
 
 // --- Mock Integration Endpoints ---
 
-const { getRegistry } = require('./controllers/registryController');
+const { getRegistry, requireValidGstin, isDemoRegistryRequest, paramGstin } = require('./controllers/registryController');
 const { isDemoMode } = require('./platform/demoMode');
 
 // Simulate Sahamati/Account Aggregator FIU Fetch (demo mode only)
@@ -95,8 +96,9 @@ if (isDemoMode()) {
 }
 
 // Registry report (real GSTN / MCA21 data via Sandbox)
-app.get('/api/v1/registry/gstin/:gstin', requireSession, getRegistry);
-app.get('/api/v1/alternate-data/gstin-probe/:gstin', requireSession, getRegistry);
+const meterRegistry = withCharge('registryLookup', { skip: isDemoRegistryRequest, reference: paramGstin });
+app.get('/api/v1/registry/gstin/:gstin', requireSession, requireValidGstin, meterRegistry, getRegistry);
+app.get('/api/v1/alternate-data/gstin-probe/:gstin', requireSession, requireValidGstin, meterRegistry, getRegistry);
 
 // Evaluate MSME Credit Score (Live Agentic Pipeline with Multi-Modal Input)
 app.post('/api/v1/evaluate', requireSession, upload.single('statement'), evaluateMSMECredit);

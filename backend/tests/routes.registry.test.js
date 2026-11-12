@@ -4,6 +4,8 @@ process.env.SESSION_JWT_SECRET = 'test-secret';
 process.env.DEMO_MODE = 'false'; // dotenv does not override, so .env cannot enable demo routes here
 const app = require('../server');
 const { issueSessionToken } = require('../platform/session');
+const { useTempStore } = require('./billing/helpers');
+test.beforeEach(() => useTempStore());
 
 test('registry route validates GSTIN and requires a session', async () => {
   const server = app.listen(0);

@@ -51,3 +51,24 @@ test('webhook route reads the raw body (signature verifies) and skips the sessio
     assert.equal(after.balanceCents, 3000);
   });
 });
+
+test('invalid GSTIN on the registry route is rejected before any charge', async () => {
+  const store = await useTempStore();
+  await withServer(async (base) => {
+    const res = await fetch(`${base}/api/v1/registry/gstin/NOTAGSTIN`, { headers: auth('r@x.com') });
+    assert.equal(res.status, 400);
+  });
+  const { accountIdFor } = require('../../billing/ledgerService');
+  assert.equal(await store.getEntity('accounts', 'acct', accountIdFor('r@x.com')), null);
+});
+
+test('registry route returns 402 when out of credit', async () => {
+  await useTempStore();
+  const ledger = require('../../billing/ledgerService');
+  for (let i = 0; i < 10; i++) await ledger.charge('broke@x.com', 'evaluate');
+  await withServer(async (base) => {
+    const res = await fetch(`${base}/api/v1/registry/gstin/27AAACR5055K1Z7`, { headers: auth('broke@x.com') });
+    assert.equal(res.status, 402);
+    assert.equal((await res.json()).action, 'registryLookup');
+  });
+});
