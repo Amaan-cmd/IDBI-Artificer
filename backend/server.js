@@ -14,6 +14,8 @@ const { trainAgamiPipeline } = require('./controllers/agamiController');
 const { handleXAIChat } = require('./controllers/chatController');
 const { requireSession, requireAdmin } = require('./middleware/requireSession');
 const { createSession } = require('./controllers/sessionController');
+const { getBillingAccount } = require('./controllers/billingController');
+const { stripeWebhook } = require('./billing/stripeWebhook');
 
 const upload = multer({ dest: path.join(os.tmpdir(), 'uploads') });
 
@@ -42,6 +44,10 @@ app.use(cors({
   },
   credentials: true
 }));
+// Stripe needs the raw body for signature verification, so this route is
+// registered before express.json(). It ends the response itself, so the /api/
+// rate limiter and session middleware registered later never run for it.
+app.post('/api/v1/billing/stripe-webhook', express.raw({ type: 'application/json' }), stripeWebhook);
 app.use(express.json());
 
 // API Throttling / DDoS mitigation
@@ -107,6 +113,9 @@ app.get('/api/v1/telemetry/logins', requireSession, requireAdmin, getLoginTeleme
 
 // --- History Endpoints ---
 app.get('/api/v1/history', requireSession, getHistory);
+
+// --- Billing ---
+app.get('/api/v1/billing/account', requireSession, getBillingAccount);
 
 // --- Agami Pipeline Simulation ---
 app.post('/api/v1/agami/train', requireSession, requireAdmin, trainAgamiPipeline);

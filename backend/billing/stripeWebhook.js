@@ -16,6 +16,10 @@ function buildStripeWebhook({ secret = () => process.env.STRIPE_WEBHOOK_SECRET, 
       return res.status(503).json({ error: 'Webhook not configured.' });
     }
 
+    if (req.body === undefined) {
+      // No body, or a content type express.raw did not accept.
+      return res.status(400).json({ error: 'Invalid payload.' });
+    }
     if (!Buffer.isBuffer(req.body)) {
       console.error('[Billing] Stripe webhook received a parsed body; it must be mounted with express.raw before express.json');
       return res.status(500).json({ error: 'Webhook misconfigured.' });

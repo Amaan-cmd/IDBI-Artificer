@@ -154,3 +154,22 @@ test('a body already parsed as JSON returns 500 (mount order bug)', async () => 
   assert.equal(r.status, 500);
   assert.equal((await ledger.ensureAccount('u@x.com')).balanceCents, 500);
 });
+
+test('a body express.raw did not parse (wrong content type) returns 400', async () => {
+  await useTempStore();
+  const acct = await ledger.ensureAccount('u@x.com');
+  const payload = JSON.stringify(checkoutEvent(acct.rowKey));
+  const header = stripe.webhooks.generateTestHeaderString({ payload, secret: SECRET });
+  const server = appFor(handler).listen(0);
+  await new Promise(r => server.once('listening', r));
+  try {
+    const res = await fetch(`http://127.0.0.1:${server.address().port}/hook`, {
+      method: 'POST', headers: { 'content-type': 'text/plain', 'stripe-signature': header }, body: payload
+    });
+    assert.equal(res.status, 400);
+    assert.deepEqual(await res.json(), { error: 'Invalid payload.' });
+  } finally {
+    server.close();
+  }
+  assert.equal((await ledger.ensureAccount('u@x.com')).balanceCents, 500);
+});
