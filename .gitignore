@@ -47,3 +47,9 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+# Local launchers holding credentials, browser-automation artefacts, smoke screenshots
+claude.bat
+claude.ps1
+.playwright-mcp/
+smoke-*.png
