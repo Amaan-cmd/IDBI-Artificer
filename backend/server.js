@@ -8,7 +8,8 @@ const multer = require('multer');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { evaluateMSMECredit, validateEvaluateInput, isDemoEvaluation, isScreeningRequest } = require('./controllers/creditController');
-const { getAllUsers, getLoginTelemetry, sendOtp, verifyOtp } = require('./controllers/userController');
+const { getAllUsers, getLoginTelemetry } = require('./controllers/userController');
+const { isEntraConfigured } = require('./platform/entraVerify');
 const { getHistory } = require('./controllers/historyController');
 const { trainAgamiPipeline } = require('./controllers/agamiController');
 const { handleXAIChat } = require('./controllers/chatController');
@@ -139,8 +140,12 @@ app.post('/api/v1/evaluate', requireSession, uploadStatement, cleanupUpload, val
 app.post('/api/v1/chat/xai', requireSession, withCharge('chat', { reference: chatReference }), handleXAIChat);
 
 // --- User & Profile Endpoints ---
-app.post('/api/v1/auth/send-code', sendOtp);
-app.post('/api/v1/auth/verify-code', verifyOtp);
+// Public sign-in settings for the browser (no secrets): read at runtime so
+// the frontend image needs no rebuild when the Entra app changes.
+app.get('/api/v1/auth/config', (req, res) => {
+  if (!isEntraConfigured()) return res.status(503).json({ code: 'AUTH_NOT_CONFIGURED', error: 'Sign-in is not configured.' });
+  return res.json({ clientId: process.env.ENTRA_CLIENT_ID.trim(), tenantSubdomain: process.env.ENTRA_TENANT_SUBDOMAIN.trim() });
+});
 app.post('/api/v1/auth/session', createSession);
 app.get('/api/v1/users', requireSession, requireAdmin, getAllUsers);
 app.get('/api/v1/telemetry/logins', requireSession, requireAdmin, getLoginTelemetry);
@@ -164,7 +169,7 @@ if (fs.existsSync(distPath)) {
 
 // --- Server Startup (Azure App Service / Container Apps / Local) ---
 // Not required to boot, but features degrade without them. Names only; never values.
-const RECOMMENDED_ENV = ['SANDBOX_API_KEY', 'SANDBOX_API_SECRET', 'FIREBASE_PROJECT_ID'];
+const RECOMMENDED_ENV = ['SANDBOX_API_KEY', 'SANDBOX_API_SECRET', 'ENTRA_TENANT_ID', 'ENTRA_CLIENT_ID', 'ENTRA_TENANT_SUBDOMAIN'];
 function missingRecommendedEnv(env = process.env) {
   return RECOMMENDED_ENV.filter((name) => !String(env[name] || '').trim());
 }
@@ -172,7 +177,7 @@ function missingRecommendedEnv(env = process.env) {
 if (require.main === module) {
   const missing = missingRecommendedEnv();
   if (missing.length) {
-    console.warn(`[Startup] Missing recommended environment variables: ${missing.join(', ')}. Sandbox registry lookups are disabled without SANDBOX_API_KEY/SANDBOX_API_SECRET; Firebase token verification falls back to the default project id without FIREBASE_PROJECT_ID.`);
+    console.warn(`[Startup] Missing recommended environment variables: ${missing.join(', ')}. Sandbox registry lookups are disabled without SANDBOX_API_KEY/SANDBOX_API_SECRET; sign-in is refused without ENTRA_TENANT_ID/ENTRA_CLIENT_ID/ENTRA_TENANT_SUBDOMAIN.`);
   }
   const { getTableStore } = require('./platform/tableStore');
   getTableStore().ensureTables().catch((err) => {

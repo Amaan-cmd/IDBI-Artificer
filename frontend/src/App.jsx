@@ -34,6 +34,7 @@ import { API_BASE, apiFetch, getSessionToken, setSessionToken, onUnauthorized, o
 import OutOfCreditModal from './components/Billing/OutOfCreditModal';
 import { useBillingAccount } from './hooks/useBillingAccount';
 import { formatCents, creditBarPercent } from './utils/money';
+import { clearEntraAccount } from './auth/entraAuth';
 
 // Preloaded Realistic MSME Scenarios for Institutional Verification
 const PRELOADED_SCENARIOS = {
@@ -358,6 +359,7 @@ function App() {
 
   const handleLogout = () => {
     setSessionToken(null);
+    clearEntraAccount();
     localStorage.removeItem('enverai_user_session');
     setIsLoggedIn(false);
     setCurrentUser(null);

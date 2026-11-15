@@ -10,8 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@azure/msal-browser": "^4.30.0",
     "@gsap/react": "^2.1.2",
-    "firebase": "^12.15.0",
     "gsap": "^3.15.0",
     "lucide-react": "^1.23.0",
     "motion": "^12.42.2",

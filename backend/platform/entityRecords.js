@@ -1,5 +1,5 @@
 /**
- * Users, evaluation history, login audit and OTP codes in table storage, so
+ * Users, evaluation history and login audit in table storage, so
  * they survive redeploys and are shared across replicas. Records are stored
  * as JSON split across payload properties: an Azure Table string property
  * holds at most 64 KiB (32K UTF-16 chars) and an entity at most 1 MiB.
@@ -99,62 +99,8 @@ async function listLogins(store = getTableStore()) {
   return (await store.listEntities('logins', 'login', { limit: LOGIN_LIMIT })).map(unpack).filter(Boolean);
 }
 
-// ---------- OTP codes ----------
-
-const OTP_TTL_MS = 10 * 60 * 1000;
-const MAX_OTP_ATTEMPTS = 5;
-const OTP_RESEND_MS = 60 * 1000;
-
-class OtpCooldownError extends Error {
-  constructor(retryAfterSec) { super('A code was sent recently'); this.retryAfterSec = retryAfterSec; }
-}
-const hashCode = (email, code) => crypto.createHash('sha256').update(`${emailKey(email)}:${code}`).digest('hex');
-
-// Issues a new code, replacing any earlier one. Only a hash is stored. One
-// code per address per OTP_RESEND_MS, so the endpoint cannot flood an inbox.
-async function issueOtp(email, { store = getTableStore(), now = Date.now() } = {}) {
-  const prev = await store.getEntity('otpcodes', 'otp', emailKey(email));
-  if (prev && prev.issuedAt && now - prev.issuedAt < OTP_RESEND_MS) {
-    throw new OtpCooldownError(Math.ceil((OTP_RESEND_MS - (now - prev.issuedAt)) / 1000));
-  }
-  const code = crypto.randomInt(100000, 1000000).toString();
-  await store.upsertEntity('otpcodes', {
-    partitionKey: 'otp', rowKey: emailKey(email), codeHash: hashCode(email, code), expiresAt: now + OTP_TTL_MS, attempts: 0, issuedAt: now
-  });
-  return code;
-}
-
-// Keeps issuedAt so a burned code still counts toward the resend cooldown.
-const burn = (store, email, issuedAt = 0) => store.upsertEntity('otpcodes', { partitionKey: 'otp', rowKey: emailKey(email), codeHash: '', expiresAt: 0, attempts: MAX_OTP_ATTEMPTS, issuedAt });
-
-// Withdraws an issued code that could not be delivered, lifting the cooldown.
-const clearOtp = (email, { store = getTableStore() } = {}) => burn(store, email, 0);
-
-// True once for a correct, unexpired code; a code is burned after use or after
-// MAX_OTP_ATTEMPTS wrong guesses.
-async function verifyOtpCode(email, code, { store = getTableStore(), now = Date.now() } = {}) {
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const e = await store.getEntity('otpcodes', 'otp', emailKey(email));
-    if (!e || !e.codeHash || e.expiresAt <= now || e.attempts >= MAX_OTP_ATTEMPTS) return false;
-    const expected = Buffer.from(e.codeHash, 'hex');
-    const given = Buffer.from(hashCode(email, String(code)), 'hex');
-    if (crypto.timingSafeEqual(expected, given)) {
-      await burn(store, email, e.issuedAt || 0);
-      return true;
-    }
-    try {
-      await store.updateEntity('otpcodes', { partitionKey: 'otp', rowKey: emailKey(email), codeHash: e.codeHash, expiresAt: e.expiresAt, attempts: (e.attempts || 0) + 1, issuedAt: e.issuedAt || 0 }, e.etag);
-      return false;
-    } catch (err) {
-      if (!(err instanceof ConflictError)) throw err;
-    }
-  }
-  return false;
-}
-
 module.exports = {
   getUserByEmail, saveUser, listUsers, updateUser,
   addHistory, listHistory, addLogin, listLogins,
-  issueOtp, verifyOtpCode, clearOtp, OtpCooldownError, MAX_OTP_ATTEMPTS, OTP_TTL_MS, OTP_RESEND_MS,
   pack, unpack
 };

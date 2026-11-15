@@ -1,6 +1,6 @@
 /**
  * Server-issued session tokens (HS256 JWT). Issued only after the server has
- * verified the identity itself (email OTP, Firebase ID token).
+ * verified the identity itself (a Microsoft Entra External ID token).
  */
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');

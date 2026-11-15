@@ -57,7 +57,7 @@ function mockRes() {
 
 function deps(overrides = {}) {
   return {
-    verify: async () => ({ email: 'officer@bank.in', name: 'Officer', uid: 'fb1', provider: 'google.com' }),
+    verify: async () => ({ email: 'officer@bank.in', name: 'Officer', uid: 'oid1', provider: 'google' }),
     findOrCreateUser: (id) => ({ id: 'u_officer_1', email: id.email, username: 'Officer', role: 'Institutional Underwriter', provider: id.provider }),
     recordTelemetryLogin: async () => {},
     ensureBillingAccount: async () => {},
@@ -84,14 +84,14 @@ test('createSession: success issues a session token for the verified lowercased 
   const res = mockRes();
   let telemetry = null;
   const createSession = buildCreateSession(deps({
-    verify: async (tok) => { assert.equal(tok, 'tok'); return { email: 'officer@bank.in', name: 'O', uid: 'fb1', provider: 'google.com' }; },
+    verify: async (tok) => { assert.equal(tok, 'tok'); return { email: 'officer@bank.in', name: 'O', uid: 'oid1', provider: 'google' }; },
     findOrCreateUser: (id) => ({ id: 'u_1', email: 'Officer@Bank.IN', username: 'O', role: 'r', provider: id.provider }),
     recordTelemetryLogin: async (e) => { telemetry = e; }
   }));
   await createSession({ body: { idToken: 'tok', email: 'attacker@enveraitech.com' }, headers: {}, socket: {} }, res);
   assert.equal(res.statusCode, 200);
   assert.equal(verifySessionToken(res.body.sessionToken).email, 'officer@bank.in');
-  assert.equal(telemetry.type, 'firebase_google.com');
+  assert.equal(telemetry.type, 'entra_google');
 });
 
 test('createSession: ensures the billing account for the verified email; failure does not block sign-in', async () => {

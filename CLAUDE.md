@@ -4,7 +4,7 @@
 EnverAI Artificer is an institutional-grade, multi-agent alternate-data credit underwriting citadel designed for autonomous forensic analysis across statutory registry data, banking feeds, and GST statements.
 
 ## Tech Stack
-- **Frontend**: React 18, Vite, Lucide Icons, Vanilla CSS (Tailwind utilities where applicable), Firebase Auth & Azure Static Web Apps.
+- **Frontend**: React 19, Vite, Lucide Icons, Vanilla CSS (Tailwind utilities where applicable), Microsoft Entra External ID sign-in (MSAL) & Azure Static Web Apps.
   - Path: `frontend/`
   - Dev server: `npm --prefix frontend run dev` (Port 5173)
   - Production build: `npm --prefix frontend run build`

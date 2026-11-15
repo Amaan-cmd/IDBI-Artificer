@@ -1,11 +1,11 @@
-const firebaseVerify = require('../platform/firebaseVerify');
+const entraVerify = require('../platform/entraVerify');
 const { issueSessionToken } = require('../platform/session');
 const userController = require('./userController');
 const { ensureAccount } = require('../billing/ledgerService');
 
 // Dependencies are injectable for tests; production uses the real modules.
 function buildCreateSession({
-  verify = firebaseVerify.verifyFirebaseIdToken,
+  verify = entraVerify.verifyEntraIdToken,
   findOrCreateUser = userController.findOrCreateUser,
   recordTelemetryLogin = userController.recordTelemetryLogin,
   ensureBillingAccount = ensureAccount
@@ -18,7 +18,7 @@ function buildCreateSession({
     try {
       identity = await verify(idToken);
     } catch (err) {
-      console.warn('[Auth] Firebase ID token rejected:', err.message);
+      console.warn('[Auth] Entra ID token rejected:', err.message);
       return res.status(401).json({ code: 'INVALID_ID_TOKEN', error: 'Sign-in could not be verified.' });
     }
 
@@ -28,7 +28,7 @@ function buildCreateSession({
       email: identity.email,
       ip: req.headers['x-forwarded-for'] || req.socket.remoteAddress || '',
       userAgent: req.headers['user-agent'] || '',
-      type: `firebase_${identity.provider}`,
+      type: `entra_${identity.provider}`,
       status: 'AUTHORIZED'
     });
 

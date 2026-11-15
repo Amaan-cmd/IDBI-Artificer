@@ -37,36 +37,3 @@ test('history lists newest first and keeps oversized records without the payload
   assert.equal(list[1].fullPayload, null);
   assert.equal(list[1].fullPayloadOmitted, true);
 });
-
-test('OTP: correct code works once; only a hash is stored', async () => {
-  const store = freshStore();
-  const code = await records.issueOtp('a@x.com', { store, now: 1000 });
-  assert.match(code, /^\d{6}$/);
-  const raw = await store.getEntity('otpcodes', 'otp', 'a%40x.com');
-  assert.ok(!JSON.stringify(raw).includes(code), 'plain code must not be stored');
-  assert.equal(await records.verifyOtpCode('a@x.com', code, { store, now: 2000 }), true);
-  assert.equal(await records.verifyOtpCode('a@x.com', code, { store, now: 3000 }), false, 'single use');
-});
-
-test('OTP: expires, and is burned after 5 wrong guesses', async () => {
-  const store = freshStore();
-  let code = await records.issueOtp('a@x.com', { store, now: 0 });
-  assert.equal(await records.verifyOtpCode('a@x.com', code, { store, now: records.OTP_TTL_MS + 1 }), false);
-
-  code = await records.issueOtp('b@x.com', { store, now: 0 });
-  const wrong = code === '111111' ? '222222' : '111111';
-  for (let i = 0; i < records.MAX_OTP_ATTEMPTS; i++) {
-    assert.equal(await records.verifyOtpCode('b@x.com', wrong, { store, now: 10 }), false);
-  }
-  assert.equal(await records.verifyOtpCode('b@x.com', code, { store, now: 20 }), false, 'burned after max attempts');
-});
-
-test('OTP: one code per address per cooldown; clearOtp lifts it', async () => {
-  const store = freshStore();
-  await records.issueOtp('a@x.com', { store, now: 1000 });
-  await assert.rejects(records.issueOtp('a@x.com', { store, now: 30000 }), records.OtpCooldownError);
-  await records.issueOtp('b@x.com', { store, now: 30000 });
-  await records.clearOtp('a@x.com', { store });
-  await records.issueOtp('a@x.com', { store, now: 31000 });
-  await records.issueOtp('a@x.com', { store, now: 31000 + records.OTP_RESEND_MS });
-});
