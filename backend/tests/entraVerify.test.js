@@ -22,6 +22,7 @@ test('accepts a valid token, lowercases the email, maps the provider', async () 
     { email: 'user@gmail.com', name: 'User', uid: 'object-id', provider: 'google' });
   assert.equal((await verifyEntraIdToken(token({ idp: 'https://appleid.apple.com' }), cfg)).provider, 'apple');
   assert.equal((await verifyEntraIdToken(token(), cfg)).provider, 'email');
+  assert.equal((await verifyEntraIdToken(token({ idp: 'mail' }), cfg)).provider, 'email');
 });
 
 test('rejects a token without an email claim', async () => {

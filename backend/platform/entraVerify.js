@@ -55,7 +55,8 @@ async function fetchEntraKeys({ forceRefresh = false, fetchImpl = fetch } = {}) 
 
 function providerFrom(idp) {
   const v = String(idp || '').toLowerCase();
-  if (!v) return 'email';
+  // Email-code accounts carry no idp, or idp "mail" in External ID tokens.
+  if (!v || v === 'mail') return 'email';
   if (v.includes('google')) return 'google';
   if (v.includes('apple')) return 'apple';
   return v.replace(/^https?:\/\//, '').split('/')[0] || 'entra';
