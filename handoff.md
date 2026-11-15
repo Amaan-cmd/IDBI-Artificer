@@ -2,6 +2,8 @@
 
 This file serves as a shared communication layer between the **User**, **Antigravity (Gemini)**, **Claude (via Vertex AI)**, and **Codestral 2 (via Vertex AI)**. We will use this document to plan our project, share ideas, and document our progress.
 
+> **Current state:** read the latest dated section at the end of this file ("2026-11-16"). Earlier sections are history; Google Cloud Run deploys, Firebase sign-in and Vertex ADC setup described below are no longer used.
+
 ---
 
 ## Authentication: Using Application Default Credentials (ADC)
@@ -298,4 +300,42 @@ EnverAI Artificer has been promoted to the **Autonomous Underwriting Citadel**, 
 - **Google Cloud Run:** 1-Click deploy via `deploy_gcloud.bat` / `deploy_gcloud.sh` (`enverai-artificer`).
 - **Git Repository:** Synced with [Amaan-cmd/IDBI-Artificer](https://github.com/Amaan-cmd/IDBI-Artificer) on branch `main` (Commit `f22407f`).
 
+---
 
+## 2026-11-16 Hackathon Submission State (Claude Code)
+
+Branch `main` == `feat/real-data-and-billing` (commit `5045882`), deployed as Container App revision `artificer-enverai--5045882`. 354 backend tests pass (`npm --prefix backend test`); frontend builds.
+
+### 1. What changed since 2026-10-14
+
+- **Real data only.** Registry facts come from Sandbox (sandbox.co.in) GST + MCA21 APIs with source, fetch time and transaction ID; anything missing is shown as "Not available", never invented. Bank statements are read by a rule-based parser (`backend/agents/statementParser.js`). Sample companies appear only when `DEMO_MODE=true` and are labelled.
+- **Registry pre-screen grade** (`backend/services/registry/preScreen.js`): deterministic A–E grade for GSTIN-only runs from business age, GSTR-3B discipline, GSTR-1 completeness, timeliness and MCA standing; knockouts for cancelled/suspended GST or a non-active company; capped at C when under 60% of factors are assessable. Never a 300–900 score. Spec: `docs/superpowers/specs/2026-11-12-registry-prescreen-design.md`.
+- **Usage billing:** $5 free credit per verified email; evaluate $0.50, Orc chat $0.05, registry lookup $0.02 (refunded when no fresh data). Admins (`@enveraitech.com`) are charged $0. Stripe Payment Links for top-ups.
+- **Sign-in: Microsoft Entra External ID** (replaced Firebase and the custom email-code flow). One hosted Microsoft page offers email code (Google/Apple once configured). Backend verifies the Entra ID token (`backend/platform/entraVerify.js`) and issues the app session; the browser reads public settings from `/api/v1/auth/config`.
+- **Persistence:** users, history and login audit live in Azure Table Storage (`backend/platform/entityRecords.js`), alongside billing; redeploys no longer wipe them.
+- **Orc chat:** Claude Opus 5.5 on Azure AI Foundry, Gemini 3.5 Flash fallback, grounded text fallback if both fail. Explains pre-screen grades for screenings.
+- **Removed:** Firebase, Google Cloud Run / Static Web Apps / old deploy scripts, NVIDIA NIM client, Azure email (ACS) resources.
+
+### 2. Infrastructure
+
+- **App:** Azure Container Apps `artificer-enverai` (rg `rg-artificer`, Central India), https://artificer.enveraitech.in. Image `caed530b2b9eacr.azurecr.io/artificer-enverai:5045882` (`latest` points here); rollback tags `cc206be`, `ca22753`.
+- **Redeploy:** see README → Cloud Deployment (`az acr build` then `az containerapp update --image`).
+- **Storage:** `artificerstore7a96b0` (tables: accounts, ledger, stripeevents, registrycache, users, history, logins; blob audit copies).
+- **Container App secrets (names):** session-jwt-secret, azure-storage-conn, sandbox-api-key, sandbox-api-secret, gemini-api-key, foundry-api-key, jev-api-key.
+- **Entra External ID tenant:** `artificerid` (ID `dbc0cc0c-37b3-4cfe-9ab4-b742812d55e6`), admin `daddy@enveraitech.com`. App "Artificer" client ID `4188a978-e8cc-4850-8fb9-9949784b2e06`; redirect URIs: the custom domain, the azurecontainerapps.io host, `http://localhost:5173`. User flow "Artificer sign-up and sign-in" (email one-time passcode). Env: `ENTRA_TENANT_ID`, `ENTRA_CLIENT_ID`, `ENTRA_TENANT_SUBDOMAIN=artificerid`.
+- **Google OAuth client** for Entra federation lives in Google Cloud project `idbi-innovate` (client ID `900490257588-lt4tt8rg49ak31u769pvogsg679rhnmv.apps.googleusercontent.com`).
+
+### 3. Live verification (2026-11-16)
+
+Passed on the live site: email sign-in, session survives reload and redeploy, statement evaluation (643/900, cash buffer 3.28x on `dataset/Sample_Bank_Statement.csv`), screening report with pre-screen card, Orc chat answered by Claude, history persistence, billing ledger exact (refunds on empty lookups), 403 on admin endpoints for normal users, 400 on bad GSTINs, logout.
+
+### 4. Open items
+
+1. **Sandbox GST search returned 503 for every GSTIN** during the test (credentials accepted). Re-check before any demo; contact Sandbox if it persists. The pre-screen grade only appears with real registry data.
+2. **Google sign-in:** enter the client secret in Entra admin center → All identity providers → Google, tick Google in the user flow, and publish the Google OAuth client (not "Testing").
+3. **Apple sign-in** (optional): Services ID + key in Apple Developer, then Entra → Apple. Key expires every 6 months.
+4. **Branding** of the Microsoft sign-in page (currently "ARTIFICER - ENVER"): Entra → Company branding.
+5. **Rotate** the Sandbox secret and the Azure Foundry key (the latter also sits in local, gitignored `claude.bat` / `claude.ps1`).
+6. **Stripe:** `STRIPE_WEBHOOK_SECRET` and `STRIPE_LINK_10/25/100` not set; top-ups return 503 until configured.
+7. **Small UI gaps:** the New Evaluation terminal does not load an evaluation reopened from Saved Businesses (top-bar Orc chat does); Watchlist shows a raw "NOT_ASSESSED" under names; logout is client-side (session JWT valid until its 12-hour expiry).
+8. **Optional clean-up not done:** untrack the third-party `.agents/` folder; remove the Grok code path (no valid key; always falls back to Gemini). Older docs (`ARTIFICER.md`, `azure.md`) still mention Google Cloud Run.
