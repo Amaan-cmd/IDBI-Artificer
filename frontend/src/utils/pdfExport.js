@@ -237,7 +237,7 @@ export function exportAuditReport({ data, auditorNotes = '', officer = null }) {
 
   <div class="hero-grid">
     <div class="score-card">
-      <div class="score-badge">${riskLevel ? `${riskLevel} RISK TIER` : (isScreening ? 'REGISTRY SCREENING' : 'RISK TIER NOT AVAILABLE')}</div>
+      <div class="score-badge">${riskLevel ? `${riskLevel} RISK TIER` : (isScreening ? (data.preScreen?.grade ? `REGISTRY PRE-SCREEN · GRADE ${esc(data.preScreen.grade)}` : 'REGISTRY SCREENING') : 'RISK TIER NOT AVAILABLE')}</div>
       <div class="score-num">${score ?? '—'}</div>
       <div style="font-size: 11px; color: #64748b;">Autonomous Score / 900</div>
     </div>

@@ -121,7 +121,7 @@ You may interrogate why this specific decision was taken, the 300–900 points b
           query: textToSend,
           // Real evaluation payload when present; demo presets send the flattened sample;
           // otherwise null so the backend reports that there is nothing to explain yet.
-          evaluationPayload: evaluationPayload?.decision
+          evaluationPayload: evaluationPayload?.decision || evaluationPayload?.preScreen
             ? evaluationPayload
             : companyData
               ? {

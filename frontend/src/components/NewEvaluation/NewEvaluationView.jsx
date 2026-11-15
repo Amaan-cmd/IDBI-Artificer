@@ -9,6 +9,7 @@ import { getCompanyDecisionData, momentumText } from '../../utils/orcIntelligenc
 import RedFlagBanner from '../RedFlagBanner/RedFlagBanner';
 import { isDemoMode } from '../../utils/demoMode';
 import RegistryProbeCard, { ProvenanceList, formatAdjustment } from '../Registry/RegistryProbeCard';
+import { PreScreenBadge } from '../Registry/PreScreenCard';
 import RegistryScreeningReport from '../Registry/RegistryScreeningReport';
 import SampleDataBadge from '../SampleDataBadge/SampleDataBadge';
 import { sanitizeText } from '../../utils/sanitize';
@@ -331,6 +332,9 @@ export default function NewEvaluationView({
             <div className="hitl-card-header">
               <div className="hitl-entity-meta">
                 <h2 className="entity-legal-name">{businessName}</h2>
+                {!file && gstinProbeData?.preScreen && (
+                  <PreScreenBadge grade={gstinProbeData.preScreen.grade} verdict={gstinProbeData.preScreen.verdict} />
+                )}
                 <div className="entity-id-row">
                   <span><strong>GSTIN:</strong> {gstinProbeData?.gstin || gstinInput || 'Auto-Detect from Statement'}</span>
                   <span className="id-sep">·</span>
@@ -475,7 +479,7 @@ export default function NewEvaluationView({
             {!isScreening && previewDecision?.redFlags?.length > 0 && <RedFlagBanner flags={previewDecision.redFlags} />}
 
             {isScreening ? (
-              <RegistryScreeningReport payload={evaluationData} onSelectCin={selectCin} />
+              <RegistryScreeningReport payload={evaluationData} onSelectCin={selectCin} onAttachStatement={() => fileInputRef.current?.click()} />
             ) : !previewDecision ? (
               <div className="registry-card registry-unavailable">Run an evaluation to see findings.</div>
             ) : (

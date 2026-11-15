@@ -15,6 +15,7 @@ const llmCalls = [];
 stub('utils/azureFoundryClaude', { callAzureFoundryClaude: async () => { llmCalls.push('claude'); throw new Error('offline'); } });
 stub('utils/googleGemini', { callGemini: async () => { llmCalls.push('gemini'); throw new Error('offline'); } });
 
+delete require.cache[require.resolve('../controllers/chatController')];
 const { handleXAIChat } = require('../controllers/chatController');
 
 async function call(body) {
@@ -59,4 +60,21 @@ test('fallback uses payload values and says "not available" for missing ones', a
 test('missing query is still a 400', async () => {
   const r = await call({ evaluationPayload: { decision: { score: 700 } } });
   assert.equal(r.status, 400);
+});
+
+test('registry screening with a pre-screen is explained from its factors, not refused', async () => {
+  llmCalls.length = 0;
+  const preScreen = {
+    grade: 'B', verdict: 'PROCEED', percent: 75, points: 75, maxPoints: 100,
+    factors: [{ key: 'vintage', label: 'Business age', detail: 'GST registered 2022-06-01 (4.5 yrs)', points: 25, max: 35 }],
+    knockouts: [], notAssessed: [{ label: 'Company standing', reason: 'Company not found on MCA21' }], caveats: []
+  };
+  const r = await call({ query: 'why B?', evaluationPayload: { reportType: 'REGISTRY_SCREENING', preScreen } });
+  assert.deepEqual(llmCalls, ['claude', 'gemini'], 'both engines are tried');
+  const text = r.body.response;
+  assert.doesNotMatch(text, /no completed evaluation/i);
+  assert.match(text, /Grade B/);
+  assert.match(text, /Business age: 25\/35/);
+  assert.match(text, /Company standing: Company not found on MCA21/);
+  assert.doesNotMatch(text, /\/900/);
 });

@@ -4,6 +4,7 @@ import { ArrowLeft, Shield, Lock, Users, Database, Cpu, CheckCircle2, ShieldAler
 import CountUp from '../CountUp/CountUp';
 import SplitText from '../SplitText/SplitText';
 import { apiFetch } from '../../utils/apiClient';
+import { PreScreenBadge } from '../Registry/PreScreenCard';
 
 export default function MasterDashboard({ onBack }) {
   const [users, setUsers] = useState([]);
@@ -288,7 +289,9 @@ export default function MasterDashboard({ onBack }) {
                       </span>
                     ) : (
                       <span className="score-pill" style={{ color: 'var(--text-muted)' }}>
-                        {h.fullPayload?.reportType === 'REGISTRY_SCREENING' ? 'Screening' : '—'}
+                        {h.fullPayload?.reportType === 'REGISTRY_SCREENING'
+                          ? (h.preScreenGrade || h.preScreenVerdict ? <PreScreenBadge grade={h.preScreenGrade} verdict={h.preScreenVerdict} compact /> : 'Screening')
+                          : '—'}
                       </span>
                     )}
                   </td>

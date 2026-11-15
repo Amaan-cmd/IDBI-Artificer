@@ -55,6 +55,7 @@ test('GSTIN is normalised and cin query is passed through upper-cased', async ()
   const r = await run({ gstin: ' 24aaacq1234a1za ' }, { cin: ' u12345mh2020ptc123456 ' });
   assert.equal(r.status, 200);
   assert.deepEqual(calls[0], ['24AAACQ1234A1ZA', { cin: 'U12345MH2020PTC123456' }]);
+  assert.equal(r.body.preScreen.verdict, 'INSUFFICIENT_DATA', 'pre-screen sits next to the report');
   await run({ gstin: '24AAACQ1234A1ZA' }, { cin: ['a', 'b'] });
   assert.deepEqual(calls[1][1], { cin: null });
 });
@@ -70,6 +71,7 @@ test('preset GSTIN returns sample data only in demo mode', async () => {
   assert.equal(calls.length, 1, 'demo preset must not call providers');
   assert.equal(r.body.registryReport.sampleData, true);
   assert.equal(r.body.registryReport.gst.source, 'Sample data (demo mode)');
+  assert.ok(r.body.preScreen, 'demo report also carries a pre-screen');
 
   r = await run({ gstin: '24AAACQ1234A1ZA' });
   assert.equal(calls.length, 2, 'non-preset GSTIN in demo mode still uses the real service');

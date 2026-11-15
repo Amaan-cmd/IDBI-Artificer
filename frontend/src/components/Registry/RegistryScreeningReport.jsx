@@ -1,8 +1,9 @@
 import React from 'react';
 import RegistryProbeCard from './RegistryProbeCard';
+import PreScreenCard from './PreScreenCard';
 import './Registry.css';
 
-export default function RegistryScreeningReport({ payload, onSelectCin }) {
+export default function RegistryScreeningReport({ payload, onSelectCin, onAttachStatement }) {
   const report = payload?.registryReport;
   if (!report) return null;
   const filings = report.filings?.status === 'ok' && Array.isArray(report.filings.data)
@@ -19,6 +20,7 @@ export default function RegistryScreeningReport({ payload, onSelectCin }) {
       <p className="registry-unavailable" style={{ marginTop: 4 }}>
         No credit score: registries do not contain revenue. Upload a bank statement for a full 5-pillar credit score.
       </p>
+      <PreScreenCard preScreen={payload.preScreen} onAttachStatement={onAttachStatement} />
       <RegistryProbeCard report={report} onSelectCin={onSelectCin} />
       {missing.length > 0 && (
         <>

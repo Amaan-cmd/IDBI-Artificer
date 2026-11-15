@@ -9,6 +9,7 @@ const { incrementUserUsage } = require('./userController');
 const { addHistoryRecord } = require('./historyController');
 const { sendSlackNotification } = require('../services/slackNotifier');
 const { applyRegistryAdjustments } = require('../services/registry/registryAdjustments');
+const { computePreScreen } = require('../services/registry/preScreen');
 const { isAcceptedGstin } = require('../utils/gstin');
 const { hasRegistryData, freshRegistryData } = require('./registryController');
 const { isDemoMode } = require('../platform/demoMode');
@@ -135,11 +136,13 @@ async function evaluateMSMECredit(req, res) {
           reportType: 'REGISTRY_SCREENING',
           gstin: structuredData.gstin,
           businessName: report?.gst?.status === 'ok' ? report.gst.data.legalName : structuredData.gstin,
-          registryReport: report
+          registryReport: report,
+          preScreen: computePreScreen(report)
         };
         addHistoryRecord({
           userId, userEmail, userName: userName || userEmail, userRole: userRole || 'Institutional Credit Officer',
           name: screeningPayload.businessName, gstin: screeningPayload.gstin, score: null, risk: null,
+          preScreenGrade: screeningPayload.preScreen.grade, preScreenVerdict: screeningPayload.preScreen.verdict,
           reason: 'Registry screening (no statement uploaded)', fullPayload: screeningPayload
         });
         // Priced like /registry: charged only when fresh data was fetched upstream.

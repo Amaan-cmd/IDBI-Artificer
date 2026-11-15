@@ -19,3 +19,30 @@
 .registry-section-title { margin: 0.75rem 0 0.25rem; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
 @media (max-width: 640px) { .registry-row { grid-template-columns: 1fr; } }
 .finding-card-badge.badge-neutral { background: var(--surface-inset); color: var(--text-muted); border: 1px solid var(--border); }
+
+/* Registry pre-screen: an A–E grade, deliberately distinct from the 300–900 score pill. */
+.prescreen-header { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
+.prescreen-grade, .prescreen-badge { display: inline-block; padding: 2px 10px; border-radius: 6px; font-weight: 700; font-size: 0.78rem; border: 1px dashed currentColor; letter-spacing: 0.02em; white-space: nowrap; }
+.prescreen-badge { font-size: 0.7rem; padding: 1px 8px; }
+.grade-A, .grade-B { color: var(--status-green-text); background: var(--status-green-bg); }
+.grade-C, .grade-D { color: var(--status-amber-text); background: var(--status-amber-bg); }
+.grade-E { color: var(--status-red-text); background: var(--status-red-bg); }
+.grade-none { color: var(--text-muted); background: var(--surface-inset); }
+.prescreen-verdict { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); }
+.prescreen-verdict.verdict-PROCEED { color: var(--status-green-text); }
+.prescreen-verdict.verdict-REQUEST_DOCUMENTS { color: var(--status-amber-text); }
+.prescreen-verdict.verdict-DECLINE { color: var(--status-red-text); }
+.prescreen-knockouts li { color: var(--status-red-text); font-weight: 600; }
+.prescreen-factors { list-style: none; margin: 0.6rem 0 0; padding: 0; display: grid; gap: 4px; }
+.prescreen-factors li { display: grid; grid-template-columns: 1.2rem 11rem 1fr auto; gap: 0.5rem; align-items: baseline; font-size: 0.8rem; cursor: default; }
+.prescreen-marker { font-weight: 800; text-align: center; }
+.prescreen-marker.m-up { color: var(--status-green-text); }
+.prescreen-marker.m-mid { color: var(--status-amber-text); }
+.prescreen-marker.m-down { color: var(--status-red-text); }
+.prescreen-factor-label { font-weight: 600; }
+.prescreen-factor-detail { color: var(--text-muted); }
+.prescreen-factor-points { font-family: var(--font-mono, monospace); font-size: 0.75rem; }
+.prescreen-unlocks { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.prescreen-unlock-btn { padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-inset); color: var(--text-primary); font-size: 0.78rem; cursor: pointer; }
+.prescreen-unlock-btn:disabled { cursor: not-allowed; opacity: 0.6; }
+@media (max-width: 640px) { .prescreen-factors li { grid-template-columns: 1.2rem 1fr auto; } .prescreen-factor-detail { grid-column: 2 / -1; } }

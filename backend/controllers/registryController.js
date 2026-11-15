@@ -1,4 +1,5 @@
 const { getRegistryReport } = require('../services/registry/registryService');
+const { computePreScreen } = require('../services/registry/preScreen');
 const { isDemoMode } = require('../platform/demoMode');
 const { demoRegistryReport } = require('../demo/demoEntities');
 
@@ -35,7 +36,7 @@ async function getRegistry(req, res) {
   if (error) return res.status(400).json({ code: 'INVALID_GSTIN', error });
   if (isDemoMode()) {
     const sample = demoRegistryReport(gstin);
-    if (sample) return res.json({ status: 'success', registryReport: sample });
+    if (sample) return res.json({ status: 'success', registryReport: sample, preScreen: computePreScreen(sample) });
   }
   try {
     const cin = typeof req.query.cin === 'string' && req.query.cin.trim() ? req.query.cin.trim().toUpperCase() : null;
@@ -43,7 +44,7 @@ async function getRegistry(req, res) {
     if (!freshRegistryData(registryReport)) {
       await req.billing?.refund(hasRegistryData(registryReport) ? 'cached registry result' : 'registry unavailable');
     }
-    return res.json({ status: 'success', registryReport });
+    return res.json({ status: 'success', registryReport, preScreen: computePreScreen(registryReport) });
   } catch (err) {
     console.error('[Registry] Report failed:', err.message);
     return res.status(503).json({ code: 'REGISTRY_UNAVAILABLE', error: 'Registry lookup is temporarily unavailable.' });

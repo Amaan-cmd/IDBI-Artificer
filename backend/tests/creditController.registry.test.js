@@ -40,6 +40,7 @@ const synthesis = {
 };
 stub('agents/synthesisAgent', { synthesizeScore: (...a) => synthesis.synthesizeScore(...a) });
 
+delete require.cache[require.resolve('../controllers/creditController')];
 const { evaluateMSMECredit } = require('../controllers/creditController');
 
 const REPORT = {
@@ -103,6 +104,11 @@ test('GSTIN-only run streams a REGISTRY_SCREENING payload with no score', async 
   assert.ok(!res.events.some(e => e.step === 99));
   assert.equal(history.length, 1);
   assert.equal(history[0].score, null);
+  // Only filing discipline is known (30 of 90 points assessable), so low coverage caps it at C.
+  assert.equal(final.payload.preScreen.grade, 'C');
+  assert.ok(final.payload.preScreen.caveats.includes('Limited registry coverage'));
+  assert.equal(history[0].preScreenGrade, final.payload.preScreen.grade);
+  assert.equal(history[0].preScreenVerdict, final.payload.preScreen.verdict);
 });
 
 test('extraction failure streams step 99 and no score, with no fabricated fallback', async () => {

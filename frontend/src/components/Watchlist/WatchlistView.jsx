@@ -6,8 +6,15 @@ import {
 } from 'lucide-react';
 import './WatchlistView.css';
 import SampleDataBadge from '../SampleDataBadge/SampleDataBadge';
+import { PreScreenBadge } from '../Registry/PreScreenCard';
 
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
+// Grade from the history record, or from the payload for rows saved before it was copied up.
+const preScreenOf = (row) => {
+  const grade = row?.preScreenGrade ?? row?.fullPayload?.preScreen?.grade ?? null;
+  const verdict = row?.preScreenVerdict ?? row?.fullPayload?.preScreen?.verdict ?? null;
+  return grade || verdict ? { grade, verdict } : null;
+};
 const isScreeningRow = (row) => row?.fullPayload?.reportType === 'REGISTRY_SCREENING' || row?.status === 'Registry Screening';
 // Normalises 'LOW' / 'LOW RISK' / null to a display label; null when no risk was assessed.
 const riskLabel = (risk) => (risk ? String(risk).trim().toUpperCase().replace(/\s*RISK$/, '') : null);
@@ -186,7 +193,7 @@ export default function WatchlistView({
                     {/* Credit Score Pill */}
                     <td>
                       {score === null ? (
-                        <span className="score-pill"><span className="score-val" style={{ color: 'var(--text-subtle)' }}>{screening ? 'Screening' : '—'}</span></span>
+                        screening && preScreenOf(row) ? <PreScreenBadge {...preScreenOf(row)} compact /> : <span className="score-pill"><span className="score-val" style={{ color: 'var(--text-subtle)' }}>{screening ? 'Screening' : '—'}</span></span>
                       ) : (
                         <div className={`score-pill ${scoreColorClass}`}>
                           <span className="score-val">{score}</span>
@@ -310,7 +317,7 @@ export default function WatchlistView({
                   </div>
                   <div className="card-score-badge" style={{ borderColor: scoreColor }}>
                     {score === null ? (
-                      <span className="card-score-num" style={{ color: 'var(--text-subtle)', fontSize: '0.8rem' }}>{screening ? 'Screening' : '—'}</span>
+                      screening && preScreenOf(row) ? <PreScreenBadge {...preScreenOf(row)} compact /> : <span className="card-score-num" style={{ color: 'var(--text-subtle)', fontSize: '0.8rem' }}>{screening ? 'Screening' : '—'}</span>
                     ) : (
                       <>
                         <span className="card-score-num" style={{ color: scoreColor }}>{score}</span>

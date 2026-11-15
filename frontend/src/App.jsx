@@ -401,7 +401,7 @@ function App() {
         const body = await res.json().catch(() => ({}));
         if (controller.signal.aborted) return;
         if (res.ok && body.registryReport) {
-          setGstinProbeData({ gstin: clean, registryReport: body.registryReport });
+          setGstinProbeData({ gstin: clean, registryReport: body.registryReport, preScreen: body.preScreen || null });
           setProbeState({ loading: false, error: null });
         } else {
           setGstinProbeData(null);
@@ -748,6 +748,8 @@ function App() {
         gstin: completedPayload.gstin || gstinInput,
         score: completedPayload.decision?.score ?? null,
         risk: completedPayload.decision?.riskLevel ?? null,
+        preScreenGrade: completedPayload.preScreen?.grade ?? null,
+        preScreenVerdict: completedPayload.preScreen?.verdict ?? null,
         evaluatedDate: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
         status: completedPayload.reportType === 'REGISTRY_SCREENING' ? 'Registry Screening' : 'Completed (Live Pipeline)',
         compliance: completedPayload.metrics?.taxCompliance ?? null,

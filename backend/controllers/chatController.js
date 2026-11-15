@@ -16,6 +16,29 @@ function decisionFrom(payload) {
   return null;
 }
 
+// A GSTIN-only screening carries a registry pre-screen grade instead of a score.
+const preScreenFrom = (payload) => (payload && typeof payload === 'object' && payload.preScreen && typeof payload.preScreen === 'object' && Array.isArray(payload.preScreen.factors) ? payload.preScreen : null);
+
+const PRE_SCREEN_SYSTEM_PROMPT = `You are Agent 3 (Chief Credit Officer) explaining a REGISTRY PRE-SCREEN to a loan officer.
+The pre-screen is a deterministic A–E grade computed only from GST registration, GST filing history and MCA21 company records.
+It is NOT a credit score: no revenue, cash buffer or debt data was assessed. Never state or estimate a 300–900 score.
+
+RULES:
+1. NO GREETINGS or filler.
+2. Explain the grade strictly from the listed factors, points, knockouts, caveats and not-assessed items. Cite the factor details.
+3. When asked about financial strength, say it was not assessed and that a bank statement unlocks the full credit score.
+4. Keep answers crisp and evidence-grounded.`;
+
+function preScreenFallback(ps) {
+  const factors = ps.factors.map(f => `${f.label}: ${f.points}/${f.max} (${f.detail})`).join('; ');
+  const knockouts = Array.isArray(ps.knockouts) && ps.knockouts.length ? ` Knockouts: ${ps.knockouts.map(k => k.label).join('; ')}.` : '';
+  const notAssessed = Array.isArray(ps.notAssessed) && ps.notAssessed.length ? ` Not assessed: ${ps.notAssessed.map(n => `${n.label}: ${n.reason}`).join('; ')}.` : '';
+  const caveats = Array.isArray(ps.caveats) && ps.caveats.length ? ` Caveats: ${ps.caveats.join('; ')}.` : '';
+  const grade = ps.grade ? `Grade ${ps.grade}` : 'No grade';
+  const pct = isNum(ps.percent) ? ` (${ps.points}/${ps.maxPoints} points, ${ps.percent}%)` : '';
+  return `[Orc Registry Pre-Screen]: ${grade}, verdict ${ps.verdict || 'not available'}${pct}. Factors: ${factors || 'none assessable'}.${knockouts}${notAssessed}${caveats} Revenue, cash buffer and debt service were not assessed; attach a bank statement for the full credit score.`;
+}
+
 async function handleXAIChat(req, res) {
   try {
     const { query, evaluationPayload, history } = req.body;
@@ -27,7 +50,8 @@ async function handleXAIChat(req, res) {
     // Only a scored evaluation can be explained. Accept the credit payload's
     // decision, or the terminal's flattened { score, riskTier } shape.
     const decision = decisionFrom(evaluationPayload);
-    if (!decision) {
+    const preScreen = decision ? null : preScreenFrom(evaluationPayload);
+    if (!decision && !preScreen) {
       await req.billing?.refund('no completed evaluation to explain');
       return res.json({
         status: 'success',
@@ -36,7 +60,7 @@ async function handleXAIChat(req, res) {
       });
     }
 
-    const systemPrompt = `You are Agent 3 (Chief Credit Officer & Explainable AI Engine) in forensic interrogation mode.
+    const systemPrompt = preScreen ? PRE_SCREEN_SYSTEM_PROMPT : `You are Agent 3 (Chief Credit Officer & Explainable AI Engine) in forensic interrogation mode.
 A loan officer or credit underwriter is challenging or querying your credit score decision.
 You have access to the complete 5-Pillar Underwriting Matrix:
 - Pillar 1: Liquidity & Cash Buffer (Cash Buffer Ratio, Minimum Cash Buffer Days, Overdraft Utilization)
@@ -91,6 +115,9 @@ Provide your direct forensic response:`;
     // 3. Grounded fallback: restate only what the payload contains. No model
     // answered, so the message is not charged.
     await req.billing?.refund('AI engines unavailable');
+    if (preScreen) {
+      return res.json({ status: 'success', engine: 'Grounded Forensic Underwriting Matrix', response: preScreenFallback(preScreen) });
+    }
     const m = evaluationPayload.metrics || {};
     const p1 = m.pillar1_liquidity || {};
     const p2 = m.pillar2_revenue || {};
