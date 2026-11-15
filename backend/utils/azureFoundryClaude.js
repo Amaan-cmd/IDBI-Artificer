@@ -12,6 +12,15 @@
  * @param {Array} [conversationHistory] - Prior chat turns [{ role, content }]
  * @returns {Promise<string>} - Claude's response text
  */
+// Accepts the resource root, the ".../anthropic" base, or the full messages URL.
+function anthropicMessagesUrl(endpoint) {
+  const base = String(endpoint || '').trim().replace(/\/+$/, '');
+  if (!base) return 'https://enver-odyssey-resource.services.ai.azure.com/anthropic/v1/messages';
+  if (/\/v1\/messages$/.test(base)) return base;
+  if (/\/anthropic$/.test(base)) return `${base}/v1/messages`;
+  return `${base}/anthropic/v1/messages`;
+}
+
 async function callAzureFoundryClaude(systemPrompt, userPrompt, conversationHistory = []) {
   const endpoint = (process.env.AZURE_FOUNDRY_ENDPOINT || process.env.AZURE_AI_ENDPOINT || '').trim();
   const apiKey = (process.env.AZURE_FOUNDRY_API_KEY || process.env.AZURE_AI_KEY || '').trim();
@@ -33,10 +42,7 @@ async function callAzureFoundryClaude(systemPrompt, userPrompt, conversationHist
 
     // Primary: Anthropic Messages API on Azure AI Foundry
     try {
-      const baseClean = endpoint.replace(/\/+$/, '');
-      const anthropicUrl = baseClean.includes('/anthropic/')
-        ? baseClean
-        : (baseClean ? `${baseClean}/anthropic/v1/messages` : 'https://enver-odyssey-resource.services.ai.azure.com/anthropic/v1/messages');
+      const anthropicUrl = anthropicMessagesUrl(endpoint);
       const anthropicBody = {
         model: deploymentName || 'claude-opus-5-5',
         max_tokens: 1500,
@@ -121,4 +127,4 @@ async function callAzureFoundryClaude(systemPrompt, userPrompt, conversationHist
   return null;
 }
 
-module.exports = { callAzureFoundryClaude };
+module.exports = { callAzureFoundryClaude, anthropicMessagesUrl };
