@@ -122,7 +122,7 @@ test('evaluate: a scored run keeps the charge and records the real cost', async 
   const r = await quiet(() => evaluate('ok@x.com', { manualData: '{"businessName":"X"}' }));
   assert.equal(r.events.at(-1).step, 4);
   assert.equal(await balance('ok@x.com'), 450);
-  assert.deepEqual(usage, [['u1', 0.5]]);
+  assert.deepEqual(usage, [['ok@x.com', 0.5]]);
   assert.equal((await chargeRow('ok@x.com')).reference, 'manual data');
 });
 
@@ -136,7 +136,7 @@ test('evaluate: screening with freshly fetched registry data is billed as a regi
   const r = await quiet(() => evaluate('scr@x.com', { gstin: VALID_GSTIN }));
   assert.equal(r.events.at(-1).step, 4);
   assert.equal(await balance('scr@x.com'), 498);
-  assert.deepEqual(usage, [['u1', 0.02]]);
+  assert.deepEqual(usage, [['scr@x.com', 0.02]]);
   const row = await chargeRow('scr@x.com');
   assert.equal(row.action, 'registryLookup');
   assert.equal(row.reference, VALID_GSTIN);
@@ -151,7 +151,7 @@ test('evaluate: screening served entirely from the registry cache is refunded', 
   assert.equal(r.events.at(-1).step, 4);
   assert.equal(await balance('scrc@x.com'), 500);
   assert.ok((await ledgerRows('scrc@x.com')).some((row) => row.type === 'refund'));
-  assert.deepEqual(usage, [['u1', 0]]);
+  assert.deepEqual(usage, [['scrc@x.com', 0]]);
 });
 
 test('evaluate: a GSTIN with manual data is still billed as an evaluation', async () => {
@@ -170,7 +170,7 @@ test('evaluate: screening with no registry data is delivered but refunded', asyn
   assert.equal(r.events.at(-1).step, 4);
   await waitFor(async () => (await balance('scr0@x.com')) === 500);
   assert.ok((await ledgerRows('scr0@x.com')).some((row) => row.type === 'refund'));
-  assert.deepEqual(usage, [['u1', 0]]);
+  assert.deepEqual(usage, [['scr0@x.com', 0]]);
 });
 
 // --- evaluate: references and uploads ---

@@ -1,31 +1,16 @@
-const fs = require('fs');
-const path = require('path');
 const { azureStorage } = require('../utils/azureStorage');
 const { isAdminEmail } = require('../platform/admin');
-
-const historyFilePath = path.join(__dirname, '../data/history.json');
-
-const getHistoryData = () => {
-  try {
-    const data = fs.readFileSync(historyFilePath, 'utf8');
-    return JSON.parse(data);
-  } catch (error) {
-    return [];
-  }
-};
-
-const saveHistoryData = (history) => {
-  try {
-    fs.mkdirSync(path.dirname(historyFilePath), { recursive: true });
-    fs.writeFileSync(historyFilePath, JSON.stringify(history, null, 2), 'utf8');
-  } catch(e) {
-    console.warn("Failed to save local history.json:", e.message);
-  }
-};
+const records = require('../platform/entityRecords');
 
 const getHistory = async (req, res) => {
   const email = req.session.email;
-  let history = getHistoryData();
+  let history;
+  try {
+    history = await records.listHistory();
+  } catch (err) {
+    console.error('[History] Read failed:', err.message);
+    return res.status(503).json({ error: 'History is temporarily unavailable.' });
+  }
   if (!isAdminEmail(email)) {
     history = history.filter(h => String(h.userEmail || '').toLowerCase() === email);
   }
@@ -33,6 +18,7 @@ const getHistory = async (req, res) => {
   res.json({ status: 'success', history });
 };
 
+// A failed write is logged, never thrown: the evaluation is still delivered.
 const addHistoryRecord = async (record) => {
   const newRecord = {
     id: record.id || `h_${Date.now()}`,
@@ -40,12 +26,13 @@ const addHistoryRecord = async (record) => {
     ...record
   };
 
-  const history = getHistoryData();
-  history.unshift(newRecord);
-  if (history.length > 500) history.length = 500;
-  saveHistoryData(history);
+  try {
+    await records.addHistory(newRecord);
+  } catch (err) {
+    console.error('[History] Write failed:', err.message);
+  }
 
-  // Sync to Azure Blob Storage if configured in Azure Container Apps
+  // Forensic audit copy in Azure Blob Storage when configured.
   try {
     await azureStorage.saveAuditPayload(newRecord.id, newRecord);
   } catch (err) {

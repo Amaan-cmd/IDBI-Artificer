@@ -146,7 +146,7 @@ export default function VerificationGate({ onVerified }) {
         setError(data.error || 'Could not send a verification code. Please retry.');
         return;
       }
-      setNotice(`Verification code dispatched to ${cleanEmail}. Enter code to verify.`);
+      setNotice(`We sent a 6-digit code to ${cleanEmail}. Check your inbox (and spam folder); it expires in 10 minutes.`);
       setOtpStep('code');
     } catch {
       setError('Could not send a verification code. Please retry.');

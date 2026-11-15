@@ -24,11 +24,16 @@ async function quiet(fn) {
   try { return await fn(); } finally { console.log = orig; }
 }
 
+// OTP codes go to a throwaway store, never backend/data.
+const os = require('os');
+const { createFileTableStore, setTableStoreForTests } = require('../platform/tableStore');
+setTableStoreForTests(createFileTableStore(fs.mkdtempSync(path.join(os.tmpdir(), 'artificer-hardening-'))));
 const { sendOtp } = require('../controllers/userController');
 
 test('sendOtp never returns demoCode for an admin address, even with ENABLE_DEMO_OTP', async () => {
   await withEnv({ NODE_ENV: 'test', ENABLE_DEMO_OTP: 'true' }, async () => {
     for (const email of ['ops@enveraitech.com', 'OPS@EnverAITech.com']) {
+      setTableStoreForTests(createFileTableStore(fs.mkdtempSync(path.join(os.tmpdir(), 'artificer-hardening-'))));
       const res = fakeRes();
       await quiet(() => sendOtp({ body: { email } }, res));
       assert.equal(res.statusCode, 200);

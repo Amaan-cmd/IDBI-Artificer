@@ -152,7 +152,7 @@ async function evaluateMSMECredit(req, res) {
           await req.billing?.refund(hasRegistryData(report) ? 'cached registry result' : 'registry unavailable');
           screeningCost = 0;
         }
-        incrementUserUsage(userId, screeningCost);
+        incrementUserUsage(userEmail, screeningCost);
         res.write(`data: ${JSON.stringify({ step: 4, payload: screeningPayload })}\n\n`);
         cleanup();
         return res.end();
@@ -231,7 +231,7 @@ async function evaluateMSMECredit(req, res) {
       };
 
       addHistoryRecord(recordToSave);
-      incrementUserUsage(userId, (req.billing?.priceCents || 0) / 100);
+      incrementUserUsage(userEmail, (req.billing?.priceCents || 0) / 100);
 
       // Dispatch Slack notification for evaluation completed
       sendSlackNotification({
@@ -328,7 +328,7 @@ async function evaluateMSMECredit(req, res) {
       };
 
       addHistoryRecord(recordToSave);
-      incrementUserUsage(userId, (req.billing?.priceCents || 0) / 100);
+      incrementUserUsage(userEmail, (req.billing?.priceCents || 0) / 100);
 
       res.write(`data: ${JSON.stringify({ step: 4, payload: responsePayload })}\n\n`);
       cleanup();

@@ -22,7 +22,7 @@ function buildCreateSession({
       return res.status(401).json({ code: 'INVALID_ID_TOKEN', error: 'Sign-in could not be verified.' });
     }
 
-    const user = findOrCreateUser(identity);
+    const user = await findOrCreateUser(identity);
     await recordTelemetryLogin({
       user,
       email: identity.email,

@@ -78,12 +78,13 @@ async function captureLogs(fn) {
   return lines;
 }
 
-test('send-code never logs the OTP in production', () => withServer(async (base) => {
-  await withEnv({ NODE_ENV: 'production', ENABLE_DEMO_OTP: undefined }, async () => {
+test('send-code in production without an email sender refuses honestly and logs no OTP', () => withServer(async (base) => {
+  await withEnv({ NODE_ENV: 'production', ENABLE_DEMO_OTP: undefined, ACS_EMAIL_CONNECTION_STRING: undefined, ACS_EMAIL_SENDER: undefined }, async () => {
     const lines = await captureLogs(async () => {
       const res = await post(base, '/api/v1/auth/send-code', { email: 'prod-user@x.com' });
-      assert.equal(res.status, 200);
+      assert.equal(res.status, 503);
       const body = await res.json();
+      assert.equal(body.code, 'EMAIL_UNAVAILABLE');
       assert.equal(body.demoCode, undefined);
     });
     assert.ok(!lines.some(l => /\b\d{6}\b/.test(l)), `OTP-like code leaked to logs: ${lines.join(' | ')}`);

@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const TABLES = ['accounts', 'ledger', 'stripeevents', 'registrycache'];
+const TABLES = ['accounts', 'ledger', 'stripeevents', 'registrycache', 'users', 'history', 'logins', 'otpcodes'];
 
 class ConflictError extends Error {
   constructor(message = 'Entity conflict') {

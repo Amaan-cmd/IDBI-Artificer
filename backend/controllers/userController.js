@@ -1,65 +1,25 @@
-const fs = require('fs');
 const crypto = require('crypto');
-const path = require('path');
 const { normaliseEmail, issueSessionToken } = require('../platform/session');
 const { isAdminEmail } = require('../platform/admin');
 const { sanitizeEmail, sanitizeOtpDigits, isSafeInput } = require('../utils/sanitize');
 const { ensureAccount } = require('../billing/ledgerService');
+const records = require('../platform/entityRecords');
+const { isEmailConfigured, sendOtpEmail } = require('../services/emailSender');
 
-const usersFilePath = path.join(__dirname, '../data/users.json');
-const telemetryLoginsPath = path.join(__dirname, '../data/telemetry_logins.json');
-
-// In-memory verification code store for email OTP authentication
-const otpCache = new Map();
-const MAX_OTP_ATTEMPTS = 5;
-
-const getUsers = () => {
-  try {
-    const data = fs.readFileSync(usersFilePath, 'utf8');
-    return JSON.parse(data);
-  } catch (error) {
-    return [];
-  }
-};
-
-const saveUsers = (users) => {
-  try {
-    fs.mkdirSync(path.dirname(usersFilePath), { recursive: true });
-    fs.writeFileSync(usersFilePath, JSON.stringify(users, null, 2), 'utf8');
-  } catch (e) {
-    console.warn("Failed to save local users.json:", e.message);
-  }
-};
-
-const getLocalTelemetryLogins = () => {
-  try {
-    if (!fs.existsSync(telemetryLoginsPath)) return [];
-    const data = fs.readFileSync(telemetryLoginsPath, 'utf8');
-    return JSON.parse(data);
-  } catch (e) {
-    return [];
-  }
-};
-
+// Login audit entries live in table storage; a failed write never blocks sign-in.
 const recordTelemetryLogin = async (entry) => {
+  const { user, ...rest } = entry;
   const record = {
-    id: `log_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+    id: `log_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`,
     timestamp: new Date().toISOString(),
-    ...entry
+    ...rest,
+    userId: user?.id || rest.userId || null
   };
-
-  // Secure local append to telemetry audit ledger
   try {
-    fs.mkdirSync(path.dirname(telemetryLoginsPath), { recursive: true });
-    const logs = getLocalTelemetryLogins();
-    logs.unshift(record);
-    // Keep last 500 login audit records
-    if (logs.length > 500) logs.length = 500;
-    fs.writeFileSync(telemetryLoginsPath, JSON.stringify(logs, null, 2), 'utf8');
+    await records.addLogin(record);
   } catch (e) {
-    console.warn("[SecOps] Failed to append to local telemetry_logins.json:", e.message);
+    console.warn('[SecOps] Failed to record login audit entry:', e.message);
   }
-
   return record;
 };
 
@@ -69,19 +29,36 @@ const sendOtp = async (req, res) => {
     return res.status(400).json({ error: 'Valid corporate email is required.' });
   }
   
-  // Generate a cryptographically random 6-digit verification code
-  const code = crypto.randomInt(100000, 1000000).toString();
-  otpCache.set(cleanEmail, {
-    code,
-    expiresAt: Date.now() + 10 * 60 * 1000 // 10 minutes expiry
-  });
+  const isProduction = process.env.NODE_ENV === 'production';
+  // Never claim a code was sent when there is no way to deliver it.
+  if (isProduction && !isEmailConfigured()) {
+    return res.status(503).json({ code: 'EMAIL_UNAVAILABLE', error: 'Email sign-in is not available right now. Please sign in with Google or Apple.' });
+  }
 
-  // No email sender exists yet, so outside production the console is the only
-  // way to read the code locally. Never log the code in production.
-  if (process.env.NODE_ENV === 'production') {
-    console.log(`[Auth Sentinel] Verification code issued for ${cleanEmail}`);
+  let code;
+  try {
+    code = await records.issueOtp(cleanEmail);
+  } catch (err) {
+    if (err instanceof records.OtpCooldownError) {
+      res.set?.('Retry-After', String(err.retryAfterSec));
+      return res.status(429).json({ code: 'OTP_COOLDOWN', error: `A code was just sent. Please wait ${err.retryAfterSec}s before requesting another.`, retryAfter: err.retryAfterSec });
+    }
+    console.error('[Auth] OTP issue failed:', err.message);
+    return res.status(503).json({ code: 'OTP_UNAVAILABLE', error: 'Could not issue a verification code. Please retry.' });
+  }
+
+  if (isEmailConfigured()) {
+    try {
+      await sendOtpEmail(cleanEmail, code);
+      console.log(`[Auth Sentinel] Verification code emailed to ${cleanEmail}`);
+    } catch (err) {
+      console.error('[Auth] Email send failed:', err.message);
+      await records.clearOtp(cleanEmail).catch(() => {});
+      return res.status(502).json({ code: 'EMAIL_SEND_FAILED', error: 'The verification email could not be sent. Please retry or sign in with Google or Apple.' });
+    }
   } else {
-    console.log(`[Auth Sentinel] Dispatching verification code for ${cleanEmail}: ${code}`);
+    // Development without an email sender: the console is the only way to read the code.
+    console.log(`[Auth Sentinel] Verification code for ${cleanEmail}: ${code} (email sender not configured)`);
   }
 
   // Development-only convenience: echo the code back to the client. Never for
@@ -112,50 +89,26 @@ const verifyOtp = async (req, res) => {
     return res.status(400).json({ error: 'Valid email and 6-digit verification code are required.' });
   }
 
-  const cached = otpCache.get(cleanEmail);
-
-  if (cached && cached.expiresAt <= Date.now()) otpCache.delete(cleanEmail);
-  const live = cached && cached.expiresAt > Date.now() ? cached : null;
-  const isValid = Boolean(live && crypto.timingSafeEqual(Buffer.from(live.code), Buffer.from(cleanCode)));
+  let isValid;
+  try {
+    // Brute-force guard: a code is burned after MAX_OTP_ATTEMPTS wrong guesses.
+    isValid = await records.verifyOtpCode(cleanEmail, cleanCode);
+  } catch (err) {
+    console.error('[Auth] OTP verification failed:', err.message);
+    return res.status(503).json({ code: 'OTP_UNAVAILABLE', error: 'Verification is temporarily unavailable. Please retry.' });
+  }
 
   if (!isValid) {
-    // Brute-force guard: a code is burned after MAX_OTP_ATTEMPTS wrong guesses.
-    if (live) {
-      live.attempts = (live.attempts || 0) + 1;
-      if (live.attempts >= MAX_OTP_ATTEMPTS) otpCache.delete(cleanEmail);
-    }
     return res.status(401).json({ error: 'Invalid or expired verification code. Please request a new code.' });
   }
 
-  // Find or automatically create user account
-  const users = getUsers();
-  let user = users.find(u => u.email && u.email.toLowerCase() === cleanEmail);
-
-  if (!user) {
-    const handle = cleanEmail.split('@')[0];
-    const domain = cleanEmail.split('@')[1];
-    const formattedName = handle.split('.').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
-    
-    user = {
-      id: `u_${handle}_${Date.now().toString().slice(-4)}`,
-      username: formattedName || 'Institutional Officer',
-      email: cleanEmail,
-      role: domain === 'enveraitech.com' ? 'Enterprise Principal Underwriter' : 'Institutional Risk Evaluator',
-      status: 'Active (Email Verified)',
-      org: domain.includes('idbi') ? 'IDBI Bank Ltd.' : 'Enver AI Tech Partner',
-      calls: 0,
-      cost: 0,
-      lastLogin: new Date().toISOString()
-    };
-    users.push(user);
-    saveUsers(users);
-  } else {
-    user.lastLogin = new Date().toISOString();
-    saveUsers(users);
+  let user;
+  try {
+    user = await findOrCreateUser({ email: cleanEmail, provider: 'email' });
+  } catch (err) {
+    console.error('[Auth] User record failed:', err.message);
+    return res.status(503).json({ code: 'USER_STORE_UNAVAILABLE', error: 'Sign-in is temporarily unavailable. Please retry.' });
   }
-
-  // Clean cache
-  otpCache.delete(cleanEmail);
 
   // Record login in audit ledger
   const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
@@ -173,25 +126,29 @@ const verifyOtp = async (req, res) => {
 };
 
 const getAllUsers = async (req, res) => {
-  const users = getUsers();
+  const users = await records.listUsers();
   // Strip sensitive passkeys before returning
   const sanitizedUsers = users.map(({ passkey, ...u }) => u);
   res.json({ status: 'success', users: sanitizedUsers });
 };
 
 const getLoginTelemetry = async (req, res) => {
-  const logins = getLocalTelemetryLogins();
+  const logins = await records.listLogins();
   res.json({ status: 'success', logins });
 };
 
-// costDollars is the price actually charged for the action (0 for admins and demo presets).
-const incrementUserUsage = async (userId, costDollars = 0) => {
-  const users = getUsers();
-  const user = users.find(u => u.id === userId);
-  if (user) {
-    user.calls = (user.calls || 0) + 1;
-    user.cost = Math.round(((user.cost || 0) + costDollars) * 100) / 100;
-    saveUsers(users);
+// costDollars is the price actually charged for the action (0 for admins and
+// demo presets). Usage counters are informational: failures are only logged.
+const incrementUserUsage = async (email, costDollars = 0) => {
+  if (!email) return;
+  try {
+    await records.updateUser(normaliseEmail(email), (user) => ({
+      ...user,
+      calls: (user.calls || 0) + 1,
+      cost: Math.round(((user.cost || 0) + costDollars) * 100) / 100
+    }));
+  } catch (err) {
+    console.warn('[Users] Usage counter update failed:', err.message);
   }
 };
 
@@ -220,18 +177,11 @@ const buildNewUser = ({ email, name, provider = 'firebase' }) => {
   };
 };
 
-const findOrCreateUser = ({ email, name, provider }) => {
+const findOrCreateUser = async ({ email, name, provider }) => {
   const cleanEmail = normaliseEmail(email);
-  const users = getUsers();
-  let user = users.find(u => u.email && u.email.toLowerCase() === cleanEmail);
-  if (!user) {
-    user = buildNewUser({ email: cleanEmail, name, provider });
-    users.push(user);
-  } else {
-    user.lastLogin = new Date().toISOString();
-  }
-  saveUsers(users);
-  return user;
+  const existing = await records.updateUser(cleanEmail, (user) => ({ ...user, lastLogin: new Date().toISOString() }));
+  if (existing) return existing;
+  return records.saveUser(buildNewUser({ email: cleanEmail, name, provider }));
 };
 
 module.exports = { getAllUsers, getLoginTelemetry, incrementUserUsage, recordTelemetryLogin, sendOtp, verifyOtp, findOrCreateUser, buildNewUser };
