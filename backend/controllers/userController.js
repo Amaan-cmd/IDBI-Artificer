@@ -24,9 +24,10 @@ const getUsers = () => {
 
 const saveUsers = (users) => {
   try {
+    fs.mkdirSync(path.dirname(usersFilePath), { recursive: true });
     fs.writeFileSync(usersFilePath, JSON.stringify(users, null, 2), 'utf8');
   } catch (e) {
-    console.warn("Failed to save local users.json");
+    console.warn("Failed to save local users.json:", e.message);
   }
 };
 
@@ -49,6 +50,7 @@ const recordTelemetryLogin = async (entry) => {
 
   // Secure local append to telemetry audit ledger
   try {
+    fs.mkdirSync(path.dirname(telemetryLoginsPath), { recursive: true });
     const logs = getLocalTelemetryLogins();
     logs.unshift(record);
     // Keep last 500 login audit records

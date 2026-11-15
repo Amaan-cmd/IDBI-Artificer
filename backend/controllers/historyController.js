@@ -16,9 +16,10 @@ const getHistoryData = () => {
 
 const saveHistoryData = (history) => {
   try {
+    fs.mkdirSync(path.dirname(historyFilePath), { recursive: true });
     fs.writeFileSync(historyFilePath, JSON.stringify(history, null, 2), 'utf8');
   } catch(e) {
-    console.warn("Failed to save local history.json");
+    console.warn("Failed to save local history.json:", e.message);
   }
 };
 

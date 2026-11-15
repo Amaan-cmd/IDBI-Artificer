@@ -33,7 +33,10 @@ async function callAzureFoundryClaude(systemPrompt, userPrompt, conversationHist
 
     // Primary: Anthropic Messages API on Azure AI Foundry
     try {
-      const anthropicUrl = 'https://enver-odyssey-resource.services.ai.azure.com/anthropic/v1/messages';
+      const baseClean = endpoint.replace(/\/+$/, '');
+      const anthropicUrl = baseClean.includes('/anthropic/')
+        ? baseClean
+        : (baseClean ? `${baseClean}/anthropic/v1/messages` : 'https://enver-odyssey-resource.services.ai.azure.com/anthropic/v1/messages');
       const anthropicBody = {
         model: deploymentName || 'claude-opus-5-5',
         max_tokens: 1500,
