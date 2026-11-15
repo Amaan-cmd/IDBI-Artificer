@@ -9,6 +9,19 @@ const { callAzureFoundryClaude } = require('../utils/azureFoundryClaude');
  */
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 
+// Gemini is called in JSON mode, so a chat reply can arrive as {"response": "..."}.
+function plainAnswer(raw) {
+  const text = String(raw).trim();
+  if (!text.startsWith('{')) return text;
+  try {
+    const obj = JSON.parse(text);
+    const inner = obj && (obj.response ?? obj.answer ?? obj.text);
+    return typeof inner === 'string' && inner.trim() ? inner.trim() : text;
+  } catch {
+    return text;
+  }
+}
+
 function decisionFrom(payload) {
   if (!payload || typeof payload !== 'object') return null;
   if (payload.decision && isNum(payload.decision.score)) return payload.decision;
@@ -108,7 +121,7 @@ Provide your direct forensic response:`;
       return res.json({
         status: 'success',
         engine,
-        response: rawAnswer.trim()
+        response: plainAnswer(rawAnswer)
       });
     }
 

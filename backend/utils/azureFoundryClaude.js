@@ -12,6 +12,23 @@
  * @param {Array} [conversationHistory] - Prior chat turns [{ role, content }]
  * @returns {Promise<string>} - Claude's response text
  */
+// Provider error message for logs (never request headers or keys), truncated.
+async function errorSummary(resp) {
+  try {
+    const body = await resp.text();
+    let msg = body;
+    try {
+      const j = JSON.parse(body);
+      msg = j?.error?.message || j?.message || j?.error?.code || body;
+    } catch {
+      // not JSON: use the raw text
+    }
+    return String(msg).replace(/\s+/g, ' ').slice(0, 200) || 'no body';
+  } catch {
+    return 'unreadable body';
+  }
+}
+
 // Accepts the resource root, the ".../anthropic" base, or the full messages URL.
 function anthropicMessagesUrl(endpoint) {
   const base = String(endpoint || '').trim().replace(/\/+$/, '');
@@ -67,9 +84,12 @@ async function callAzureFoundryClaude(systemPrompt, userPrompt, conversationHist
           console.log(`[Azure AI Foundry] Claude (${deploymentName}) executed successfully via Anthropic API.`);
           return textBlock.text.trim();
         }
+        console.warn(`[Azure AI Foundry] Anthropic API returned no text block for ${deploymentName}.`);
+      } else {
+        console.warn(`[Azure AI Foundry] Anthropic API call failed (HTTP ${resp.status}) for ${deploymentName}: ${await errorSummary(resp)}`);
       }
     } catch (e) {
-      // Fall through to other URL candidates
+      console.warn(`[Azure AI Foundry] Anthropic API request error: ${e.message}`);
     }
 
     const requestBody = JSON.stringify({

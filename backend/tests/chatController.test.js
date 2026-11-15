@@ -13,7 +13,8 @@ function stub(relPath, exports) {
 }
 const llmCalls = [];
 stub('utils/azureFoundryClaude', { callAzureFoundryClaude: async () => { llmCalls.push('claude'); throw new Error('offline'); } });
-stub('utils/googleGemini', { callGemini: async () => { llmCalls.push('gemini'); throw new Error('offline'); } });
+const gemini = { impl: async () => { throw new Error('offline'); } };
+stub('utils/googleGemini', { callGemini: async (...args) => { llmCalls.push('gemini'); return gemini.impl(...args); } });
 
 delete require.cache[require.resolve('../controllers/chatController')];
 const { handleXAIChat } = require('../controllers/chatController');
@@ -77,4 +78,22 @@ test('registry screening with a pre-screen is explained from its factors, not re
   assert.match(text, /Business age: 25\/35/);
   assert.match(text, /Company standing: Company not found on MCA21/);
   assert.doesNotMatch(text, /\/900/);
+});
+
+test('a JSON-wrapped Gemini reply is shown as plain text', async () => {
+  const payload = { decision: { score: 643, riskLevel: 'MEDIUM' } };
+  try {
+    for (const [raw, expected] of [
+      ['{"response": "Volatility caps the score."}', 'Volatility caps the score.'],
+      ['{"answer": "Bounce on 10 April."}', 'Bounce on 10 April.'],
+      ['Plain text stays as is.', 'Plain text stays as is.'],
+      ['{"unrelated": 1}', '{"unrelated": 1}']
+    ]) {
+      gemini.impl = async () => raw;
+      const r = await call({ query: 'why?', evaluationPayload: payload });
+      assert.equal(r.body.response, expected);
+    }
+  } finally {
+    gemini.impl = async () => { throw new Error('offline'); };
+  }
 });
