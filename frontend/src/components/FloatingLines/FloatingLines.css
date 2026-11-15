@@ -21,7 +21,7 @@
   z-index: 0;
   pointer-events: none;
   overflow: hidden;
-  background-color: var(--bg-canvas, #0A050E);
+  background-color: transparent;
 }
 
 .floating-lines-bg-container .floating-lines-container {

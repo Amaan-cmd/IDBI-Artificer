@@ -9,11 +9,13 @@
   position: relative;
   top: 0;
   left: 0;
-  background: var(--surface);
+  background: var(--surface-translucent);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1), min-width 0.25s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease, border-color 0.2s ease;
+  transition: width 0.28s cubic-bezier(0.22, 1, 0.36, 1), min-width 0.28s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.2s ease, border-color 0.2s ease;
   z-index: 50;
   user-select: none;
   box-shadow: var(--shadow-soft);
@@ -146,20 +148,20 @@
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: 10px;
   background: transparent;
   border: 1px solid transparent;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 0.18s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.18s ease, color 0.18s ease;
   text-align: left;
   width: 100%;
 }
 
 .sidebar-nav-item:hover {
-  background: var(--surface-alt);
+  background: var(--surface-hover);
   color: var(--text-primary);
-  border-color: var(--border);
+  border-color: var(--border-subtle);
 }
 
 .sidebar-nav-item.active {
@@ -250,11 +252,11 @@
 }
 
 .sidebar-quota-card {
-  background: var(--surface);
+  background: var(--surface-inset);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px 12px;
-  box-shadow: var(--shadow-sm);
+  border-radius: 12px;
+  padding: 11px 12px;
+  font-variant-numeric: tabular-nums;
 }
 
 .quota-header {

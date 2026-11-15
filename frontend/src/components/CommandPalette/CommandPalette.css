@@ -20,10 +20,12 @@
 .cmd-palette-modal {
   width: 100%;
   max-width: 680px;
-  background: var(--surface);
-  border: 1.5px solid var(--border);
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-strong);
   border-radius: 16px;
   box-shadow: var(--shadow-hover);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   overflow: hidden;
   display: flex;
   flex-direction: column;

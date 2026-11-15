@@ -234,7 +234,7 @@
 /* 1. Score Gauge Card */
 .verdict-score-card {
   background: var(--surface);
-  border: 1.5px solid var(--border);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 24px;
   display: flex;
@@ -242,6 +242,9 @@
   align-items: center;
   text-align: center;
   box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  font-variant-numeric: tabular-nums;
 }
 
 .verdict-card-label {

@@ -585,6 +585,7 @@
   overflow: hidden;
   width: 100%;
   position: relative;
+  isolation: isolate;
   z-index: 10;
 }
 
@@ -603,8 +604,8 @@
 
 .citadel-workspace-body {
   flex: 1;
-  padding: 24px;
-  max-width: 1600px;
+  padding: 28px 32px 40px;
+  max-width: 1520px;
   width: 100%;
   margin: 0 auto;
   box-sizing: border-box;

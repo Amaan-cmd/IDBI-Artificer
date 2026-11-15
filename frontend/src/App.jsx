@@ -921,9 +921,10 @@ function App() {
       <div className={`app-viewport ${theme === 'dark' ? 'dark-theme' : ''}`} data-theme={theme}>
         <div className="floating-lines-bg-container">
           <FloatingLines
+            key={`admin-${theme}`}
             linesGradient={theme === 'dark' ? ['#10B981', '#059669', '#34D399', '#3F3F46', '#10B981'] : ['#FF8BA7', '#F43F5E', '#FDA4AF', '#CBD0D8', '#E2E5E9']}
-            backgroundColor={theme === 'dark' ? '#090B0E' : '#F8F9FB'}
             lightMode={theme !== 'dark'}
+            opacity={theme === 'dark' ? 0.52 : 0.42}
             animationSpeed={0.55}
             amplitude={0.8}
             lineWidth={1.0}
@@ -954,9 +955,10 @@ function App() {
       {/* Interactive FloatingLines WebGL2 Ambient Field */}
       <div className="floating-lines-bg-container">
         <FloatingLines
+          key={`main-${theme}`}
           linesGradient={theme === 'dark' ? ['#10B981', '#059669', '#34D399', '#3F3F46', '#10B981'] : ['#FF8BA7', '#F43F5E', '#FDA4AF', '#CBD0D8', '#E2E5E9']}
-          backgroundColor={theme === 'dark' ? '#090B0E' : '#F8F9FB'}
           lightMode={theme !== 'dark'}
+          opacity={theme === 'dark' ? 0.52 : 0.42}
           animationSpeed={theme === 'dark' ? 0.55 : 0.55}
           amplitude={0.8}
           lineWidth={1.0}

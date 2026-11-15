@@ -180,12 +180,12 @@
   --bg-tertiary: #18181B;
   --bg-canvas: #090B0E;
 
-  --surface: #12141A;
-  --surface-alt: #18181B;
-  --surface-hover: #27272A;
-  --surface-elevated: #18181B;
-  --surface-inset: #090B0E;
-  --surface-translucent: rgba(18, 20, 26, 0.94);
+  --surface: #11141B;
+  --surface-alt: #171B24;
+  --surface-hover: rgba(255, 255, 255, 0.05);
+  --surface-elevated: #1B202B;
+  --surface-inset: #0B0E13;
+  --surface-translucent: rgba(13, 16, 22, 0.84);
   --backdrop-modal: rgba(5, 6, 8, 0.78);
   --backdrop-shade: #090B0E;
 
@@ -276,18 +276,18 @@
   --brand-red-dim: rgba(239, 68, 68, 0.15);
   --brand-red-border: rgba(239, 68, 68, 0.38);
 
-  /* Zinc Borders */
-  --border: #27272A;
-  --border-strong: #3F3F46;
-  --border-subtle: #18181B;
+  /* Crisp Hairline Borders (Linear / Vercel Obsidian feel) */
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --border-subtle: rgba(255, 255, 255, 0.045);
   --border-focus: #10B981;
 
-  /* Crisp Zinc Typography */
-  --text-primary: #FAFAFA;
+  /* High-Legibility Zinc Typography */
+  --text-primary: #F4F4F5;
   --text-secondary: #D4D4D8;
   --text-muted: #A1A1AA;
-  --text-subtle: #A1A1AA;
-  --text-faint: #71717A;
+  --text-subtle: #9CA3AF;
+  --text-faint: #6B7280;
   --text-inverse: #090B0E;
   --text-gold: #34D399;
   --text-celadon: #34D399;
@@ -296,13 +296,13 @@
 
   /* Scrollbars */
   --scrollbar-track: #090B0E;
-  --scrollbar-thumb: #3F3F46;
+  --scrollbar-thumb: rgba(255, 255, 255, 0.16);
   --scrollbar-thumb-hover: #10B981;
 
   /* Obsidian Shadows & Subtle Inset Specular */
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
-  --shadow-soft: 0 12px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  --shadow-hover: 0 20px 50px rgba(0, 0, 0, 0.65), 0 0 28px rgba(16, 185, 129, 0.1);
+  --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.35);
+  --shadow-soft: 0 12px 32px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --shadow-hover: 0 20px 48px rgba(0, 0, 0, 0.6), 0 0 28px rgba(16, 185, 129, 0.09);
   --shadow-gold: 0 0 24px rgba(16, 185, 129, 0.22);
 }
 
@@ -322,22 +322,50 @@
   padding: 0;
 }
 
+:root {
+  color-scheme: light dark;
+  accent-color: var(--accent);
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+:root:has(> head > meta[name="color-scheme"][content="dark"]) {
+  color-scheme: dark;
+}
+
+:root:has(> head > meta[name="color-scheme"][content="light"]) {
+  color-scheme: light;
+}
+
 html, body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
   font-family: var(--font-primary);
-  line-height: 1.6;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  line-height: 1.5;
   min-height: 100vh;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+h1, h2, h3, th {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--text-primary);
+}
+
 /* Legacy WebKit Scrollbar Fallback */
 @supports not (scrollbar-color: auto) {
   ::-webkit-scrollbar {
-    width: 7px;
-    height: 7px;
+    width: 8px;
+    height: 8px;
   }
   ::-webkit-scrollbar-track {
     background: var(--scrollbar-track);
@@ -363,6 +391,7 @@ html, body {
     radial-gradient(ellipse 80% 50% at 50% -20%, rgba(255, 183, 197, 0.22), transparent),
     radial-gradient(ellipse 60% 40% at 90% 90%, rgba(226, 232, 240, 0.7), transparent);
   color: var(--text-primary);
+  isolation: isolate;
   z-index: 1;
 }
 
@@ -371,8 +400,8 @@ html, body {
 [data-theme="dark"].app-viewport {
   background-color: #090B0E;
   background-image:
-    radial-gradient(ellipse 90% 70% at 50% 10%, rgba(16, 185, 129, 0.08) 0%, rgba(9, 11, 14, 0.98) 60%, #050608 100%),
-    radial-gradient(ellipse 60% 50% at 85% 85%, rgba(63, 63, 70, 0.2) 0%, transparent 70%);
+    radial-gradient(ellipse 90% 70% at 50% 8%, rgba(16, 185, 129, 0.09) 0%, rgba(9, 11, 14, 0.96) 58%, #06080B 100%),
+    radial-gradient(ellipse 55% 45% at 88% 88%, rgba(63, 63, 70, 0.16) 0%, transparent 70%);
 }
 
 .ambient-ghost-canvas {
