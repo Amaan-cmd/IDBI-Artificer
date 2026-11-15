@@ -104,34 +104,18 @@ Runs 8 automated test cases covering real GSTINs (Kariman Enterprises, Enver AI,
 
 ## ☁️ Cloud Deployment
 
-The repository is containerized and ready for single-container serverless deployment to **Google Cloud Run**, **Azure Container Apps**, or **AWS ECS**.
+Production runs as a single container on **Azure Container Apps** (`artificer-enverai`, resource group `rg-artificer`), serving both the API and the built frontend at https://artificer.enveraitech.in. Sign-in is Microsoft Entra External ID; settings and secrets live on the Container App (see `backend/.env.example` for names).
 
-### Option A: One-Click Google Cloud Run (Recommended)
-
-#### Linux / macOS / Cloud Shell:
+### Redeploy
 ```bash
-chmod +x deploy_gcloud.sh
-./deploy_gcloud.sh
+TAG=$(git rev-parse --short HEAD)
+az acr build -r caed530b2b9eacr -t artificer-enverai:$TAG .
+az containerapp update -n artificer-enverai -g rg-artificer \
+  --image caed530b2b9eacr.azurecr.io/artificer-enverai:$TAG --revision-suffix $TAG
 ```
+Roll back by pointing `--image` at the previous tag.
 
-#### Windows:
-```cmd
-deploy_gcloud.bat
-```
-
-#### Or via gcloud CLI directly:
-```bash
-gcloud run deploy enverai-artificer \
-  --source . \
-  --platform managed \
-  --region us-central1 \
-  --port 8080 \
-  --memory 1Gi \
-  --allow-unauthenticated \
-  --set-env-vars NODE_ENV=production
-```
-
-### Option B: Local Docker Container
+### Local Docker Container
 ```bash
 docker compose up --build
 # Cockpit and API accessible on http://localhost:8080

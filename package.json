@@ -15,8 +15,6 @@
     "dev:backend": "node backend/server.js",
     "dev:frontend": "npm --prefix frontend run dev",
     "smoke-test": "node test_smoke_enterprises.js",
-    "deploy:gcloud": "gcloud run deploy enverai-artificer --source . --platform managed --region us-central1 --allow-unauthenticated",
-    "deploy:azure": "deploy_azure.bat",
     "test": "node test_smoke_enterprises.js"
   },
   "keywords": [
